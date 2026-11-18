@@ -10,7 +10,7 @@
   · <a href="CHANGELOG.md">Historique des versions</a>
 </p>
 
-![Tomatoes Text : un document en mode avancé](docs/captures/document.png)
+![Tomatoes Text : un document en mode avancé, affiché en double page](docs/captures/double-page.png)
 
 Tomatoes Text réunit la prise de notes et la rédaction de documents longs dans un même outil. Les notes sont
 classées en projets et reliées entre elles ; le même texte peut ensuite être mis en page, paginé et exporté
@@ -27,6 +27,8 @@ ligne nécessaire.
 - Typographie française automatique : majuscule en début de phrase, guillemets, ordinaux (19ᵉ, 1ᵉʳ), espaces
   insécables, point médian.
 - Mini-barre de mise en forme sur la sélection, palette de commandes (Ctrl+K), raccourcis personnalisables.
+
+![Schémas, graphiques et titres numérotés dans une page](docs/captures/schemas-et-graphiques.png)
 
 **Organisation**
 - Projets et sections dans le panneau latéral, tags, recherche.
