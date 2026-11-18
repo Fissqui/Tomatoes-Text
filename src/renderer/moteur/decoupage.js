@@ -118,6 +118,8 @@
     const lh = px(kcs.lineHeight) || 1.4 * px(kcs.fontSize) || 20;
     const inner = el.clientWidth - px(cs.paddingLeft) - px(cs.paddingRight);
     const colW = Math.max(40, (inner - (c - 1) * px(cs.columnGap)) / c);
+    // (Mise en une colonne le temps de la mesure, puis remise comme avant : la zone imprimée reste en colonnes.)
+    const saved = ['column-count', 'box-sizing', 'width'].map((p) => [p, el.style.getPropertyValue(p), el.style.getPropertyPriority(p)]);
     el.style.setProperty('column-count', '1', 'important');
     el.style.setProperty('box-sizing', 'content-box', 'important');
     el.style.setProperty('width', colW + 'px', 'important');
@@ -132,6 +134,7 @@
     }
     if (units.length > 1) units[0].b = Math.min(height, units[1].y + lh);
     attachNotes(el, units, at);
+    for (const [p, v, prio] of saved) if (v) el.style.setProperty(p, v, prio); else el.style.removeProperty(p);
     return { height, mt: px(cs.marginTop), mb: px(cs.marginBottom), units };
   }
 

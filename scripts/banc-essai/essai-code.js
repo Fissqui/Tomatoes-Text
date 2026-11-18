@@ -243,13 +243,13 @@ module.exports = async ({ page }) => {
   const bytes = Buffer.from(await v(async () => Array.from(await window.FTWord.exportWord())));
   const xml = unzip(bytes, 'word/document.xml');
   assert.ok(xml, 'document.xml');
-  const paras = [...xml.matchAll(/<w:p>[\s\S]*?<\/w:p>|<w:p [\s\S]*?<\/w:p>/g)].map((m) => m[0]).filter((p) => /Consolas/.test(p));
+  const paras = [...xml.matchAll(/<w:p>[\s\S]*?<\/w:p>|<w:p [\s\S]*?<\/w:p>/g)].map((m) => m[0]).filter((p) => /JetBrains Mono/.test(p));
   assert.strictEqual(paras.length, PY.split('\n').length, 'une ligne Word par ligne de code : ' + paras.length);
   assert.ok(paras.every((p) => /<w:shd /.test(p) && /<w:pBdr>/.test(p)), 'cadre et fond');
   assert.ok(/<w:t xml:space="preserve">    <\/w:t>|<w:t xml:space="preserve">    x: float/.test(xml) || /    /.test(xml), 'retraits gardés');
   assert.ok(/w:color w:val="CF222E"/.test(xml), 'mots-clés en couleur');
   assert.ok(!/Python/.test(xml.replace(/Un point du plan/, '')), 'pas de menu du langage');
-  ok(`export Word : ${paras.length} lignes en Consolas, colorées, dans un cadre avec fond`);
+  ok(`export Word : ${paras.length} lignes en JetBrains Mono (police jointe), colorées, dans un cadre avec fond`);
 
   // ----- SQL de SAS (PROC SQL) et autres mots -----
 

@@ -8,5 +8,9 @@ Archivo, Atkinson Hyperlegible, Caveat, Crimson Pro, EB Garamond, Inter,
 JetBrains Mono, Libre Baskerville, Literata, Lora, Merriweather, Montserrat,
 Nunito, Open Sans, Playfair Display, Roboto, Source Serif 4.
 
+Le dossier statiques/ contient des graisses fixes tirées de ces mêmes polices
+(scripts/polices-statiques.py), sous la même licence : elles servent aux
+exports PDF et Word.
+
 Les polices Office (Aptos, etc.) ne sont pas incluses : Tomatoes Text les lit
 seulement sur l'ordinateur où Microsoft Office les a installées.

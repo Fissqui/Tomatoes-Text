@@ -18576,13 +18576,30 @@ MAX: 9026 };
 				value: "w14 w15 w16se w16cid w16 w16cex w16sdtdh"
 			}
 		},
-		children: fonts.map((font, i) => createRegularFont({
-			name: font.name,
-			index: i + 1,
-			fontKey: font.fontKey,
-			characterSet: font.characterSet
-		}))
+		children: embeddedFonts(fonts)
 	});
+	// (Tomatoes Text) Une entrée par famille, avec ses styles gras / italique / gras italique
+	// (option style : "bold", "italic", "boldItalic" ; sans style : le romain).
+	var embeddedFonts = (fonts) => {
+		const families = new Map();
+		fonts.forEach((font, i) => {
+			if (!families.has(font.name)) families.set(font.name, { name: font.name, characterSet: font.characterSet });
+			const f = families.get(font.name);
+			const key = { bold: "embedBold", italic: "embedItalic", boldItalic: "embedBoldItalic" }[font.style] || "embedRegular";
+			f[key] = { fontKey: font.fontKey, id: `rId${i + 1}` };
+		});
+		return [...families.values()].map((f) => createFont({
+			name: f.name,
+			sig: { usb0: "E0002AFF", usb1: "C000247B", usb2: "00000009", usb3: "00000000", csb0: "000001FF", csb1: "00000000" },
+			charset: f.characterSet,
+			family: "auto",
+			pitch: "variable",
+			embedRegular: f.embedRegular,
+			embedBold: f.embedBold,
+			embedItalic: f.embedItalic,
+			embedBoldItalic: f.embedBoldItalic
+		}));
+	};
 	//#endregion
 	//#region src/file/fonts/font-wrapper.ts
 	/**
@@ -27443,6 +27460,7 @@ MAX: 9026 };
 				Ignorable: "w14 w15 wp14"
 			}));
 			this.root.push(new OnOffElement("w:displayBackgroundShape", true));
+			if (options.embedTrueTypeFonts) this.root.push(new OnOffElement("w:embedTrueTypeFonts", true));
 			if (options.trackRevisions !== void 0) this.root.push(new OnOffElement("w:trackRevisions", options.trackRevisions));
 			if (options.defaultTabStop !== void 0) this.root.push(new NumberValueElement("w:defaultTabStop", options.defaultTabStop));
 			if (((_options$hyphenation = options.hyphenation) === null || _options$hyphenation === void 0 ? void 0 : _options$hyphenation.autoHyphenation) !== void 0) this.root.push(new OnOffElement("w:autoHyphenation", options.hyphenation.autoHyphenation));
@@ -29047,6 +29065,7 @@ MAX: 9026 };
 			this.packageParts = new PackageParts(this.contentTypes);
 			this.documentWrapper = new DocumentWrapper({ background: options.background });
 			this.settings = new Settings({
+				embedTrueTypeFonts: !!(options.fonts && options.fonts.length),
 				compatibilityModeVersion: options.compatabilityModeVersion,
 				compatibility: options.compatibility,
 				evenAndOddHeaders: options.evenAndOddHeaderAndFooters ? true : false,

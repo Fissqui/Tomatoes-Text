@@ -40,9 +40,13 @@
   }
 
   const GENERIC = { serif: 'Georgia', 'sans-serif': 'Arial', monospace: 'Consolas', cursive: 'Comic Sans MS', 'system-ui': 'Segoe UI' };
+  // (Polices employées par le document : celles qui sont intégrées au logiciel sont jointes au fichier.)
+  let usedFonts = new Set();
   function family(css) {
     const first = (css || '').split(',')[0].replace(/["']/g, '').trim();
-    return GENERIC[first] || first || 'Georgia';
+    const name = GENERIC[first] || first || 'Georgia';
+    usedFonts.add(name);
+    return name;
   }
 
   const isInlineDisplay = (el) => getComputedStyle(el).display.startsWith('inline');
@@ -85,6 +89,15 @@
     }
     if (cs.fontVariantCaps === 'small-caps') props.smallCaps = true;
     if (cs.textTransform === 'uppercase') props.allCaps = true;
+    // Espacement des lettres (surtitres, petites capitales espacées) : en vingtièmes de point.
+    const ls = parseFloat(cs.letterSpacing);
+    if (ls && Math.abs(ls) >= 0.1) props.characterSpacing = Math.round(ls * 15);
+    // Texte atténué (opacité, sous-titres de la page de titre…) : sa couleur mêlée au blanc du papier.
+    let alpha = 1;
+    for (let n = el; n && n !== editor && n.nodeType === 1; n = n.parentElement) alpha *= parseFloat(getComputedStyle(n).opacity) || 1;
+    if (alpha < 0.98 && props.color && /^[0-9A-F]{6}$/i.test(props.color)) {
+      props.color = [0, 2, 4].map((i) => Math.round(255 - (255 - parseInt(props.color.slice(i, i + 2), 16)) * alpha).toString(16).padStart(2, '0')).join('').toUpperCase();
+    }
     props.size = Math.max(2, Math.round(size * 1.5));
     return props;
   }
@@ -363,10 +376,32 @@
       const loose = ['devant', 'derriere', 'gauche', 'droite'].includes(node.dataset.wrap) && node.classList.contains('ft-image');
       if (loose || isInlineDisplay(node)) { buffer.push(node); continue; }
       flush();
-      block(node, ctx, out);
+      block(node, inColumn(ctx, node), out);
     }
     flush();
     return out;
+  }
+
+  // Zone en colonnes : chaque bloc est mesuré par rapport à la colonne où il se trouve à l'écran,
+  // pas par rapport à toute la largeur (sinon Word reçoit un retrait plus large que la colonne).
+  function columnsCtx(el, ctx) {
+    const cs = getComputedStyle(el);
+    const n = parseInt(cs.columnCount, 10);
+    if (!(n > 1)) return ctx;
+    const r = el.getBoundingClientRect();
+    const x0 = r.left + parseFloat(cs.borderLeftWidth) + parseFloat(cs.paddingLeft);
+    const x1 = r.right - parseFloat(cs.borderRightWidth) - parseFloat(cs.paddingRight);
+    const gap = parseFloat(cs.columnGap) || 0;
+    return { ...ctx, cols: { x0, n, gap, w: (x1 - x0 - gap * (n - 1)) / n } };
+  }
+  function inColumn(ctx, node) {
+    const c = ctx.cols;
+    if (!c) return ctx;
+    const box = node.getClientRects()[0];
+    if (!box) return ctx;
+    const k = Math.max(0, Math.min(c.n - 1, Math.floor((box.left - c.x0 + c.gap / 2) / (c.w + c.gap))));
+    const x0 = c.x0 + k * (c.w + c.gap);
+    return { ...ctx, cols: null, x0, x1: x0 + c.w };
   }
 
   const hasBlockChild = (el) => [...el.children].some((c) => !isGap(c) && !isBare(c) && !isInlineDisplay(c) && getComputedStyle(c).display !== 'none' &&
@@ -416,7 +451,7 @@
       const zone = el.classList.contains('ft-pg-cont') && lastZone ? lastZone : { count: parseInt(el.dataset.cols, 10) || 2, rule: el.hasAttribute('data-rule'), el };
       lastZone = zone;
       const inner = [];
-      flow(el, ctx, inner);
+      flow(el, columnsCtx(el, ctx), inner);
       inner.forEach((it) => { it.zone = zone; });
       out.push(...inner);
       return;
@@ -450,9 +485,10 @@
   function codeBlock(el, ctx) {
     const cs = getComputedStyle(el);
     const code = el.querySelector(':scope > code') || el;
-    // Police du style du bloc (JetBrains Mono, absente de Word : Consolas).
+    // Police du style du bloc (JetBrains Mono par défaut, jointe au fichier).
     const chosen = el.style.getPropertyValue('--code-font').replace(/["']/g, '').trim();
-    const font = chosen && chosen !== 'JetBrains Mono' ? chosen : 'Consolas';
+    const font = chosen || 'JetBrains Mono';
+    usedFonts.add(font);
     const lines = [[]];
     const cuts = [undefined];
     (function walk(node) {
@@ -513,6 +549,18 @@
   // Page de titre (cover.js) : un paragraphe par champ rempli. Les espaces entre les champs sont
   // ceux de l'écran, agrandis ou réduits pour que l'ensemble occupe la page Word comme à l'écran.
   // Les filets, bandes de couleur et cadres des groupes passent en bordures et fonds de paragraphe.
+  // Filet plein dessiné par ::before au début d'un groupe de la page de titre (bloc, fond de couleur, sans texte).
+  function barOf(group) {
+    const b = getComputedStyle(group, '::before');
+    if (b.content !== '""' || b.display !== 'block' || b.position !== 'static') return null;
+    const color = hex(b.backgroundColor);
+    const w = parseFloat(b.width), h = parseFloat(b.height);
+    if (!color || !(w > 0) || !(h > 0)) return null;
+    const gr = group.getBoundingClientRect(), gs = getComputedStyle(group);
+    const left = gr.left + parseFloat(gs.borderLeftWidth) + parseFloat(gs.paddingLeft) + (parseFloat(b.marginLeft) || 0);
+    return { color, w, h, left, mb: parseFloat(b.marginBottom) || 0 };
+  }
+
   function cover(el, ctx, out) {
     const filled = (f) => f.textContent.trim() || f.querySelector('img');
     const fields = [...el.querySelectorAll('.ft-cover-field')].filter(filled);
@@ -559,6 +607,21 @@
       const group = f.parentElement;
       const fctx = group && group !== el ? boxCtx(group, outer) : outer;
       const extra = { before: tw(Math.max(0, gaps[i] * k - collapsed(f, getComputedStyle(f)))) };
+      // Filet de couleur dessiné avant le groupe (modèle « Rapport ») : la bordure du bas d'un paragraphe
+      // vide, aussi large que le filet.
+      const bar = group && group !== el && fields.find((x) => x.parentElement === group) === f ? barOf(group) : null;
+      if (bar) {
+        const space = Math.max(0, gaps[i] - bar.h - bar.mb);
+        // (Page de titre plus large que la zone de texte : le filet part du bord du texte, comme le titre.)
+        const left = Math.max(0, tw(bar.left - fctx.x0));
+        paras.push({ el: group, node: new D.Paragraph({
+          children: [new D.TextRun({ text: '', size: 2 })],
+          spacing: { before: tw(space * k), after: tw(bar.mb), line: 20, lineRule: D.LineRuleType.EXACT },
+          indent: { left, right: Math.max(0, tw(fctx.x1 - fctx.x0) - left - tw(bar.w)) },
+          border: { bottom: { style: D.BorderStyle.SINGLE, size: Math.min(96, Math.max(2, Math.round(bar.h * 6))), color: bar.color, space: 0 } }
+        }) });
+        extra.before = tw(Math.max(0, -collapsed(f, getComputedStyle(f))));
+      }
       // Texte vertical, ou champs côte à côte (pied en colonnes du modèle « Suisse ») : Word les écrit
       // l'un sous l'autre, sur toute la largeur de leur groupe.
       if (getComputedStyle(f).writingMode.startsWith('vertical') || getComputedStyle(group).display === 'grid') {
@@ -1067,6 +1130,7 @@
 
   async function build() {
     const info = window.FTPages.exportInfo();
+    usedFonts = new Set();
     const state = { numbering: [], footnotes: {}, fnIds: new Map(), captions: [], images: new Map(), bookmarks: new Map(), x0: 0,
       headingNums: window.FTStructure && window.FTStructure.headingNumbers ? window.FTStructure.headingNumbers() : new Map() };
     const unmark = info.mode === 'avance' ? markCuts(info) : () => {};
@@ -1105,7 +1169,7 @@
 
       const er = editor.getBoundingClientRect();
       const ecs = getComputedStyle(editor);
-      const baseCtx = { state, x0: er.left + parseFloat(ecs.paddingLeft), x1: er.right - parseFloat(ecs.paddingRight), border: null, shading: null };
+      const baseCtx = columnsCtx(editor, { state, x0: er.left + parseFloat(ecs.paddingLeft), x1: er.right - parseFloat(ecs.paddingRight), border: null, shading: null });
       state.x0 = baseCtx.x0;
       // Mode note : la largeur du texte à l'écran n'est pas celle de la page Word ;
       // les tableaux et les images trop larges sont ramenés à la largeur de la page.
@@ -1144,7 +1208,7 @@
         const loose = node.classList.contains('ft-image') && ['devant', 'derriere', 'gauche', 'droite'].includes(node.dataset.wrap);
         if (loose || isInlineDisplay(node)) { buffer.push(node); continue; }
         flushTop();
-        let ctx = baseCtx;
+        let ctx = inColumn(baseCtx, node);
         if (node.classList.contains('ft-pg-alt') || node.hasAttribute('data-pm-alt')) {
           const cs = getComputedStyle(node);
           ctx = { ...baseCtx, x0: baseCtx.x0 + parseFloat(cs.marginLeft), x1: baseCtx.x1 - parseFloat(cs.marginRight) };
@@ -1169,8 +1233,16 @@
       }
 
       const sections = info.mode === 'avance' ? pagedSections(info, items, state) : noteSections(info, items);
+      // Polices intégrées au logiciel (Inter, Literata…) : absentes de la plupart des ordinateurs,
+      // elles sont jointes au fichier pour que Word affiche le texte comme le logiciel.
+      let fonts = [];
+      try {
+        const bytes = (b64) => Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+        fonts = ((await window.frameText.fontsForWord([...usedFonts])) || []).map((f) => ({ ...f, data: bytes(f.data) }));
+      } catch { fonts = []; }
       return new D.Document({
         creator: 'Tomatoes Text',
+        fonts,
         title: window.FTApp.docName(),
         styles: { default: { document: { run: { font: 'Georgia', size: 24, ...docLanguage() } } } },
         numbering: { config: state.numbering },

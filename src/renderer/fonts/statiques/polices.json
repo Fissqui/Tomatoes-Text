@@ -1,0 +1,303 @@
+{
+ "Archivo": {
+  "slug": "archivo",
+  "styles": {
+   "normal": [
+    400,
+    500,
+    600,
+    700,
+    800
+   ],
+   "italic": [
+    400,
+    500,
+    600,
+    700,
+    800
+   ]
+  }
+ },
+ "Atkinson Hyperlegible": {
+  "slug": "atkinson-hyperlegible",
+  "styles": {
+   "normal": [
+    400,
+    700
+   ],
+   "italic": [
+    400,
+    700
+   ]
+  }
+ },
+ "Caveat": {
+  "slug": "caveat",
+  "styles": {
+   "normal": [
+    400,
+    500,
+    600,
+    700
+   ]
+  }
+ },
+ "Crimson Pro": {
+  "slug": "crimson-pro",
+  "styles": {
+   "normal": [
+    400,
+    500,
+    600,
+    700,
+    800
+   ],
+   "italic": [
+    400,
+    500,
+    600,
+    700,
+    800
+   ]
+  }
+ },
+ "EB Garamond": {
+  "slug": "eb-garamond",
+  "styles": {
+   "normal": [
+    400,
+    500,
+    600,
+    700,
+    800
+   ],
+   "italic": [
+    400,
+    500,
+    600,
+    700,
+    800
+   ]
+  }
+ },
+ "Inter": {
+  "slug": "inter",
+  "styles": {
+   "normal": [
+    400,
+    500,
+    600,
+    700,
+    800
+   ],
+   "italic": [
+    400,
+    500,
+    600,
+    700,
+    800
+   ]
+  }
+ },
+ "JetBrains Mono": {
+  "slug": "jetbrains-mono",
+  "styles": {
+   "normal": [
+    400,
+    500,
+    600,
+    700,
+    800
+   ],
+   "italic": [
+    400,
+    500,
+    600,
+    700,
+    800
+   ]
+  }
+ },
+ "Libre Baskerville": {
+  "slug": "libre-baskerville",
+  "styles": {
+   "normal": [
+    400,
+    700
+   ],
+   "italic": [
+    400,
+    700
+   ]
+  }
+ },
+ "Literata": {
+  "slug": "literata",
+  "styles": {
+   "normal": [
+    400,
+    500,
+    600,
+    700,
+    800
+   ],
+   "italic": [
+    400,
+    500,
+    600,
+    700,
+    800
+   ]
+  }
+ },
+ "Lora": {
+  "slug": "lora",
+  "styles": {
+   "normal": [
+    400,
+    500,
+    600,
+    700
+   ],
+   "italic": [
+    400,
+    500,
+    600,
+    700
+   ]
+  }
+ },
+ "Merriweather": {
+  "slug": "merriweather",
+  "styles": {
+   "normal": [
+    400,
+    500,
+    600,
+    700,
+    800
+   ],
+   "italic": [
+    400,
+    500,
+    600,
+    700,
+    800
+   ]
+  }
+ },
+ "Montserrat": {
+  "slug": "montserrat",
+  "styles": {
+   "normal": [
+    400,
+    500,
+    600,
+    700,
+    800
+   ],
+   "italic": [
+    400,
+    500,
+    600,
+    700,
+    800
+   ]
+  }
+ },
+ "Nunito": {
+  "slug": "nunito",
+  "styles": {
+   "normal": [
+    400,
+    500,
+    600,
+    700,
+    800
+   ],
+   "italic": [
+    400,
+    500,
+    600,
+    700,
+    800
+   ]
+  }
+ },
+ "Open Sans": {
+  "slug": "open-sans",
+  "styles": {
+   "normal": [
+    400,
+    500,
+    600,
+    700,
+    800
+   ],
+   "italic": [
+    400,
+    500,
+    600,
+    700,
+    800
+   ]
+  }
+ },
+ "Playfair Display": {
+  "slug": "playfair-display",
+  "styles": {
+   "normal": [
+    400,
+    500,
+    600,
+    700,
+    800
+   ],
+   "italic": [
+    400,
+    500,
+    600,
+    700,
+    800
+   ]
+  }
+ },
+ "Roboto": {
+  "slug": "roboto",
+  "styles": {
+   "normal": [
+    400,
+    500,
+    600,
+    700,
+    800
+   ],
+   "italic": [
+    400,
+    500,
+    600,
+    700,
+    800
+   ]
+  }
+ },
+ "Source Serif 4": {
+  "slug": "source-serif-4",
+  "styles": {
+   "normal": [
+    400,
+    500,
+    600,
+    700,
+    800
+   ],
+   "italic": [
+    400,
+    500,
+    600,
+    700,
+    800
+   ]
+  }
+ }
+}

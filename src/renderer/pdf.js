@@ -85,7 +85,7 @@
   function pageHtml({ box, cls, css, head = '', scripts = '' }) {
     const page = `<!doctype html><html lang="${docLang()}" data-theme="light"><head><meta charset="utf-8">
 <base href="${location.href.replace(/[^/]*$/, '')}">
-<link rel="stylesheet" href="fonts/fonts.css"><link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="fonts/fonts-impression.css"><link rel="stylesheet" href="styles.css">
 <style>${liveStyles()}</style>
 <style>${css}</style>${head}${scripts}</head>
 <body><div class="ft-print"><div id="editor" class="${cls}"></div></div></body></html>`;

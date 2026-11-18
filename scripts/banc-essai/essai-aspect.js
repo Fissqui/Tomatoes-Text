@@ -76,10 +76,10 @@ module.exports = async ({ page }) => {
   await page.hover('#sidebar-toggle');
   await page.waitForTimeout(700);
   const tip = await v(() => ({ shown: !document.getElementById('ui-tip').hidden, text: document.getElementById('ui-tip').textContent, title: document.getElementById('sidebar-toggle').getAttribute('title') }));
-  assert(tip.shown && /Projets/.test(tip.text) && tip.title === null, JSON.stringify(tip));
+  assert(tip.shown && /Liste des documents/.test(tip.text) && tip.title === null, JSON.stringify(tip));
   await page.mouse.move(700, 600);
   await page.waitForTimeout(100);
-  assert(await v(() => document.getElementById('ui-tip').hidden && /Projets/.test(document.getElementById('sidebar-toggle').title)));
+  assert(await v(() => document.getElementById('ui-tip').hidden && /Liste des documents/.test(document.getElementById('sidebar-toggle').title)));
   await setPrefs({ theme: 'classique', look: { bulles: 'systeme' } });
   await page.hover('#sidebar-toggle');
   await page.waitForTimeout(700);

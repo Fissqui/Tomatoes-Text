@@ -19,6 +19,8 @@
   html.np-on #editor > .ft-footnotes { display: none !important; }
   html.np-on #editor .np-gap { display: block; position: relative; margin: 0 !important; padding: 0 !important; border: 0 !important; background: none !important; text-indent: 0 !important; break-after: page !important; }
   html.np-on #editor .np-gap.np-end { break-after: auto !important; }
+  html.np-on #editor .np-top { margin-top: 0 !important; }
+  html.np-on #editor .np-bottom { margin-bottom: 0 !important; }
   html.np-on #editor tr.np-gap { display: table-row; }
   html.np-on #editor tr.np-gap > td { position: relative; padding: 0 !important; border: 0 !important; background: none !important; }
   #editor .np-notes { position: absolute; bottom: 0; font-size: 0.8em; line-height: 1.45; text-indent: 0; text-align: left; font-weight: normal; font-style: normal; text-transform: none; letter-spacing: normal; color: #1f1f1f; }
@@ -39,6 +41,7 @@
   function undo() {
     const root = ed();
     for (const g of [...root.querySelectorAll('.np-gap, .np-head')]) g.remove();
+    for (const t of [...root.querySelectorAll('.np-top, .np-bottom')]) t.classList.remove('np-top', 'np-bottom');
     // Paragraphes coupés : la suite revient dans le premier morceau.
     for (const b of [...root.querySelectorAll('[data-np-split]')].reverse()) {
       const a = b.previousElementSibling;
@@ -124,6 +127,14 @@
     g.className = 'np-gap';
     g.setAttribute('aria-hidden', 'true');
     target.before(g);
+    // Le bloc qui ouvre la page la commence sans sa marge du haut (comme une coupure ordinaire : le
+    // découpage a compté la page à partir de son bord).
+    // Le bloc qui finit la page, sans sa marge du bas : elle ferait passer l'intercalaire, et la coupure,
+    // sur la page suivante.
+    if (target.tagName !== 'TR') {
+      target.classList.add('np-top');
+      if (g.previousElementSibling) g.previousElementSibling.classList.add('np-bottom');
+    }
     // (Même page nommée que ce qui précède : un changement ajouterait une page.)
     const prev = g.previousElementSibling;
     if (prev && g.parentElement === ed()) g.style.page = getComputedStyle(prev).page;
@@ -179,6 +190,15 @@
     const tops = blocks.map(top);
     const end = root.getBoundingClientRect().bottom + y0 - (parseFloat(getComputedStyle(root).paddingBottom) || 0);
     const meas = blocks.map((el) => D.measure(el, 1));
+    // Page de titre : elle occupe sa page entière ; un dépassement d'une fraction de pixel (arrondis)
+    // ne doit pas la faire déborder sur une page blanche.
+    const fit = H - SAFE - 1;
+    blocks.forEach((el, i) => {
+      if (!el.classList.contains('ft-cover')) return;
+      const h = Math.min(meas[i].height, fit);
+      meas[i] = { height: h, mt: 0, mb: 0, units: [{ y: 0, b: h, kind: 'start', at: el }] };
+      if (i + 1 < n) tops[i + 1] = Math.min(tops[i + 1], tops[i] + fit);
+    });
     // Notes : mesurées dans une couche à la largeur du texte (celle des notes posées).
     const cs = getComputedStyle(root);
     const ox = root.getBoundingClientRect().left + (parseFloat(cs.paddingLeft) || 0);
