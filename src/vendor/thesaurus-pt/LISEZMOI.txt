@@ -1,0 +1,8 @@
+Thésaurus (synonymes) utilisé par Tomatoes Text
+
+Source : paquet Debian/Ubuntu mythes-pt-pt 26.8.0.3 (th_pt_PT_v2.dat),
+tel que distribué avec les dictionnaires de LibreOffice (https://archive.ubuntu.com/ubuntu/pool/).
+Licence et auteurs : voir COPYRIGHT-debian.txt.
+
+Le fichier thes_pt.dat.gz est produit par scripts/thesaurus-langues.js : contraires, termes plus
+généraux et annotations retirés, sens fusionnés, UTF-8 compressé en gzip.

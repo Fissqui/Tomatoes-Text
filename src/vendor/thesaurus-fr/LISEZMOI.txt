@@ -1,0 +1,11 @@
+Thésaurus français (synonymes) utilisé par Frame Text
+=====================================================
+
+Fichier : thes_fr.dat (format MyThes), version 2.x du thésaurus de Dicollecte,
+tel que distribué avec les dictionnaires de LibreOffice (paquet mythes-fr 26.8.0.3,
+https://archive.ubuntu.com/ubuntu/pool/main/libr/libreoffice-dictionaries/).
+
+Auteurs : Kevin Hendricks, Frédéric Labbé, Laurent Godard, et les contributeurs de Dicollecte.
+Licence : GNU Lesser General Public License, version 2.1 ou ultérieure (texte complet : COPYING.LGPL-2.1).
+
+Le fichier n'est pas modifié : Frame Text le lit tel quel (src/thesaurus.js).

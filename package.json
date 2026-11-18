@@ -1,0 +1,24 @@
+{
+  "name": "tomatoes-text",
+  "productName": "Tomatoes Text",
+  "version": "2.4.20",
+  "description": "Logiciel de rédaction de notes et de textes",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Fissqui/Tomatoes-Text"
+  },
+  "homepage": "https://github.com/Fissqui/Tomatoes-Text",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "electron .",
+    "build:win": "node scripts/build-windows.js"
+  },
+  "license": "UNLICENSED",
+  "devDependencies": {
+    "electron": "38.8.6",
+    "resedit": "^3.1.0"
+  },
+  "dependencies": {
+    "node-llama-cpp": "^3.22.2"
+  }
+}

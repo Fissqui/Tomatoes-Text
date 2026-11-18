@@ -1,0 +1,9 @@
+node_modules/
+/dist/
+installation/
+*.bundle
+prototype-moteur/
+
+# Réglages locaux de développement (jamais publiés)
+src/prive.json
+src/edition.json

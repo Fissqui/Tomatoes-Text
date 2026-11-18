@@ -1,0 +1,7 @@
+Liste des mots courants du français (frequences.js).
+
+Fabriquée par scripts/frequences-fr.mjs à partir des fréquences de wordfreq (Robyn Speer et contributeurs),
+https://github.com/rspeer/wordfreq, fichier wordfreq/data/large_fr.msgpack.gz.
+Ces données sont distribuées sous licence Creative Commons Attribution-ShareAlike 4.0 (CC BY-SA 4.0) :
+https://creativecommons.org/licenses/by-sa/4.0/ ; la liste dérivée l'est sous la même licence.
+Elles réunissent notamment Wikipédia, OpenSubtitles, Google Books Ngrams, NewsCrawl et le web (voir wordfreq).

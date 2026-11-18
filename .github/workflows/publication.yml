@@ -1,0 +1,79 @@
+# Publie une version sur GitHub Releases quand un nouveau numéro de version arrive sur main.
+# Fichiers publiés : programme d'installation Windows et fichiers de la mise à jour intégrée.
+name: Publication
+
+on:
+  push:
+    branches: [main]
+    paths: [package.json]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: publication
+  cancel-in-progress: false
+
+jobs:
+  publier:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Numéro de version
+        id: version
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          v=$(node -p "require('./package.json').version")
+          s=$(node -p "require('./src/version.json').version")
+          if [ "$v" != "$s" ]; then echo "package.json ($v) et src/version.json ($s) diffèrent." >&2; exit 1; fi
+          echo "version=$v" >> "$GITHUB_OUTPUT"
+          if gh release view "v$v" >/dev/null 2>&1; then
+            echo "La version $v est déjà publiée."
+            echo "publier=non" >> "$GITHUB_OUTPUT"
+          else
+            echo "publier=oui" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/setup-node@v4
+        if: steps.version.outputs.publier == 'oui'
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Outils de fabrication
+        if: steps.version.outputs.publier == 'oui'
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q nsis
+          ELECTRON_SKIP_BINARY_DOWNLOAD=1 npm ci --ignore-scripts
+
+      - name: Fabrication
+        if: steps.version.outputs.publier == 'oui'
+        run: node scripts/build-windows.js --publication
+
+      - name: Notes de version
+        if: steps.version.outputs.publier == 'oui'
+        run: |
+          prev=$(git tag --list 'v*' --sort=-v:refname | head -n 1)
+          range=${prev:+$prev..}HEAD
+          git log --format=%s "$range" \
+            | grep -E '^(Version )?[0-9]+\.[0-9]+(\.[0-9]+)? ?:' \
+            | sed -E 's/^(Version )?[0-9.]+ ?: ?/- /' > notes.md || true
+          if [ ! -s notes.md ]; then echo "- Voir l'historique des versions (CHANGELOG.md)." > notes.md; fi
+          cat notes.md
+
+      - name: Publication sur GitHub Releases
+        if: steps.version.outputs.publier == 'oui'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          V: ${{ steps.version.outputs.version }}
+        run: |
+          gh release create "v$V" \
+            "dist/Tomatoes-Text-Installation-$V.exe" \
+            "dist/Tomatoes-Text-$V-fichiers.tar.gz" \
+            --target "$GITHUB_SHA" --title "Tomatoes Text $V" --notes-file notes.md --latest

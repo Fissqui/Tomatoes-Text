@@ -1,0 +1,66 @@
+/* Moteur d'édition (version 2.0) : ce qui diffère de l'ancienne zone d'écriture. */
+
+/* Ligatures et espaces comme avant (le moteur les désactive par défaut). */
+#editor.ProseMirror { font-variant-ligatures: normal; font-feature-settings: normal; }
+
+/* Objet sélectionné (image, ligne de séparation, bloc fermé). */
+#editor .ProseMirror-selectednode { outline: 2px solid var(--accent); outline-offset: 2px; }
+/* Image, tableau, encadré… : cadre de sélection dessiné à part (objets.js). La sélection du navigateur
+   reste invisible sur l'objet seul (une classe posée sur toute la zone d'écriture ferait recalculer
+   l'apparence de tout le texte, très long sur un gros document). */
+#editor :is(.ft-image, table.ft-table, blockquote.ft-callout, hr, div.ft-math, div.ft-toc, div.ft-lof, div.ft-index).ProseMirror-selectednode { outline: none; }
+#editor .ProseMirror-selectednode::selection, #editor .ProseMirror-selectednode *::selection { background: transparent; }
+#editor .ProseMirror-gapcursor:after { border-top-color: var(--text); }
+/* Cases sélectionnées (glisser d'une case à l'autre) : le voile couvre la case seule, pas toute la page. */
+#editor :is(td, th).selectedCell { position: relative; }
+#editor .selectedCell:after { background: color-mix(in srgb, var(--accent) 22%, transparent); }
+
+/* Paragraphe ajouté par le moteur autour du texte d'une ligne de liste ou d'une case : il s'affiche
+   comme le texte nu des versions 1.x (pas d'espace après, alignement de la ligne ou de la case). Avec un
+   autre paragraphe dans la ligne ou la case (coupée par Entrée), il est enregistré comme un paragraphe
+   ordinaire : il en garde l'espace après, sinon le texte bougerait à la réouverture. */
+#editor :is(li, td, th) > p[data-pm-bare] { text-align: inherit; text-indent: inherit; }
+#editor :is(li, td, th) > p[data-pm-bare]:first-child:not(:has(+ p)) { margin: 0; }
+
+/* Très long document : seuls les blocs autour de l'écran sont affichés (voir moteur/visibles.js). La
+   zone d'écriture contient ses marges (sinon la place rendue aux blocs retirés la déplacerait). */
+#editor.ProseMirror { display: flow-root; }
+#editor > [data-pm-far] { display: none !important; }
+#editor > [data-pm-sp] { margin-top: calc(attr(data-pm-sp type(<length>), 0px) + attr(data-pm-spf type(<length>), 0px)) !important; }
+#editor > [data-pm-sb] { margin-bottom: calc(attr(data-pm-sb type(<length>), 0px) + attr(data-pm-sbf type(<length>), 0px)) !important; }
+
+/* Double page (zoom.js, moteur/visibles.js) : les coupures du découpage ouvrent les colonnes ; marges des
+   blocs retirés et hauteurs des intercalaires sans objet. */
+#app.zoom-double #editor.pm-spread > [data-pm-sp] { margin-top: 0 !important; }
+#app.zoom-double #editor.pm-spread > [data-pm-sb] { margin-bottom: 0 !important; }
+#app.zoom-double #editor.pm-spread > [data-pm-brk] { break-before: column; }
+#app.zoom-double #editor.pm-spread .ft-pg-gap:not(tr) { display: block; height: 0 !important; break-before: column; }
+#app.zoom-double #editor.pm-spread tr.ft-pg-gap:not(.ft-pg-rhead) { break-before: column; }
+#app.zoom-double #editor.pm-spread tr.ft-pg-gap:not(.ft-pg-rhead) > td { height: 0 !important; }
+#app.zoom-double #editor.pm-spread :is(table, .ft-image, .ft-math, .ft-callout, figure, tr) { break-inside: auto; }
+#app.zoom-double #editor.pm-spread :is(h1, h2, h3, h4, h5) { break-after: auto; }
+/* (Un bloc vide en tête : une coupure qui tombe avant le premier bloc affiché ouvre bien une colonne.) */
+#app.zoom-double #editor.pm-spread::before { content: ''; display: block; height: 0; }
+
+/* Bloc sur une page tournée : à la largeur de sa zone de texte (comme .ft-pg-alt des versions 1.x). */
+#editor > [data-pm-alt] { margin-left: var(--pg-shift, 0px) !important; margin-right: var(--pg-shift, 0px) !important; }
+
+/* Champs de la page de titre : Maj+Entrée y pose un retour à la ligne (<br>), comme dans les versions 1.x. */
+#editor.ProseMirror .ft-cover-field { white-space: normal; }
+
+/* Zone en colonnes coupée par une page (mode avancé) : l'intercalaire prend toute la largeur ; avant lui,
+   les colonnes de la page s'équilibrent, après lui celles de la page suivante commencent. */
+#editor .ft-cols > div.ft-pg-gap { column-span: all; }
+
+/* Notes de bas de page au pied des pages (mode avancé, moteur/visibles.js) : le bloc des notes sort du fil
+   du texte ; chaque note est posée au bas de la page de son appel (top : posé par le moteur), sous un
+   filet. Une note coupée montre ses premières lignes sur sa page, et sa suite (copie) sur la suivante. */
+#editor.pm-fn-pages { position: relative; }
+#editor.pm-fn-pages > .ft-footnotes { position: absolute !important; left: 0; right: 0; top: 0; height: 0; margin: 0 !important; padding: 0 !important; }
+#editor.pm-fn-pages > .ft-footnotes::before { content: none; }
+#editor.pm-fn-pages > .ft-footnotes :is(li, .pm-fn-cont) { position: absolute; left: 1.8em; right: 0; margin: 0; }
+#editor.pm-fn-pages > .ft-footnotes li:not([data-pm-n]) { visibility: hidden; }
+#editor.pm-fn-pages > .ft-footnotes li[data-pm-n]::marker { content: attr(data-pm-n) ". "; }
+#editor.pm-fn-pages > .ft-footnotes .pm-fn-clip { height: 100%; overflow: hidden; }
+#editor.pm-fn-pages > .ft-footnotes .pm-fn-cont { cursor: text; }
+#editor.pm-fn-pages > .ft-footnotes .pm-fn-top::after { content: ''; position: absolute; left: -1.8em; top: -0.8em; width: calc((100% + 1.8em) * 0.3); border-top: 1px solid var(--text-muted); pointer-events: none; }

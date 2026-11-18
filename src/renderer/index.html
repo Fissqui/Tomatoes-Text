@@ -1,0 +1,1673 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data: blob:">
+  <title>Tomatoes Text</title>
+  <link rel="stylesheet" href="fonts/fonts.css">
+  <link rel="stylesheet" href="vendor/mathlive/mathlive-fonts.css">
+  <link rel="stylesheet" href="vendor/mathlive/mathlive-static.css">
+  <link rel="stylesheet" href="vendor/prosemirror/prosemirror.css">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="moteur/moteur.css">
+</head>
+<body class="ft-starting">
+  <div id="app">
+    <aside id="sidebar">
+      <div class="sidebar-header">
+        <h1 class="brand" title="Accueil"><svg class="brand-logo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" aria-hidden="true"><g transform="rotate(10 160 110)"><rect style="fill:var(--logo-paper);stroke:var(--logo-line)" x="104" y="34" width="112" height="140" rx="10" stroke-width="5"/><path style="stroke:var(--logo-paper-lines)" d="M122 66h76" stroke-width="5" stroke-linecap="round"/><path style="stroke:var(--logo-paper-lines)" d="M122 84h76" stroke-width="5" stroke-linecap="round"/><path style="stroke:var(--logo-paper-lines)" d="M122 102h50" stroke-width="5" stroke-linecap="round"/><path style="stroke:var(--logo-paper-lines)" d="M122 120h76" stroke-width="5" stroke-linecap="round"/><path style="stroke:var(--logo-paper-lines)" d="M122 138h76" stroke-width="5" stroke-linecap="round"/></g><ellipse cx="112" cy="222" rx="74" ry="7.4" fill="#000" opacity="0.1"/><g transform="translate(112 142) scale(0.86) translate(-128 -140)"><g transform="rotate(-12 128 146)"><defs><clipPath id="brand-clip"><path d="M128.0 74.0 C155.0 57.8 216.2 86.6 218.0 146.0 C218.0 192.8 178.4 228.8 128.0 228.8 C77.6 228.8 38.0 192.8 38.0 146.0 C39.8 86.6 101.0 57.8 128.0 74.0Z"/></clipPath></defs><path style="fill:var(--logo-tomato)" d="M128.0 74.0 C155.0 57.8 216.2 86.6 218.0 146.0 C218.0 192.8 178.4 228.8 128.0 228.8 C77.6 228.8 38.0 192.8 38.0 146.0 C39.8 86.6 101.0 57.8 128.0 74.0Z"/><g clip-path="url(#brand-clip)"><ellipse style="fill:var(--logo-tomato-shade)" cx="165.8" cy="155.0" rx="67.5" ry="99.0"/><ellipse style="fill:var(--logo-tomato)" cx="120.8" cy="142.4" rx="81.0" ry="82.8"/></g><path d="M72.2 135.2 Q75.8 96.5 108.2 86.6 Q84.8 105.5 72.2 135.2Z" fill="#fff" opacity=".9"/><ellipse cx="68.6" cy="153.2" rx="4.5" ry="6.3" fill="#fff" opacity=".9"/><path style="stroke:var(--logo-line)" d="M128.0 74.0 C155.0 57.8 216.2 86.6 218.0 146.0 C218.0 192.8 178.4 228.8 128.0 228.8 C77.6 228.8 38.0 192.8 38.0 146.0 C39.8 86.6 101.0 57.8 128.0 74.0Z" fill="none" stroke-width="6" stroke-linejoin="round"/><g clip-path="url(#brand-clip)" opacity=".55"><path style="fill:var(--logo-tomato-deep)" d="M131.7 79.6 Q100.2 60.9 67.4 85.0 Q98.2 70.7 130.3 86.4Z"/><path style="fill:var(--logo-tomato-deep)" d="M129.0 80.1 Q105.3 77.4 85.2 104.3 Q110.9 85.7 133.0 85.9Z"/><path style="fill:var(--logo-tomato-deep)" d="M127.5 82.7 Q124.3 92.1 127.6 102.6 Q134.3 92.9 134.5 83.3Z"/><path style="fill:var(--logo-tomato-deep)" d="M128.9 85.8 Q154.4 86.2 183.6 108.7 Q160.2 78.1 133.1 80.2Z"/><path style="fill:var(--logo-tomato-deep)" d="M131.7 86.4 Q159.1 73.3 185.0 84.7 Q157.0 63.5 130.3 79.6Z"/><path style="fill:var(--logo-tomato-deep)" d="M134.3 81.8 Q130.7 73.1 121.0 70.1 Q121.3 76.6 127.7 84.2Z"/><path style="fill:var(--logo-tomato-deep)" d="M134.4 83.9 Q139.6 76.4 138.6 69.4 Q130.0 73.8 127.6 82.1Z"/></g><path style="fill:var(--logo-leaf);stroke:var(--logo-leaf-line)" d="M128.7 70.6 Q97.2 51.9 64.4 76.0 Q95.2 61.7 127.3 77.4Z" stroke-width="3" stroke-linejoin="round"/><path style="stroke:var(--logo-leaf-vein)" d="M122.1 73.4 Q96.2 56.8 77.1 73.4" stroke-width="1.6" stroke-linecap="round" fill="none"/><path style="fill:var(--logo-leaf);stroke:var(--logo-leaf-line)" d="M126.0 71.1 Q102.3 68.4 82.2 95.3 Q107.9 76.7 130.0 76.9Z" stroke-width="3" stroke-linejoin="round"/><path style="stroke:var(--logo-leaf-vein)" d="M123.0 75.7 Q105.1 72.5 91.4 89.6" stroke-width="1.6" stroke-linecap="round" fill="none"/><path style="fill:var(--logo-leaf);stroke:var(--logo-leaf-line)" d="M124.5 73.7 Q121.3 83.1 124.6 93.6 Q131.3 83.9 131.5 74.3Z" stroke-width="3" stroke-linejoin="round"/><path style="stroke:var(--logo-leaf-vein)" d="M127.5 77.0 Q126.3 83.5 125.3 89.6" stroke-width="1.6" stroke-linecap="round" fill="none"/><path style="fill:var(--logo-leaf);stroke:var(--logo-leaf-line)" d="M125.9 76.8 Q151.4 77.2 180.6 99.7 Q157.2 69.1 130.1 71.2Z" stroke-width="3" stroke-linejoin="round"/><path style="stroke:var(--logo-leaf-vein)" d="M132.9 75.8 Q154.3 73.1 170.1 92.9" stroke-width="1.6" stroke-linecap="round" fill="none"/><path style="fill:var(--logo-leaf);stroke:var(--logo-leaf-line)" d="M128.7 77.4 Q156.1 64.3 182.0 75.7 Q154.0 54.5 127.3 70.6Z" stroke-width="3" stroke-linejoin="round"/><path style="stroke:var(--logo-leaf-vein)" d="M133.9 73.4 Q155.0 59.4 171.2 73.5" stroke-width="1.6" stroke-linecap="round" fill="none"/><path style="fill:var(--logo-leaf);stroke:var(--logo-leaf-line)" d="M131.3 72.8 Q127.7 64.1 118.0 61.1 Q118.3 67.6 124.7 75.2Z" stroke-width="3" stroke-linejoin="round"/><path style="stroke:var(--logo-leaf-vein)" d="M125.9 71.2 Q123.0 65.8 120.0 63.5" stroke-width="1.6" stroke-linecap="round" fill="none"/><path style="fill:var(--logo-leaf);stroke:var(--logo-leaf-line)" d="M131.4 74.9 Q136.6 67.4 135.6 60.4 Q127.0 64.8 124.6 73.1Z" stroke-width="3" stroke-linejoin="round"/><path style="stroke:var(--logo-leaf-vein)" d="M129.6 71.1 Q131.8 66.1 134.1 63.0" stroke-width="1.6" stroke-linecap="round" fill="none"/><path style="stroke:var(--logo-leaf-line)" d="M128.0 76.0 C127.0 59.0 131.8 49.0 143.0 42.8" stroke-width="15.0" stroke-linecap="round" fill="none"/><path style="stroke:var(--logo-stem)" d="M128.0 76.0 C127.0 59.0 131.8 49.0 143.0 42.8" stroke-width="7.5" stroke-linecap="round" fill="none"/></g></g></svg><span class="brand-text"><span class="brand-name"><span class="brand-tomatoes">Tomatoes</span> Text</span><span class="brand-codename" title="Version 2.4">Corbarino <span class="brand-version">2.4</span></span></span></h1>
+        <button id="theme-toggle" class="icon-btn" title="Mode jour, crépuscule ou lune (Ctrl+D)"></button>
+      </div>
+      <div id="presentation-bar" class="presentation-bar" hidden>
+        <span><b>Mode présentation</b><br>Modifications non conservées</span>
+        <button type="button" id="presentation-quit" title="Revenir à mes projets (Fichier &gt; Mode présentation)">Quitter</button>
+      </div>
+      <div class="project-label">Projet sélectionné</div>
+      <div class="project-bar">
+        <select id="project-select" aria-label="Projet"></select>
+        <button id="project-more" class="icon-btn" title="Projets et dossier de stockage">⋯</button>
+      </div>
+      <div class="sidebar-actions">
+        <button id="new-section">+ Section</button>
+        <button id="new-doc" class="primary">+ Document</button>
+      </div>
+      <div class="tree-search">
+        <input id="tree-search" type="search" placeholder="Rechercher (nom ou #tag)" spellcheck="false" title="Filtrer par nom, ou par tag en commençant par #">
+      </div>
+      <nav id="tree" aria-label="Mes documents"></nav>
+      <div class="sidebar-footer">
+        <button id="import-doc" class="link-btn" title="Ouvrir un document Tomatoes Text (.tmtx) ou Word (.docx) (Ctrl+O)">Ouvrir un fichier…</button>
+        <button id="open-folder" class="link-btn" title="Voir le dossier du projet, où sont rangés ses documents">Dossier du projet</button>
+      </div>
+    </aside>
+
+    <aside id="navpane" aria-label="Volet de navigation" aria-hidden="true">
+      <div class="nav-header">
+        <span class="nav-title">Navigation</span>
+        <button type="button" class="nav-close icon-btn" title="Fermer le volet de navigation (Ctrl+Maj+P)">×</button>
+      </div>
+      <div class="nav-sub">Titres du document</div>
+      <nav id="nav-list"></nav>
+      <div class="nav-resize" title="Tirer pour régler la largeur (double-clic : largeur d'origine)"></div>
+    </aside>
+
+    <main id="main">
+      <div id="view-tabs" role="tablist" aria-label="Affichage">
+        <button id="tab-document" role="tab" aria-selected="true" title="Le document ouvert">
+          <svg viewBox="0 0 16 16"><path d="M4 1.8h5.2L12.5 5v9.2H4zM9 1.8V5.2h3.5M6 8h4.5M6 10.6h4.5"/></svg>Document
+        </button>
+        <button id="tab-mindmap" role="tab" aria-selected="false" title="Les documents du projet et leurs liens (( )) (Ctrl+M)">
+          <svg viewBox="0 0 16 16"><circle cx="3.5" cy="4" r="1.8"/><circle cx="12.5" cy="3.5" r="1.8"/><circle cx="8" cy="12" r="1.8"/><circle cx="13" cy="11" r="1.3"/><path d="M5.2 4.6 10.7 3.8M4.4 5.6 7.2 10.4M11.6 5 8.8 10.4M9.8 11.8l1.9-.6"/></svg>Mindmap
+        </button>
+        <button id="tab-timeline" role="tab" aria-selected="false" title="Carte du temps : les dates trouvées dans les textes, sur une frise (Ctrl+Maj+T)">
+          <svg viewBox="0 0 16 16"><path d="M1.5 8.5h13"/><circle cx="4" cy="8.5" r="1.3"/><circle cx="9" cy="8.5" r="1.3"/><circle cx="12.8" cy="8.5" r="1.3"/><path d="M4 7.2V3.5h3.5M9 9.8v3.2h3.5M12.8 7.2V5"/></svg>Carte du temps
+        </button>
+        <button id="palette-btn" class="view-action view-search" type="button" title="Rechercher un outil, un style, un réglage ou un document (Ctrl+K)">
+          <svg viewBox="0 0 16 16"><circle cx="6.8" cy="6.8" r="4.3"/><path d="M10 10l4 4"/></svg><span class="va-label">Rechercher un outil</span><kbd>Ctrl+K</kbd>
+        </button>
+        <button id="reading-btn" class="view-action" type="button" hidden title="Mode lecture : le document en plein écran, page par page, comme un livre (Ctrl+Maj+F)">
+          <svg viewBox="0 0 16 16"><path d="M8 4.2C6.5 3 4.4 2.6 1.8 2.8v9.6c2.6-.2 4.7.2 6.2 1.4 1.5-1.2 3.6-1.6 6.2-1.4V2.8C11.6 2.6 9.5 3 8 4.2zM8 4.2v9.6"/></svg><span class="va-label">Lecture</span>
+        </button>
+        <div id="mode-switch" class="ft-switch" role="group" aria-label="Mode d'écriture">
+          <span class="ft-knob"></span>
+          <button type="button" data-mode="note" aria-pressed="true" title="Mode note : le texte défile sans fin, sans pages">
+            <svg viewBox="0 0 16 16"><path d="M3.5 1.5v13M12.5 1.5v13M5.8 4.5h4.4M5.8 7.5h4.4M5.8 10.5h3"/></svg>Mode note
+          </button>
+          <button type="button" data-mode="avance" aria-pressed="false" title="Mode avancé : le texte est découpé en pages, comme dans Word (format, numéros, en-tête et pied de page)">
+            <svg viewBox="0 0 16 16"><rect x="2.5" y="1.5" width="7" height="9" rx="0.6"/><rect x="6.5" y="5.5" width="7" height="9" rx="0.6"/></svg>Mode avancé
+          </button>
+        </div>
+      </div>
+      <div id="mindmap" hidden>
+        <canvas id="mindmap-canvas"></canvas>
+        <div id="mindmap-count"></div>
+        <div id="mindmap-filter">
+          <input id="mindmap-search" type="search" placeholder="Filtrer : nom ou #tag" spellcheck="false">
+          <div id="mindmap-filter-tags"></div>
+          <div class="mindmap-filter-row">
+            <div id="mindmap-filter-mode" class="mm-seg" role="group" aria-label="Documents qui ne correspondent pas">
+              <button type="button" data-mode="surligner" aria-pressed="true" title="Les documents qui correspondent sont entourés">Surligner</button>
+              <button type="button" data-mode="attenuer" aria-pressed="false" title="Les documents qui ne correspondent pas deviennent moins visibles">Atténuer</button>
+              <button type="button" data-mode="seuls" aria-pressed="false" title="Seuls les documents qui correspondent restent affichés">Afficher seulement</button>
+            </div>
+            <label class="mm-check" title="Montrer discrètement les tags sous chaque document"><input id="mindmap-show-tags" type="checkbox"> Tags</label>
+          </div>
+        </div>
+        <div id="mindmap-tip" hidden></div>
+        <div id="mindmap-empty" hidden>Aucun document dans ce projet.</div>
+        <div class="mindmap-help">Glissez un point pour le déplacer · molette pour zoomer · glissez le fond pour vous déplacer · cliquez sur un point pour ouvrir le document</div>
+        <button id="mindmap-center" type="button" title="Recentrer la mindmap">Recentrer</button>
+        <button id="mindmap-settings-btn" type="button" aria-pressed="false" title="Réglages de la mindmap : points, liens, noms, espacement, fond">Réglages</button>
+        <div id="mindmap-settings" hidden></div>
+      </div>
+      <div id="timeline" hidden>
+        <div class="tl-head">
+          <div id="tl-scope" class="mm-seg" role="group" aria-label="Dates de">
+            <button type="button" data-v="document" aria-pressed="false" title="Seulement les dates du document ouvert">Ce document</button>
+            <button type="button" data-v="projet" aria-pressed="true" title="Les dates de tous les documents du projet">Tout le projet</button>
+          </div>
+          <input id="tl-search" type="search" placeholder="Filtrer : un mot, un nom…" spellcheck="false">
+          <span id="tl-count"></span>
+          <span class="spacer"></span>
+          <div id="tl-zoom" class="tl-zoom">
+            <button type="button" id="tl-zoom-out" title="Dézoomer (Ctrl + molette)">−</button>
+            <button type="button" id="tl-fit" title="Voir toute la frise">Tout voir</button>
+            <button type="button" id="tl-zoom-in" title="Zoomer (Ctrl + molette)">+</button>
+          </div>
+          <div id="tl-mode" class="mm-seg" role="group" aria-label="Présentation">
+            <button type="button" data-v="frise" aria-pressed="true">Frise</button>
+            <button type="button" data-v="liste" aria-pressed="false">Liste</button>
+          </div>
+          <button type="button" id="tl-settings-btn" aria-pressed="false" title="Réglages de la frise : cartes, couleurs, position, contenu">Réglages</button>
+          <div id="tl-settings" hidden></div>
+        </div>
+        <div id="tl-docs"></div>
+        <div id="tl-scroll"><div id="tl-stage"></div></div>
+        <div id="tl-list" hidden></div>
+        <div id="tl-empty" hidden></div>
+        <div class="tl-help">Molette : avancer dans le temps · Ctrl + molette : zoomer · glissez le fond pour vous déplacer · cliquez sur une date pour l'ouvrir dans le texte · clic droit : exclure une date · « ~ » : année reprise de plus haut dans le texte</div>
+      </div>
+      <div id="toolbar" class="ft-toolbar" role="toolbar" aria-label="Mise en forme">
+        <span class="tb-grip" title="Déplacer la barre d'outils (clic droit : options)">
+          <svg viewBox="0 0 16 16"><path d="M6 3.5h.01M10 3.5h.01M6 8h.01M10 8h.01M6 12.5h.01M10 12.5h.01"/></svg>
+        </span>
+        <button type="button" class="tb-lock on" title="Cadenas fermé : les deux barres d'outils se déplacent ensemble. Cliquez pour les déplacer séparément.">
+          <svg viewBox="0 0 16 16"><rect x="3.5" y="7" width="9" height="7" rx="1.2"/><path class="lock-arc" d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2"/></svg>
+        </button>
+        <div class="tb-group" data-group="document" data-caption="Document" role="group" aria-label="Document">
+          <button data-tb="sidebar" id="sidebar-toggle" class="icon-btn" title="Liste des documents (Ctrl+Maj+B)"><svg class="ic" viewBox="0 0 24 24"><path d="M3 6.5A1.5 1.5 0 0 1 4.5 5h4l2 2h9A1.5 1.5 0 0 1 21 8.5v9a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 17.5z"/><path class="ic-a" d="M7 11h10M7 14.5h6"/></svg></button>
+          <button data-tb="navpane" id="navpane-toggle" title="Volet de navigation : les titres du document, pour s'y rendre d'un clic (Ctrl+Maj+P)">
+            <svg class="ic" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="1.5"/><rect class="ic-f" x="3" y="4" width="7" height="16" opacity=".22"/><path d="M10 4v16"/><path class="ic-a" d="M5 8h3M5.8 11h2.2M5.8 14h2.2"/><path d="M13 8h5M13 11h5M13 14h3"/></svg>
+          </button>
+          <button data-tb="find" id="find-btn" title="Rechercher et remplacer un mot (Ctrl+F, ou Ctrl+H pour remplacer)">
+            <svg viewBox="0 0 16 16"><circle cx="6.8" cy="6.8" r="4.3"/><path d="M10 10l4 4"/></svg>
+            <span class="tb-label">Rechercher</span>
+          </button>
+          <button data-tb="undo" id="undo-btn" title="Annuler la dernière modification (Ctrl+Z)">
+            <svg viewBox="0 0 16 16"><path d="M5.5 3.5 2.5 6.5l3 3M3 6.5h6.5a4 4 0 0 1 0 8H7"/></svg>
+          </button>
+          <button data-tb="redo" id="redo-btn" title="Rétablir la modification annulée (Ctrl+Y)">
+            <svg viewBox="0 0 16 16"><path d="M10.5 3.5l3 3-3 3M13 6.5H6.5a4 4 0 0 0 0 8H9"/></svg>
+          </button>
+        </div>
+        <div class="tb-group" data-group="police" data-caption="Police" role="group" aria-label="Police">
+          <select data-tb="font" id="font-family" title="Police d'écriture"></select>
+          <select data-tb="size" id="font-size" title="Taille du texte"></select>
+        </div>
+        <div class="tb-group" data-group="caracteres" data-caption="Caractères" role="group" aria-label="Caractères">
+          <button data-tb="bold" data-cmd="bold" title="Gras (Ctrl+G)"><b>G</b></button>
+          <button data-tb="italic" data-cmd="italic" title="Italique (Ctrl+I)"><i>I</i></button>
+          <button data-tb="underline" data-cmd="underline" title="Souligné (Ctrl+U)"><u>S</u></button>
+          <button data-tb="strike" data-cmd="strikeThrough" title="Barré (Ctrl+Maj+X)"><s>B</s></button>
+          <button data-tb="smallcaps" id="smallcaps-btn" title="Petites capitales (Ctrl+Maj+K) : les minuscules deviennent de petites majuscules"><svg class="ic" viewBox="0 0 24 24"><text x="3" y="18" font-size="15" font-family="Georgia">A</text><text x="13" y="18" font-size="10" font-family="Georgia">A</text></svg></button>
+          <div class="color-picker case-picker" data-tb="case">
+            <button id="case-btn" class="color-btn" title="Majuscules / minuscules (Maj+F3 : passer d'une casse à l'autre)"><span class="case-icon">aA</span><span class="caret">▾</span></button>
+            <div id="case-pop" class="ft-pop" hidden>
+              <div class="pop-title">Casse</div>
+              <button type="button" data-case="lower">minuscules</button>
+              <button type="button" data-case="upper">MAJUSCULES</button>
+              <button type="button" data-case="sentence">Majuscule en début de phrase</button>
+              <button type="button" data-case="title">Majuscule À Chaque Mot</button>
+              <button type="button" data-case="toggle">iNVERSER la casse</button>
+            </div>
+          </div>
+          <div data-tb="color" class="color-picker">
+            <button id="color-btn" class="color-btn" title="Couleur du texte : applique la couleur affichée (la flèche choisit la couleur)">
+              <span class="color-letter">A</span>
+              <span id="color-swatch"></span>
+            </button>
+            <button id="color-more" class="caret-btn" type="button" title="Choisir la couleur du texte">▾</button>
+            <div id="color-pop" hidden>
+              <div class="color-grid">
+                <button data-color="#1f1f1f" title="Noir"></button>
+                <button data-color="#6b6b6b" title="Gris"></button>
+                <button data-color="#7b4a2a" title="Marron"></button>
+                <button data-color="#c0392b" title="Rouge"></button>
+                <button data-color="#e67e22" title="Orange"></button>
+                <button data-color="#d4ac0d" title="Jaune"></button>
+                <button data-color="#27ae60" title="Vert"></button>
+                <button data-color="#16a085" title="Bleu-vert"></button>
+                <button data-color="#2e86c1" title="Bleu"></button>
+                <button data-color="#1f3a93" title="Bleu marine"></button>
+                <button data-color="#8e44ad" title="Violet"></button>
+                <button data-color="#d63384" title="Rose"></button>
+              </div>
+              <button id="color-auto" class="color-auto">Couleurs automatiques selon le mode jour/nuit</button>
+              <details class="color-advanced">
+                <summary>Couleur personnalisée…</summary>
+                <div class="color-custom">
+                  <input type="color" id="text-color" value="#c0392b" title="Choisir une couleur">
+                  <button id="color-custom-apply">Appliquer</button>
+                </div>
+              </details>
+            </div>
+        </div>
+          <div class="color-picker hl-picker" data-tb="highlight">
+          <button id="hl-btn" class="color-btn" title="Surligner la sélection (la flèche choisit la couleur)">
+            <svg viewBox="0 0 16 16"><path d="M10.2 2.3l3.5 3.5-6.2 6.2H4v-3.5zM8.6 3.9l3.5 3.5M2.5 14.2h5"/></svg>
+            <span id="hl-swatch"></span>
+          </button>
+          <button id="hl-more" class="caret-btn" title="Choisir la couleur du surlignage">▾</button>
+          <div id="hl-pop" class="ft-pop" hidden>
+            <div class="pop-title">Surlignage</div>
+            <div class="color-grid hl-grid"></div>
+            <button id="hl-none" class="color-auto">Retirer le surlignage</button>
+          </div>
+        </div>
+        </div>
+        <div class="tb-group" data-group="paragraphe" data-caption="Paragraphe" role="group" aria-label="Paragraphes">
+          <button data-tb="align-left" data-align="left" title="Aligner à gauche (Ctrl+L) : la sélection, ou tout le document si rien n'est sélectionné">
+            <svg viewBox="0 0 16 16"><path d="M2 3h12M2 6.3h8M2 9.6h12M2 13h8"/></svg>
+          </button>
+          <button data-tb="align-center" data-align="center" title="Centrer (Ctrl+E) : la sélection, ou tout le document si rien n'est sélectionné">
+            <svg viewBox="0 0 16 16"><path d="M2 3h12M4 6.3h8M2 9.6h12M4 13h8"/></svg>
+          </button>
+          <button data-tb="align-right" data-align="right" title="Aligner à droite (Ctrl+R) : la sélection, ou tout le document si rien n'est sélectionné">
+            <svg viewBox="0 0 16 16"><path d="M2 3h12M6 6.3h8M2 9.6h12M6 13h8"/></svg>
+          </button>
+          <button data-tb="align-justify" data-align="justify" title="Justifier (Ctrl+J) : la sélection, ou tout le document si rien n'est sélectionné">
+            <svg viewBox="0 0 16 16"><path d="M2 3h12M2 6.3h12M2 9.6h12M2 13h12"/></svg>
+          </button>
+          <button data-tb="indent" id="auto-indent" title="Alinéa automatique en début de paragraphe">
+            <svg class="ic" viewBox="0 0 24 24"><text x="2" y="11" font-size="10" class="ic-t">¶</text><path class="ic-a" d="M8.5 7h3M10 5.5 11.5 7 10 8.5"/><path d="M13 7h8M3 12h18M3 16.5h18M3 21h12"/></svg>
+            <span class="tb-label">Alinéa</span>
+          </button>
+          <div data-tb="bullets" class="ft-dropdown ds-tool">
+            <button id="bullets-btn" title="Liste à tirets (ou tapez - puis espace en début de ligne)">
+              <svg class="ic" viewBox="0 0 24 24"><circle class="ic-f" cx="5" cy="6" r="1.8"/><circle class="ic-f" cx="5" cy="12" r="1.8"/><circle class="ic-f" cx="5" cy="18" r="1.8"/><path d="M9.5 6H21M9.5 12H21M9.5 18H21"/></svg>
+              <span class="tb-label">Tirets</span>
+            </button>
+            <button id="bullets-more" class="caret-btn" title="Styles des tirets">▾</button>
+            <div id="bullets-pop" class="ft-pop ds-pop" hidden></div>
+          </div>
+          <button data-tb="check" id="check-btn" title="Liste à cocher (raccourci : [] puis espace)">
+            <svg class="ic" viewBox="0 0 24 24"><rect x="3" y="3.5" width="6.5" height="6.5" rx="1.2"/><path class="ic-a" d="M4.5 6.8l1.5 1.5 2.7-3" stroke-width="1.9"/><rect x="3" y="14" width="6.5" height="6.5" rx="1.2"/><path d="M12.5 6.8H21M12.5 17.2H21"/></svg>
+            <span class="tb-label">Cases</span>
+          </button>
+          <div data-tb="structure" class="ft-dropdown">
+            <button id="structure-btn" title="Insérer un titre, une liste, un encadré, une séparation, le plan ou une note">
+              <svg class="ic" viewBox="0 0 24 24"><path d="M4.5 5.5v13M2.8 5.5h3.4M2.8 18.5h3.4"/><path class="ic-a" d="M7.8 12h4M10.2 9.8l2.2 2.2-2.2 2.2"/><rect class="ic-f" x="14" y="3" width="7" height="3" rx=".7"/><path d="M14 9.8h7M14 14.2h7"/><rect x="14" y="18" width="7" height="3" rx=".8"/></svg>
+              <span class="tb-label tb-label-main">Éléments</span><span class="caret">▾</span>
+            </button>
+            <div id="structure-pop" class="ft-pop" hidden></div>
+        </div>
+        </div>
+        <div class="tb-group" data-group="saisie" data-caption="Saisie automatique" role="group" aria-label="Saisie automatique">
+          <div data-tb="quotes" id="quotes-switch" class="ft-switch" role="group" aria-label="Guillemets" title="Guillemets écrits par la touche &quot; du clavier">
+            <span class="ft-knob"></span>
+            <button type="button" data-q="anglais" aria-pressed="false" title="La touche &quot; écrit “ ”">“ ”</button>
+            <button type="button" data-q="francais" aria-pressed="true" title="La touche &quot; écrit « » (avec les espaces insécables)">« »</button>
+        </div>
+          <button data-tb="capitalize" id="capitalize-btn" class="tb-mini" title="Majuscule automatique en début de phrase">
+          <svg class="ic" viewBox="0 0 24 24"><text x="2" y="18" font-size="15" font-weight="600">A</text><text x="12" y="18" font-size="11">b.</text><path class="ic-f" d="M19 2.5l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"/></svg>
+        </button>
+          <button data-tb="typo" id="typo-btn" class="tb-mini on" title="Typographie automatique : ' devient ’, -- devient –, ... devient …">
+          <span class="median-icon">’–…</span>
+        </button>
+          <button data-tb="median" id="median-btn" class="tb-mini" title="Point médian : la touche * du pavé numérique écrit un point médian (·) pour l'écriture inclusive">
+          <span class="median-icon">e·s</span>
+        </button>
+        </div>
+        <div class="tb-group" data-group="relecture" data-caption="Relecture" role="group" aria-label="Relecture">
+          <button data-tb="comment" id="comment-btn" title="Commentaire sur la sélection (Ctrl+Maj+M)">
+            <svg class="ic" viewBox="0 0 24 24"><path class="ic-f" d="M3 4h18v12H11l-5 4v-4H3z" opacity=".22"/><path d="M3 4h18v12H11l-5 4v-4H3z"/><path d="M7 8.5h10M7 11.5h6"/></svg>
+            <span class="tb-label">Commentaire</span>
+          </button>
+          <button data-tb="track" id="track-btn" aria-pressed="false" title="Suivi des modifications (Ctrl+Maj+R)">
+          <svg class="ic" viewBox="0 0 24 24"><path class="ic-plus" d="M6.5 3.5v7M3 7h7" stroke-width="2"/><path class="ic-moins" d="M14 7h7" stroke-width="2"/><path d="M3 15h18M3 19.5h12"/></svg>
+          <span class="tb-label">Suivi</span>
+        </button>
+          <button data-tb="assist" id="assist-toggle" title="Aide au texte (AAT) : reformulation du passage sélectionné (Ctrl+Maj+A)">
+            <svg class="ic" viewBox="0 0 24 24"><path d="M4 3.5h12a2 2 0 0 1 2 2V8M10 15.5H8.5l-4 3.5v-3.5H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2"/><path class="ic-a" d="M5.5 7.5h8M5.5 11h5"/><path d="M13 21l.8-3.3 6.5-6.5a1.6 1.6 0 0 1 2.3 2.3l-6.5 6.5z"/><path class="ic-a" d="M18.8 12.7l2.3 2.3"/></svg>
+            <span class="tb-label tb-label-aat">Aide au texte</span>
+          </button>
+        </div>
+        <input id="image-file" type="file" accept="image/*" multiple hidden>
+      </div>
+      <div id="toolbar2" class="ft-toolbar" role="toolbar" aria-label="Insérer">
+        <span class="tb-grip" title="Déplacer la barre d'insertion (clic droit : options)">
+          <svg viewBox="0 0 16 16"><path d="M6 3.5h.01M10 3.5h.01M6 8h.01M10 8h.01M6 12.5h.01M10 12.5h.01"/></svg>
+        </span>
+        <div class="tb-group" data-group="objets" data-caption="Objets" role="group" aria-label="Objets">
+          <div data-tb="table" class="ft-dropdown table-tool">
+            <button id="table-quick" title="Insérer un tableau de 3 × 3 (clic droit dessus pour le modifier)">
+              <svg class="ic" viewBox="0 0 24 24"><path class="ic-f" d="M3 4h18v5.5H8.5V20H3z" opacity=".35"/><rect x="3" y="4" width="18" height="16" rx="1.5"/><path d="M3 9.5h18M8.5 4v16"/><path d="M12 13h5.5M12 16.5h4"/></svg>
+              <span class="tb-label tb-label-main">Tableau</span>
+            </button>
+            <button id="table-more" class="caret-btn" title="Taille et styles des tableaux">▾</button>
+            <div id="table-pop" class="ft-pop" hidden>
+              <div id="table-size-part">
+                <div class="pop-title">Taille du tableau</div>
+                <div id="table-grid"></div>
+                <div id="table-grid-label">Survolez pour choisir la taille</div>
+                <div class="table-size">
+                  <label>Lignes <input id="table-rows" type="number" data-int min="1" max="100" value="3"></label>
+                  <label>Colonnes <input id="table-cols" type="number" data-int min="1" max="20" value="3"></label>
+                  <button id="table-insert" type="button">Insérer</button>
+                </div>
+              </div>
+              <div id="table-styles"></div>
+            </div>
+          </div>
+          <button data-tb="image" id="image-btn" title="Insérer une image (vous pouvez aussi la glisser dans la page, ou la coller)">
+            <svg class="ic" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="1.5"/><circle class="ic-f" cx="15.5" cy="9" r="2"/><path d="M3 17l5-5 4 4 3-3 6 6"/></svg>
+            <span class="tb-label tb-label-main">Image</span>
+          </button>
+          <div data-tb="diagram" class="ft-dropdown ds-tool">
+            <button id="diagram-btn" title="Schéma : formes reliées par des connecteurs (double-clic sur un schéma pour le modifier)">
+              <svg class="ic" viewBox="0 0 24 24"><rect class="ic-f" x="8" y="2.5" width="8" height="5.5" rx="1.2" opacity=".35"/><rect x="8" y="2.5" width="8" height="5.5" rx="1.2"/><path d="M12 8v3.5M6 11.5h12M6 11.5v4M18 11.5v4"/><rect x="2.5" y="15.5" width="7" height="5.5" rx="1.2"/><rect x="14.5" y="15.5" width="7" height="5.5" rx="1.2"/></svg>
+              <span class="tb-label">Schéma</span>
+            </button>
+            <button id="diagram-more" class="caret-btn" title="Styles des schémas">▾</button>
+            <div id="diagram-pop" class="ft-pop ds-pop" hidden></div>
+          </div>
+          <button data-tb="math" id="math-btn" title="Insérer une formule mathématique">
+            <svg class="ic" viewBox="0 0 24 24"><path d="M2 13.2l2.2-1 3.3 7.8L12 3.5h10"/><text x="17" y="18" font-size="13" text-anchor="middle" font-family="Georgia" font-style="italic" class="ic-t">x</text></svg><span class="tb-label">Formule</span>
+          </button>
+          <button data-tb="bio" id="bio-btn" title="Repère biographique : courte notice sur une personne (portrait, dates, présentation), à côté du texte">
+            <svg class="ic" viewBox="0 0 24 24"><rect x="3" y="3.5" width="18" height="17" rx="1.5"/><circle class="ic-f" cx="9" cy="9.3" r="2.6" opacity=".35"/><circle cx="9" cy="9.3" r="2.6"/><path d="M4.8 16.5c.7-2.2 2.2-3.3 4.2-3.3s3.5 1.1 4.2 3.3"/><path class="ic-a" d="M15 8h3.5M15 11.5h3.5M15 15h2.2"/></svg>
+            <span class="tb-label">Repère</span>
+          </button>
+        </div>
+        <div class="tb-group" data-group="blocs" data-caption="Blocs" role="group" aria-label="Blocs de texte">
+          <div data-tb="quote" class="ft-dropdown ds-tool">
+            <button id="quote-btn" title="Citation : place les paragraphes sélectionnés dans un bloc de citation">
+              <svg class="ic" viewBox="0 0 24 24"><path class="ic-f" d="M3.5 18v-5.5C3.5 8.5 5.5 6 9 5l.8 1.6c-2 .8-3 2.2-3.2 3.9H10V18zM13.5 18v-5.5c0-4 2-6.5 5.5-7.5l.8 1.6c-2 .8-3 2.2-3.2 3.9H20V18z"/></svg>
+              <span class="tb-label">Citation</span>
+            </button>
+            <button id="quote-more" class="caret-btn" title="Styles des citations">▾</button>
+            <div id="quote-pop" class="ft-pop ds-pop" hidden></div>
+          </div>
+          <div data-tb="callout" class="ft-dropdown ds-tool">
+            <button id="callout-btn" title="Encadré : place les paragraphes sélectionnés dans un cadre (ou tapez > puis espace)">
+              <svg class="ic" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path class="ic-a" d="M6.5 7.5v9" stroke-width="2.8"/><path d="M10 8.5h8M10 12h8M10 15.5h5"/></svg>
+              <span class="tb-label">Encadré</span>
+            </button>
+            <button id="callout-more" class="caret-btn" title="Styles des encadrés">▾</button>
+            <div id="callout-pop" class="ft-pop ds-pop" hidden></div>
+          </div>
+          <div data-tb="code" class="ft-dropdown ds-tool">
+            <button id="code-btn" title="Bloc de code, coloré selon le langage (ou tapez ``` puis espace en début de ligne)">
+              <svg class="ic" viewBox="0 0 24 24"><path d="M8 6.5 2.5 12 8 17.5M16 6.5l5.5 5.5-5.5 5.5"/><path class="ic-a" d="M13.6 4.5l-3.2 15"/></svg>
+              <span class="tb-label">Code</span>
+            </button>
+            <button id="code-more" class="caret-btn" title="Styles des blocs de code">▾</button>
+            <div id="code-pop" class="ft-pop ds-pop" hidden></div>
+          </div>
+          <div data-tb="lettrine" class="ft-dropdown lettrine-tool">
+            <button id="lettrine-btn" title="Lettrine : agrandit la première lettre du paragraphe (la petite flèche pour la hauteur et le style)">
+              <svg class="ic" viewBox="0 0 24 24"><rect class="ic-f" x="3" y="3.5" width="8.5" height="10" rx="1" opacity=".25"/><text x="7.25" y="12" font-size="9.5" text-anchor="middle" font-weight="700" font-family="Georgia" class="ic-t">A</text><path d="M14 5h7M14 8.5h7M14 12h7M3 16.5h18M3 20.5h13"/></svg>
+              <span class="tb-label">Lettrine</span>
+            </button>
+            <button id="lettrine-more" class="caret-btn" title="Réglages de la lettrine">▾</button>
+            <div id="lettrine-pop" class="ft-pop" hidden></div>
+          </div>
+        </div>
+        <div class="tb-group" data-group="symboles" data-caption="Symboles" role="group" aria-label="Symboles">
+          <div data-tb="chars" class="ft-dropdown chars-tool">
+            <button id="chars-btn" title="Caractères spéciaux (survol : vos favoris, clic : tous les caractères)">
+              <span class="chars-icon">Ω</span><span class="tb-label">Caractères</span>
+            </button>
+            <div id="chars-fav" class="ft-pop" hidden></div>
+            <div id="chars-pop" class="ft-pop" hidden></div>
+          </div>
+          <div data-tb="date" class="ft-dropdown date-tool">
+            <button id="date-btn" title="Insérer la date du jour (la flèche : autres formats)">
+              <svg class="ic" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="1.8"/><path d="M3 9.5h18M8 3v4M16 3v4"/><text x="12" y="18.8" font-size="8" text-anchor="middle" font-weight="700" class="ic-t">29</text></svg>
+              <span class="tb-label">Date</span>
+            </button>
+            <button id="date-more" class="caret-btn" title="Choisir le format de la date">▾</button>
+            <div id="date-pop" class="ft-pop" hidden></div>
+          </div>
+        </div>
+        <div class="tb-group" data-group="notes" data-caption="Notes et sources" role="group" aria-label="Notes et sources">
+          <button data-tb="note" id="note-btn" title="Insérer une note de bas de page (ou tapez ^ dans le texte)">
+            <svg class="ic" viewBox="0 0 24 24"><text x="1.8" y="14.5" font-size="12" font-weight="600">ab</text><text x="15.5" y="9" font-size="8" class="ic-t" font-weight="700">1</text><path class="ic-a" d="M3 18.2h7"/><path d="M3 21.2h15"/></svg>
+            <span class="tb-label">Note</span>
+          </button>
+          <button data-tb="endnote" id="endnote-btn" title="Note de fin : numérotée i, ii, iii… et rangée dans « Notes », à la fin du document">
+            <svg class="ic" viewBox="0 0 24 24"><path d="M8 2.5h11v15"/><path d="M5 5.5h11v16H5z"/><path class="ic-a" d="M8 14.5h5M8 17.5h5" /><path d="M8 9h5"/><text x="15.5" y="20.5" font-size="6" class="ic-t" font-weight="700">ii</text></svg>
+            <span class="tb-label">Note de fin</span>
+          </button>
+          <button data-tb="cite" id="cite-btn" title="Sourcer : renvoyer à une source, gérer les sources du projet et insérer la bibliographie">
+          <svg class="ic" viewBox="0 0 24 24"><path d="M3 5.5c3-1 6-.8 9 1.2v13c-3-2-6-2.2-9-1.2zM21 5.5c-3-1-6-.8-9 1.2v13c3-2 6-2.2 9-1.2z"/><path class="ic-a" d="M15 10h3M15 13h3M6 10h3"/></svg>
+          <span class="tb-label">Sourcer</span>
+        </button>
+          <button data-tb="pdf-source" id="pdf-source-btn" title="Source PDF côte à côte : sélectionner un passage du PDF pour le citer avec sa page">
+          <svg class="ic" viewBox="0 0 24 24"><path d="M7 3h8l4 4v14H7z"/><path d="M15 3v4h4"/><rect x="2.5" y="11.5" width="14" height="7" rx="1.2" class="ic-f"/><text x="9.5" y="17" font-size="5.6" text-anchor="middle" font-weight="800" class="ic-w">PDF</text></svg>
+          <span class="tb-label">Source PDF</span>
+        </button>
+        </div>
+        <div class="tb-group" data-group="liens" data-caption="Liens" role="group" aria-label="Liens et renvois">
+          <button data-tb="weblink" id="weblink-btn" title="Lien vers un site ou une adresse e-mail, placé sur le texte choisi (Ctrl+Maj+L)">
+            <svg class="ic" viewBox="0 0 24 24"><path d="M10.2 13.8a4.2 4.2 0 0 0 6 0l3.4-3.4a4.2 4.2 0 0 0-6-6l-1.4 1.4"/><path class="ic-a" d="M13.8 10.2a4.2 4.2 0 0 0-6 0l-3.4 3.4a4.2 4.2 0 0 0 6 6l1.4-1.4"/></svg>
+            <span class="tb-label">Lien</span>
+          </button>
+          <button data-tb="xref" id="xref-btn" title="Renvoi vers un titre, une légende ou un signet (« voir page 12 »)">
+            <svg class="ic" viewBox="0 0 24 24"><path d="M3 18c0-6 3.5-10 9-10"/><path d="M9.5 5l3 3-3 3"/><rect x="14" y="9" width="7.5" height="11" rx="1"/><text x="17.75" y="17.2" font-size="5.5" text-anchor="middle" class="ic-t" font-weight="700">12</text></svg>
+            <span class="tb-label">Renvoi</span>
+          </button>
+          <button data-tb="bookmarks" id="bookmarks-btn" title="Signets : marquer des endroits du document et y revenir d'un clic (Ctrl+Maj+G)">
+            <svg class="ic" viewBox="0 0 24 24"><path class="ic-f" d="M6 2.5h12v19l-6-4.5-6 4.5z" opacity=".3"/><path d="M6 2.5h12v19l-6-4.5-6 4.5z"/></svg>
+            <span class="tb-label">Signets</span>
+          </button>
+        </div>
+        <div class="tb-group" data-group="parties" data-caption="Parties du document" role="group" aria-label="Parties du document">
+          <button data-tb="cover" id="cover-btn" title="Page de titre : page de couverture en tête du document, centrée verticalement, au choix parmi 24 modèles">
+            <svg class="ic" viewBox="0 0 24 24"><rect x="4.5" y="2.5" width="15" height="19" rx="1"/><text x="12" y="14.2" font-size="10" font-weight="700" text-anchor="middle" font-family="Georgia" class="ic-t">T</text><path class="ic-a" d="M9 17.5h6"/></svg>
+            <span class="tb-label">Page de titre</span>
+          </button>
+          <div data-tb="toc" class="ft-dropdown ds-tool">
+            <button id="toc-btn" title="Plan du document : liste des titres, mise à jour automatiquement">
+              <svg class="ic" viewBox="0 0 24 24"><path d="M3 5h6M3 11h8M5 17h5"/><path d="M11 5h6M13 11h4M12 17h5" stroke-dasharray=".1 2.2"/><text x="20.5" y="7" font-size="6" text-anchor="middle" class="ic-t">3</text><text x="20.5" y="13" font-size="6" text-anchor="middle" class="ic-t">7</text><text x="20.5" y="19" font-size="6" text-anchor="middle" class="ic-t">9</text></svg>
+              <span class="tb-label">Plan</span>
+            </button>
+            <button id="toc-more" class="caret-btn" title="Styles des plans">▾</button>
+            <div id="toc-pop" class="ft-pop ds-pop" hidden></div>
+          </div>
+          <button data-tb="lof" id="lof-btn" title="Table des illustrations : liste automatique des figures, schémas et tableaux légendés, avec leurs pages">
+            <svg class="ic" viewBox="0 0 24 24"><rect class="ic-f" x="3" y="3.5" width="5.5" height="4.5" rx=".6" opacity=".5"/><rect class="ic-f" x="3" y="10" width="5.5" height="4.5" rx=".6" opacity=".5"/><rect class="ic-f" x="3" y="16.5" width="5.5" height="4.5" rx=".6" opacity=".5"/><path d="M11 5.8h7M11 12.3h7M11 18.8h7" stroke-dasharray=".1 2.2"/></svg>
+            <span class="tb-label">Illustrations</span>
+          </button>
+          <button data-tb="index" id="index-btn" title="Index : les mots marqués, rangés par ordre alphabétique avec leurs pages, en fin de document">
+            <svg class="ic" viewBox="0 0 24 24"><text x="2.5" y="11" font-size="9.5" font-weight="700">A</text><text x="2.5" y="21.5" font-size="9.5" font-weight="700">Z</text><path class="ic-a" d="M16 4v15M12.8 16l3.2 3.2 3.2-3.2"/></svg>
+            <span class="tb-label">Index</span>
+          </button>
+        </div>
+        <div class="tb-group" data-group="presentation" data-caption="Mise en page" role="group" aria-label="Mise en page">
+          <button data-tb="modele" id="layout-tab" type="button" hidden title="Modèle de mise en page : mémoire, roman, rapport, lettre…">
+          <svg viewBox="0 0 16 16"><rect x="2" y="1.8" width="7.4" height="10" rx="0.7"/><path d="M6.6 4.2h4.6a.7.7 0 0 1 .7.7v8.6a.7.7 0 0 1-.7.7H6.6"/><path d="M4 4.4h3.4M4 6.6h3.4M4 8.8h2.2"/><path d="M12 6.2h1.3a.7.7 0 0 1 .7.7v6.6"/></svg><span class="tb-label">Modèle</span>
+        </button>
+          <button data-tb="doctheme" id="doc-theme-tab" type="button" hidden title="Thème du document : police du texte, titres, tableaux, encadrés, plan et marges, accordés entre eux">
+          <svg class="ic" viewBox="0 0 24 24"><path d="M12 2.8a9.2 9.2 0 1 0 0 18.4c1.4 0 2.1-.8 2.1-1.8 0-1.2-1.1-1.6-1.1-2.8 0-1 .8-1.7 1.9-1.7h2.3c2.4 0 4-1.6 4-3.8C21.2 6.6 17.1 2.8 12 2.8z"/><circle class="ic-f" cx="7.3" cy="11" r="1.6"/><circle class="ic-f" cx="9.6" cy="6.8" r="1.6" opacity=".75"/><circle class="ic-f" cx="14.4" cy="6.4" r="1.6" opacity=".5"/><circle class="ic-f" cx="8.2" cy="15.6" r="1.6" opacity=".3"/></svg><span class="tb-label">Thème du document</span>
+        </button>
+          <button data-tb="docstyles" id="docstyles-btn" type="button" hidden title="Styles du document : titres, tirets, tableaux, encadrés, citations, plan et schémas">
+          <svg class="ic" viewBox="0 0 24 24"><path d="M3 5h7M3 8.8h5M3 12.6h6"/><path d="M20.8 3.2 14.6 9.4"/><path d="M13.2 8.2l2.6 2.6"/><path class="ic-f" d="M12.4 10.9c-1.9-.4-3.6.9-3.9 2.8-.2 1.5-1 2.4-2.8 3 3.3 1.3 7 .3 7.7-2.1.5-1.5 0-2.8-1-3.7z"/><path class="ic-a" d="M3 20.5c3-1.3 6.5-1.3 9.5 0s6 1.3 8.5 0"/></svg><span class="tb-label">Styles du document</span>
+        </button>
+          <button data-tb="pages" id="page-setup" type="button" hidden title="Format des pages et marges (en mode avancé : aussi l'orientation, les numéros, l'en-tête et le pied de page)">
+          <svg class="ic" viewBox="0 0 24 24"><rect x="3" y="2.5" width="12" height="16" rx="1"/><path d="M6 6.5h6M6 9.5h3.5"/><circle class="ic-f" cx="10.8" cy="13.9" r="3.9"/><text x="10.8" y="16.1" font-size="6.2" font-weight="700" text-anchor="middle" class="ic-w">1</text><path class="ic-a" style="stroke-width: calc(1.35 * var(--icon-weight, 1))" d="M19.5 3v15M17.6 5l1.9-2 1.9 2M17.6 16l1.9 2 1.9-2M3.5 21.5h11M5.5 19.6l-2 1.9 2 1.9M12.5 19.6l2 1.9-2 1.9"/></svg><span class="tb-label">Réglages des pages</span>
+        </button>
+          <button data-tb="pagenum" id="pagenum-btn" type="button" hidden title="Numéros de page : afficher, position, style, première page numérotée, pages exclues (passe le document en mode avancé)">
+            <svg class="ic" viewBox="0 0 24 24"><path d="M5.5 2.5h9l4 4v15h-13z"/><path d="M14.5 2.5v4h4"/><path d="M8.5 7.5h5M8.5 10.5h7"/><rect class="ic-f" x="6.5" y="14" width="11" height="6.6" rx="3.3"/><text x="12" y="19.1" font-size="5.8" font-weight="700" text-anchor="middle" class="ic-w">12</text></svg><span class="tb-label">Numéros de page</span>
+          </button>
+          <div data-tb="layout" class="ft-dropdown">
+          <button id="layout-btn" title="Colonnes : tout le document ou une partie sur deux ou trois colonnes">
+            <svg class="ic" viewBox="0 0 24 24"><path d="M3.5 5h7M3.5 8.5h7M3.5 12h7M3.5 15.5h7M3.5 19h7"/><path d="M13.5 5h7M13.5 8.5h7M13.5 12h7M13.5 15.5h7M13.5 19h7"/></svg>
+            <span class="tb-label tb-label-main">Colonnes</span><span class="caret">▾</span>
+          </button>
+          <div id="layout-pop" class="ft-pop" hidden></div>
+        </div>
+        </div>
+        <div class="tb-group" data-group="tags" data-caption="Tags" role="group" aria-label="Tags">
+          <div data-tb="tags" class="ft-dropdown tags-tool">
+            <button id="tags-btn" type="button" title="Tags du document">
+              <svg class="ic" viewBox="0 0 24 24"><path d="M3 3h8.5L21 12.5 12.5 21 3 11.5z"/><circle class="ic-f" cx="7.5" cy="7.5" r="1.7"/></svg>
+              <span class="tb-label">Tags</span>
+            </button>
+            <div id="tags-pop" class="ft-pop" hidden>
+              <div class="pop-title">Tags du document</div>
+              <div id="tags-pop-list"></div>
+              <input id="tags-pop-input" type="text" maxlength="24" placeholder="Ajouter un tag (Entrée)" list="tags-pop-suggestions" spellcheck="false">
+              <datalist id="tags-pop-suggestions"></datalist>
+              <label class="pop-check"><input type="checkbox" id="tags-pop-show"> Afficher au-dessus du document</label>
+              <label class="pop-check" id="tags-pop-later-row" hidden><input type="checkbox" id="tags-pop-later"> Après la page de titre (page 2)</label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="workspace">
+        <div id="empty-state">
+          <p>Aucun document ouvert.</p>
+          <button id="empty-new" class="primary">Créer un document</button>
+          <button id="empty-home">Accueil</button>
+        </div>
+        <button id="doc-name" type="button" hidden title="Nom du document, tel qu'il apparaît dans la gestion des projets. Cliquez pour le changer."></button>
+        <div id="page" hidden>
+          <div id="doc-tags" hidden></div>
+          <div id="editor" contenteditable="true" spellcheck="true" data-placeholder="Commencez à écrire…"></div>
+        </div>
+      </div>
+
+      <div id="track-panel" hidden role="dialog" aria-label="Modifications">
+        <div class="tk-head">
+          <b>Modifications</b>
+          <span id="track-count"></span>
+          <span class="spacer"></span>
+          <button type="button" id="track-close" class="icon-btn" title="Fermer le panneau (le suivi continue)">✕</button>
+        </div>
+        <div class="tk-sub"><span id="track-since"></span><label><input type="checkbox" id="track-marks" checked> Marques dans le texte</label></div>
+        <div id="track-list" class="tk-list"></div>
+        <div class="tk-foot">
+          <button type="button" id="track-accept-all">Tout accepter</button>
+          <button type="button" id="track-reject-all">Tout refuser</button>
+          <span class="spacer"></span>
+          <button type="button" id="track-stop">Arrêter le suivi</button>
+        </div>
+      </div>
+      <div id="bm-panel" hidden role="dialog" aria-label="Signets">
+        <div class="tk-head">
+          <b>Signets</b>
+          <span id="bm-count"></span>
+          <span class="spacer"></span>
+          <button type="button" id="bm-close" class="icon-btn" title="Fermer le panneau (Échap)">✕</button>
+        </div>
+        <div class="tk-sub"><label title="Un petit drapeau dans la marge, à côté de chaque ligne marquée"><input type="checkbox" id="bm-show" checked> Drapeaux dans la marge</label></div>
+        <div id="bm-list" class="tk-list"></div>
+        <div class="tk-foot">
+          <button type="button" id="bm-add" class="primary" title="Marque la ligne où se trouve le curseur">+ Ajouter un signet ici</button>
+        </div>
+      </div>
+      <div id="find-panel" hidden role="search" aria-label="Rechercher et remplacer">
+        <div class="find-row">
+          <input id="find-input" type="text" placeholder="Rechercher…" spellcheck="false" title="Entrée : mot suivant · Maj+Entrée : mot précédent">
+          <span id="find-count"></span>
+          <button id="find-prev" type="button" title="Mot précédent, en remontant (Maj+Entrée)"><svg viewBox="0 0 16 16"><path d="M3.5 10l4.5-4.5 4.5 4.5"/></svg></button>
+          <button id="find-next" type="button" title="Mot suivant, en descendant (Entrée)"><svg viewBox="0 0 16 16"><path d="M3.5 6l4.5 4.5 4.5-4.5"/></svg></button>
+          <button id="find-close" type="button" title="Fermer (Échap)">✕</button>
+        </div>
+        <div class="find-row">
+          <input id="find-replace" type="text" placeholder="Remplacer par…" spellcheck="false" title="Entrée : remplacer le mot en cours">
+          <button id="find-replace-one" type="button" title="Remplacer seulement le mot surligné en orange, puis passer au suivant">Remplacer</button>
+          <button id="find-replace-all" type="button" title="Remplacer le mot partout dans le document">Tout remplacer</button>
+        </div>
+        <div class="find-row find-options">
+          <label><input id="find-case" type="checkbox"> Respecter les majuscules</label>
+          <label><input id="find-word" type="checkbox"> Mot entier</label>
+        </div>
+      </div>
+
+      <footer id="statusbar">
+        <span class="status-left">
+          <button type="button" id="status-save" title="Historique des versions (Ctrl+Maj+H)"></button>
+          <button type="button" id="status-track" hidden title="Ouvrir le panneau des modifications"></button>
+        </span>
+        <span class="status-right">
+          <button type="button" id="status-update" hidden title="Ouvrir la fenêtre de mise à jour"></button>
+          <button type="button" id="status-lang" title="Langues du document">Français</button>
+          <button type="button" id="status-goal" hidden><span class="bar"><i></i></span><span class="txt"></span></button>
+          <button type="button" id="status-count" title="Objectifs et statistiques"></button>
+          <span id="zoom-bar">
+            <span id="zoom-pages" hidden title="Double page">
+              <button type="button" id="zoom-prev" title="Pages précédentes"><svg viewBox="0 0 16 16"><path d="M10 3.5L5.5 8l4.5 4.5"/></svg></button>
+              <span id="zoom-spread"></span>
+              <button type="button" id="zoom-next" title="Pages suivantes"><svg viewBox="0 0 16 16"><path d="M6 3.5l4.5 4.5L6 12.5"/></svg></button>
+            </span>
+            <button type="button" id="zoom-out" title="Zoom arrière (Ctrl + molette)"><svg viewBox="0 0 16 16"><path d="M3.5 8h9"/></svg></button>
+            <input id="zoom-slider" type="range" min="25" max="300" step="5" value="100" title="Zoom (double-clic : taille réelle)" aria-label="Zoom">
+            <button type="button" id="zoom-in" title="Zoom avant (Ctrl + molette)"><svg viewBox="0 0 16 16"><path d="M3.5 8h9M8 3.5v9"/></svg></button>
+            <label id="zoom-label" title="Zoom (Ctrl + 0 : taille réelle)"><input id="zoom-value" type="number" min="25" max="300" step="5" data-int value="100" aria-label="Zoom en pourcentage"> %</label>
+          </span>
+        </span>
+      </footer>
+    </main>
+
+    <aside id="srcpane" aria-label="Sources et citations" aria-hidden="true">
+      <div id="srcpane-resize" title="Tirer pour changer la largeur"></div>
+      <div id="srcpane-inner"></div>
+    </aside>
+
+    <aside id="pdfpane" aria-label="Source PDF" aria-hidden="true">
+      <div id="pdf-resize" title="Tirer pour changer la largeur"></div>
+      <div class="pdf-inner">
+        <div class="pdf-head">
+          <h2>Source PDF</h2>
+          <select id="pdf-list" title="PDF du projet" hidden></select>
+          <span class="spacer"></span>
+          <button type="button" id="pdf-open" class="small">Ouvrir un PDF…</button>
+          <button type="button" id="pdf-close" class="icon-btn" title="Fermer">✕</button>
+        </div>
+        <div id="pdf-info" class="pdf-info" hidden>
+          <label>Source <select id="pdf-link" title="Source du projet à laquelle ce PDF est rattaché"></select></label>
+          <button type="button" id="pdf-edit" class="small" title="Auteurs, titre, année…">Modifier…</button>
+          <label title="Numéro imprimé de la première page du PDF (article tiré d'une revue, chapitre…)">1re page <input type="number" id="pdf-first" data-int min="1" max="99999" value="1"></label>
+        </div>
+        <div class="pdf-tools">
+          <button type="button" id="pdf-zoom-out" class="icon-btn" title="Réduire">−</button>
+          <span id="pdf-zoom-label"></span>
+          <button type="button" id="pdf-zoom-in" class="icon-btn" title="Agrandir">+</button>
+          <button type="button" id="pdf-zoom-fit" class="small" title="Ajuster à la largeur du volet">Largeur</button>
+          <span class="spacer"></span>
+          <span id="pdf-pageno"></span>
+        </div>
+        <div id="pdf-pages"></div>
+      </div>
+      <div id="pdf-selbar" class="ft-pop" hidden>
+        <button type="button" id="pdf-cite" class="primary" title="Insère le passage entre guillemets, puis la citation, à l'endroit du curseur">Citer</button>
+        <button type="button" id="pdf-cite-ref" title="Insère seulement la citation (auteur, année, page)">Référence seule</button>
+        <button type="button" id="pdf-highlight" title="Surligner sans citer">Surligner</button>
+        <span id="pdf-sel-page"></span>
+      </div>
+    </aside>
+
+    <aside id="assist" aria-label="Aide au texte" aria-hidden="true">
+      <div class="assist-inner">
+        <div class="assist-header">
+          <h2>Aide au texte</h2>
+          <button id="assist-close" class="icon-btn" title="Fermer">✕</button>
+        </div>
+        <label class="assist-label" for="assist-source">Texte sélectionné</label>
+        <textarea id="assist-source" readonly placeholder="Sélectionnez un passage dans votre texte : une reformulation apparaîtra ici (des synonymes pour un à trois mots)."></textarea>
+
+        <div class="assist-options">
+          <label>Style
+            <select id="assist-style">
+              <option value="neutre">Neutre</option>
+              <option value="professionnel">Professionnel</option>
+              <option value="academique">Académique vulgarisé</option>
+              <option value="synthetique">Synthétique (résumé)</option>
+            </select>
+          </label>
+          <label>Intensité
+            <select id="assist-intensity">
+              <option value="legere">Légère</option>
+              <option value="moyenne" selected>Moyenne</option>
+              <option value="forte">Forte</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="assist-label-row">
+          <span class="assist-label">Proposition</span>
+          <button id="assist-retry" class="small" title="Proposer une autre reformulation">↻ Autre proposition</button>
+        </div>
+        <p id="assist-status" role="status"></p>
+        <div id="assist-proposals"></div>
+
+        <div class="assist-label-row">
+          <span class="assist-label">Synonymes</span>
+        </div>
+        <div id="assist-synonyms"><p class="assist-hint">Sélectionnez un à trois mots : des synonymes apparaîtront ici.</p></div>
+
+        <div class="assist-label-row">
+          <span class="assist-label">Tout le document</span>
+        </div>
+        <div class="assist-doc-actions">
+          <button type="button" id="assist-summary" title="Résumer tout le document ouvert">Résumer le document</button>
+          <button type="button" id="assist-coherence" title="Noms écrits de plusieurs façons, dates impossibles, faits qui se contredisent">Vérifier la cohérence</button>
+        </div>
+
+        <div class="assist-label-row">
+          <span class="assist-label">Faux texte</span>
+        </div>
+        <div class="assist-doc-actions">
+          <button type="button" id="assist-lorem" title="Texte de remplissage en français (lorem ipsum), sans modèle local">Générer un faux texte…</button>
+        </div>
+
+        <details id="assist-settings" class="assist-settings">
+          <summary>Réglages de l'AAT</summary>
+          <p class="assist-help">Les reformulations et propositions d'aides sont réalisées à l'aide d'un LLM local installé sur cet ordinateur. En cas d'absence de modèle local, cette partie du logiciel ne peut fonctionner.</p>
+          <label class="assist-label" for="assist-model">Modèle</label>
+          <select id="assist-model"></select>
+          <p class="assist-folder">Dossier des modèles :<br><span id="assist-folder"></span></p>
+          <button id="assist-folder-change" class="small">Changer de dossier…</button>
+          <p id="assist-model-status"></p>
+          <progress id="assist-model-progress" max="100" value="0" hidden></progress>
+          <div class="assist-actions">
+            <button id="assist-model-download">Télécharger le modèle</button>
+            <button id="assist-model-cancel" hidden>Annuler</button>
+            <button id="assist-model-delete" class="small" hidden>Supprimer le modèle</button>
+          </div>
+        </details>
+      </div>
+    </aside>
+  </div>
+
+  <div id="welcome" hidden role="dialog" aria-label="Accueil">
+    <div class="wl-box">
+      <aside class="wl-side">
+        <div class="wl-brand"></div>
+        <nav class="wl-actions">
+          <button id="wl-new" type="button" class="primary">Nouveau document</button>
+          <button id="wl-model" type="button">Nouveau depuis un modèle…</button>
+          <button id="wl-open" type="button">Ouvrir un document…</button>
+          <button id="wl-word" type="button">Importer un document Word…</button>
+          <button id="wl-project-new" type="button">Nouveau projet…</button>
+        </nav>
+        <label class="wl-field"><span>Projet</span><select id="wl-project"></select></label>
+        <div class="wl-foot">
+          <label class="wl-check"><input type="checkbox" id="wl-at-start"> Afficher l’accueil au démarrage</label>
+          <button id="wl-update" type="button" class="wl-link">Rechercher une mise à jour…</button>
+        </div>
+      </aside>
+      <main class="wl-main">
+        <p id="wl-msg" role="status" hidden></p>
+        <section id="wl-resume" hidden>
+          <h2>Reprendre</h2>
+          <div class="wl-resume-slot"></div>
+        </section>
+        <section class="wl-recent">
+          <div class="wl-head">
+            <h2 id="wl-list-title">Documents récents</h2>
+            <input id="wl-search" type="search" placeholder="Rechercher un document" aria-label="Rechercher un document" spellcheck="false">
+          </div>
+          <ul id="wl-list"></ul>
+          <p id="wl-none" hidden></p>
+        </section>
+      </main>
+      <button id="wl-close" type="button" class="wl-close" title="Fermer l’accueil (Échap)" aria-label="Fermer l’accueil">×</button>
+    </div>
+  </div>
+
+  <div id="context-menu" class="context-menu" hidden></div>
+
+  <dialog id="modal">
+    <form method="dialog">
+      <p id="modal-message"></p>
+      <input id="modal-input" type="text" maxlength="80">
+      <div class="modal-actions">
+        <button type="button" value="cancel" id="modal-cancel">Annuler</button>
+        <button value="ok" id="modal-ok" class="primary">Valider</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div id="reading-bar" role="toolbar" aria-label="Mode lecture">
+    <button type="button" id="rd-prev" title="Page précédente (←)"><svg viewBox="0 0 16 16"><path d="M10 3.5 5.5 8l4.5 4.5"/></svg></button>
+    <span id="rd-counter"></span>
+    <input type="range" id="rd-slider" min="0" max="0" value="0" aria-label="Aller à la page">
+    <button type="button" id="rd-next" title="Page suivante (→)"><svg viewBox="0 0 16 16"><path d="M6 3.5 10.5 8 6 12.5"/></svg></button>
+    <span class="rd-sep"></span>
+    <button type="button" id="rd-zoom-out" title="Texte plus petit (Ctrl+-)">A−</button>
+    <button type="button" id="rd-zoom-in" title="Texte plus grand (Ctrl++)">A+</button>
+    <span class="rd-sep"></span>
+    <button type="button" id="rd-exit" title="Quitter le mode lecture (Échap)">Quitter</button>
+  </div>
+  <div id="goals-toast" hidden></div>
+
+  <dialog id="sources-dialog">
+    <div class="src-head">
+      <h2>Sources et citations</h2>
+      <span class="spacer"></span>
+      <label class="src-style-label">Norme
+        <select id="src-norm">
+          <option value="classique">Classique (française)</option>
+          <option value="apa">APA 7ᵉ édition</option>
+          <option value="chicago">Chicago 17ᵉ édition</option>
+          <option value="iso690">ISO 690</option>
+          <option value="mla">MLA 9ᵉ édition</option>
+        </select>
+      </label>
+      <label class="src-style-label">Appel
+        <select id="src-style">
+          <option value="auteur-date">Auteur et année : (Dupont, 2020)</option>
+          <option value="numerique">Numéros : [1]</option>
+          <option value="note">Notes de fin : référence complète</option>
+        </select>
+      </label>
+      <button type="button" id="src-dock" title="Afficher les sources dans un volet à droite du texte, pour continuer d'écrire">Volet à droite</button>
+    </div>
+    <div class="src-lookup">
+      <input type="text" id="src-lookup" placeholder="DOI, ISBN, arXiv, PMID, HAL, lien, ou titre et auteur" aria-label="Identifiant, lien ou titre de la source" spellcheck="false">
+      <button type="button" id="src-lookup-go" class="primary" title="Créer la source à partir des bases en ligne (Crossref, BnF, Open Library, PubMed, HAL…)">Remplir automatiquement</button>
+    </div>
+    <div class="src-body">
+      <div class="src-side">
+        <input type="search" id="src-search" placeholder="Chercher une source…">
+        <div id="src-list" class="src-list"></div>
+        <div class="src-side-actions">
+          <button type="button" id="src-new">+ Nouvelle source</button>
+          <button type="button" id="src-import" aria-haspopup="menu">Importer…</button>
+        </div>
+        <div id="src-import-pop" class="src-import-pop" role="menu" hidden>
+          <button type="button" id="src-import-file" role="menuitem">Fichier BibTeX, RIS ou CSL JSON…</button>
+          <button type="button" id="src-import-paste" role="menuitem">Coller des références</button>
+          <button type="button" id="src-import-zotero" role="menuitem">Depuis Zotero</button>
+        </div>
+      </div>
+      <div class="src-main">
+        <p id="src-msg" class="src-msg" hidden></p>
+        <div id="src-paste-box" class="src-import-box" hidden>
+          <label>Références à importer <span class="hint">BibTeX, RIS, CSL JSON, ou une liste de DOI, ISBN et liens (un par ligne)</span>
+            <textarea id="src-paste" rows="9" spellcheck="false"></textarea></label>
+          <div class="src-import-actions"><button type="button" id="src-paste-cancel">Annuler</button><button type="button" id="src-paste-ok" class="primary">Importer</button></div>
+        </div>
+        <div id="src-found-box" class="src-import-box" hidden>
+          <label>Notices trouvées <span class="hint">cliquez sur une notice pour l'ajouter</span></label>
+          <div id="src-found" class="src-list src-found"></div>
+          <div class="src-import-actions"><button type="button" id="src-found-cancel">Fermer</button></div>
+        </div>
+        <div id="src-zotero-box" class="src-import-box" hidden>
+          <label>Collection Zotero <select id="src-zotero-coll"></select></label>
+          <div class="src-import-actions"><button type="button" id="src-zotero-cancel">Annuler</button><button type="button" id="src-zotero-ok" class="primary">Importer</button></div>
+        </div>
+        <p id="src-none" class="src-empty">Choisissez une source à gauche, ou créez-en une.</p>
+        <form id="src-form" hidden>
+          <label>Type <select id="src-type">
+            <option value="livre">Livre</option>
+            <option value="article">Article de revue</option>
+            <option value="chapitre">Chapitre d'ouvrage</option>
+            <option value="conference">Communication (actes)</option>
+            <option value="these">Thèse ou mémoire</option>
+            <option value="rapport">Rapport</option>
+            <option value="web">Page web</option>
+            <option value="autre">Autre</option>
+          </select></label>
+          <label class="wide">Auteurs <span class="hint">un par ligne : Nom, Prénom</span><textarea id="src-authors" rows="2" placeholder="Hugo, Victor"></textarea></label>
+          <label class="wide f-editors">Directeurs de l'ouvrage <span class="hint">un par ligne : Nom, Prénom</span><textarea id="src-editors" rows="1"></textarea></label>
+          <label class="wide">Titre <input id="src-title" type="text"></label>
+          <label>Année <input id="src-year" type="text" placeholder="2020"></label>
+          <label class="f-container">
+            <span class="for-article">Revue</span><span class="for-chapitre">Titre de l'ouvrage</span><span class="for-conference">Titre des actes</span><span class="for-web">Nom du site</span>
+            <input id="src-container" type="text"></label>
+          <label class="f-publisher"><span class="for-default">Éditeur</span><span class="for-these">Université</span><span class="for-rapport">Organisme</span> <input id="src-publisher" type="text"></label>
+          <label class="f-place">Lieu d'édition <input id="src-place" type="text"></label>
+          <label class="f-volume">Volume <input id="src-volume" type="text"></label>
+          <label class="f-issue">Numéro <input id="src-issue" type="text"></label>
+          <label class="f-pages">Pages <input id="src-pages" type="text" placeholder="12-34"></label>
+          <label class="f-edition">Édition <input id="src-edition" type="text" placeholder="2"></label>
+          <label class="f-isbn">ISBN <input id="src-isbn" type="text"></label>
+          <label class="f-doi">DOI <input id="src-doi" type="text" placeholder="10.1000/xyz123"></label>
+          <label class="f-url wide">Adresse web <input id="src-url" type="text" placeholder="https://"></label>
+          <label class="f-accessed">Consulté le <input id="src-accessed" type="date"></label>
+          <div class="src-preview-box wide"><span class="hint">Dans la bibliographie :</span><div id="src-preview"></div></div>
+        </form>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button type="button" id="src-delete">Supprimer la source</button>
+      <span class="spacer"></span>
+      <label class="src-page-label">Page citée <input id="src-page" type="text" placeholder="facultatif"></label>
+      <button type="button" id="src-cite" class="primary">Citer cette source</button>
+    </div>
+    <div class="modal-actions src-bottom">
+      <label class="src-scope-label">Bibliographie :
+        <select id="src-scope"><option value="cites">les sources citées dans ce document</option><option value="tout">toutes les sources du projet</option></select>
+      </label>
+      <button type="button" id="src-biblio">Insérer la bibliographie ici</button>
+      <span class="spacer"></span>
+      <button type="button" id="src-close">Fermer</button>
+    </div>
+  </dialog>
+
+  <dialog id="coherence-dialog">
+    <div class="coh-head">
+      <h2>Cohérence : <span id="coh-title"></span></h2>
+      <span class="spacer"></span>
+      <button type="button" id="coh-refresh" title="Refaire les vérifications après vos corrections">↻ Revérifier</button>
+      <button type="button" id="coh-close" title="Fermer (Échap)">✕</button>
+    </div>
+    <div class="coh-body">
+      <div id="coh-local"></div>
+      <section class="coh-section coh-ai">
+        <h3>Contradictions (Aide au Texte)</h3>
+        <p class="coh-hint">Le modèle local relève les faits (âges, apparence, familles, métiers, lieux, dates) et cherche ceux qui se contredisent d'un passage à l'autre.</p>
+        <div class="coh-ai-actions">
+          <button type="button" id="coh-ai-run" class="primary">Lancer la vérification par l'AAT</button>
+          <button type="button" id="coh-ai-stop" hidden>Arrêter</button>
+          <button type="button" id="coh-ai-setup" hidden>Ouvrir les réglages de l'AAT</button>
+        </div>
+        <div id="coh-ai-progress" hidden><div class="sum-bar"><span></span></div><p id="coh-ai-step"></p></div>
+        <p id="coh-ai-error" class="sum-error" hidden></p>
+        <div id="coh-ai-results"></div>
+        <p id="coh-ai-info" class="sum-info"></p>
+      </section>
+    </div>
+  </dialog>
+
+  <dialog id="read-dialog">
+    <div class="coh-head">
+      <h2>Lisibilité : <span id="rl-title"></span></h2>
+      <span class="spacer"></span>
+      <button type="button" id="rl-refresh" title="Refaire l'analyse">↻ Actualiser</button>
+      <button type="button" id="rl-close" title="Fermer (Échap)">✕</button>
+    </div>
+    <div class="coh-body">
+      <div id="rl-score" class="rl-card"></div>
+      <dl id="rl-stats" class="rl-stats"></dl>
+      <section class="coh-section">
+        <h3>Longueur des phrases</h3>
+        <div id="rl-dist"></div>
+        <label class="rl-check"><input type="checkbox" id="rl-mark-long"> Surligner les phrases longues dans le texte</label>
+      </section>
+      <section class="coh-section">
+        <h3>Phrases les plus longues</h3>
+        <div id="rl-long" class="rl-list"></div>
+      </section>
+      <section class="coh-section">
+        <h3>Mots rares <span id="rl-rare-count" class="rl-sub"></span></h3>
+        <p class="coh-hint">Mots peu employés en français (moins d'une occurrence par million de mots, toutes formes du mot réunies). Les noms propres ne sont pas comptés.</p>
+        <div id="rl-rare" class="rl-words"></div>
+        <label class="rl-check"><input type="checkbox" id="rl-mark-rare"> Souligner les mots rares dans le texte</label>
+      </section>
+    </div>
+  </dialog>
+
+  <dialog id="summary-dialog">
+    <div class="sum-head">
+      <h2>Résumé : <span id="sum-title"></span></h2>
+      <span class="spacer"></span>
+      <div id="sum-length" class="mm-seg" role="group" aria-label="Longueur du résumé">
+        <button type="button" data-v="court" aria-pressed="false" title="Deux ou trois phrases">Court</button>
+        <button type="button" data-v="moyen" aria-pressed="true" title="Un paragraphe d'environ 130 mots">Moyen</button>
+        <button type="button" data-v="points" aria-pressed="false" title="5 à 8 points clés, un par ligne">Points clés</button>
+      </div>
+    </div>
+    <div id="sum-progress" hidden>
+      <div class="sum-bar"><span></span></div>
+      <p id="sum-step"></p>
+    </div>
+    <p id="sum-error" class="sum-error" hidden></p>
+    <div id="sum-text" class="sum-text" hidden></div>
+    <p id="sum-info" class="sum-info"></p>
+    <div class="modal-actions">
+      <button type="button" id="sum-redo" title="Demander un nouveau résumé au modèle">Refaire</button>
+      <button type="button" id="sum-stop" hidden>Arrêter</button>
+      <button type="button" id="sum-setup" hidden>Ouvrir les réglages de l'AAT</button>
+      <span class="spacer"></span>
+      <button type="button" id="sum-copy">Copier</button>
+      <button type="button" id="sum-insert" title="Écrire le résumé à l'endroit du curseur, dans le document ouvert">Insérer dans le texte</button>
+      <button type="button" id="sum-close" class="primary">Fermer</button>
+    </div>
+  </dialog>
+
+  <dialog id="lorem-dialog">
+    <h2>Faux texte</h2>
+    <div class="lr-grid">
+      <label>Quantité
+        <span class="lr-qty"><input type="number" id="lr-count" data-int min="1" max="50" value="3"><select id="lr-unit">
+          <option value="paragraphes">paragraphes</option>
+          <option value="phrases">phrases</option>
+          <option value="lignes">lignes</option>
+          <option value="mots">mots</option>
+        </select></span>
+      </label>
+      <label>Longueur des paragraphes
+        <select id="lr-length">
+          <option value="court">Courts</option>
+          <option value="moyen" selected>Moyens</option>
+          <option value="long">Longs</option>
+        </select>
+      </label>
+      <label>Vocabulaire
+        <select id="lr-vocab">
+          <option value="general">Général</option>
+          <option value="pro">Professionnel</option>
+        </select>
+      </label>
+      <div id="lr-extras" class="lr-extras">
+        <label><input type="checkbox" id="lr-headings"> Titres intermédiaires</label>
+        <label><input type="checkbox" id="lr-lists"> Listes à puces</label>
+      </div>
+    </div>
+    <div id="lr-preview" class="lr-preview" aria-label="Aperçu"></div>
+    <p id="lr-info" class="sum-info"></p>
+    <div class="modal-actions">
+      <button type="button" id="lr-again" title="Tirer un autre texte avec les mêmes réglages">Autre texte</button>
+      <span class="spacer"></span>
+      <button type="button" id="lr-copy">Copier</button>
+      <button type="button" id="lr-insert" title="Insérer à l'endroit du curseur">Insérer</button>
+      <button type="button" id="lr-close" class="primary">Fermer</button>
+    </div>
+  </dialog>
+
+  <dialog id="paste-dialog">
+    <h2>Coller</h2>
+    <p id="ps-from" class="sum-info"></p>
+    <div class="ps-options">
+      <label><input type="checkbox" id="ps-lines"> Recoller les lignes coupées</label>
+      <label><input type="checkbox" id="ps-spaces"> Retirer les espaces en trop</label>
+      <label><input type="checkbox" id="ps-inline"> Garder gras, italique et liens</label>
+      <label><input type="checkbox" id="ps-structure"> Garder titres, listes et tableaux</label>
+    </div>
+    <div class="ps-tabs" role="tablist">
+      <button type="button" id="ps-tab-clean" class="on">Aperçu nettoyé</button>
+      <button type="button" id="ps-tab-original">Original</button>
+    </div>
+    <div id="ps-preview" class="lr-preview ps-preview" aria-label="Aperçu"></div>
+    <p class="sum-info">Polices, tailles, couleurs et fonds d’origine retirés : le texte prend le thème du document.</p>
+    <div class="modal-actions">
+      <button type="button" id="ps-raw" title="Coller avec la mise en forme d'origine">Coller tel quel</button>
+      <span class="spacer"></span>
+      <button type="button" id="ps-cancel">Annuler</button>
+      <button type="button" id="ps-ok" class="primary">Coller</button>
+    </div>
+  </dialog>
+
+  <dialog id="doclink-dialog">
+    <h2>Lier à un document</h2>
+    <p class="dl-sub">Texte du lien : <b id="doclink-word"></b></p>
+    <input type="search" id="doclink-search" placeholder="Rechercher un document" spellcheck="false">
+    <div id="doclink-list" class="dl-list" role="listbox" aria-label="Documents du projet"></div>
+    <div class="modal-actions">
+      <button type="button" id="doclink-new" title="Crée un document de ce nom dans le projet et y lie le texte"></button>
+      <span class="spacer"></span>
+      <button type="button" id="doclink-cancel">Annuler</button>
+      <button type="button" id="doclink-ok" class="primary">Lier</button>
+    </div>
+  </dialog>
+
+  <dialog id="weblink-dialog">
+    <h2>Lien</h2>
+    <label class="wl-field" for="wl-text">Texte affiché</label>
+    <input type="text" id="wl-text" maxlength="500">
+    <label class="wl-field" for="wl-href">Adresse</label>
+    <input type="text" id="wl-href" maxlength="2000" placeholder="https://exemple.fr ou nom@exemple.fr" spellcheck="false">
+    <p id="wl-error" class="wl-error" hidden></p>
+    <div class="modal-actions">
+      <button type="button" id="wl-remove" class="danger">Retirer le lien</button>
+      <span class="spacer"></span>
+      <button type="button" id="wl-cancel">Annuler</button>
+      <button type="button" id="wl-ok" class="primary">OK</button>
+    </div>
+  </dialog>
+  <dialog id="palette-dialog" aria-label="Rechercher un outil">
+    <div class="palette-head ft-no-drag">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6"/><path d="M15 15l5.5 5.5"/></svg>
+      <input id="palette-search" type="text" placeholder="Rechercher un outil, un style, un réglage ou un document" autocomplete="off" spellcheck="false" role="combobox" aria-controls="palette-list" aria-expanded="true">
+      <kbd>Échap</kbd>
+    </div>
+    <div id="palette-list" class="palette-list ft-no-drag" role="listbox"></div>
+    <p id="palette-none" class="palette-none" hidden>Aucun résultat.</p>
+  </dialog>
+
+  <dialog id="keys-dialog">
+    <div class="keys-head">
+      <h2>Raccourcis clavier</h2>
+      <input type="search" id="keys-search" placeholder="Chercher…">
+    </div>
+    <p class="keys-help">Cliquez sur un raccourci, puis appuyez sur la nouvelle combinaison de touches. ↺ remet celui d'origine, ✕ le retire.</p>
+    <p id="keys-msg" class="keys-msg" hidden></p>
+    <div id="keys-list" class="keys-list"></div>
+    <div class="modal-actions">
+      <button type="button" id="keys-reset-all">Tout remettre d'origine</button>
+      <span class="spacer"></span>
+      <button type="button" id="keys-close" class="primary">Fermer</button>
+    </div>
+  </dialog>
+
+  <dialog id="goals-dialog">
+    <h2>Objectifs et statistiques</h2>
+    <div class="gl-grid">
+      <section>
+        <h3>Ce document</h3>
+        <dl class="gl-stats">
+          <dt>Mots</dt><dd id="gl-words"></dd>
+          <dt>Caractères</dt><dd id="gl-chars"></dd>
+          <dt>Sans les espaces</dt><dd id="gl-chars-ns"></dd>
+          <dt>Paragraphes</dt><dd id="gl-paras"></dd>
+          <dt>Phrases</dt><dd id="gl-sentences"></dd>
+          <dt>Temps de lecture</dt><dd id="gl-read"></dd>
+        </dl>
+        <div class="gl-row">
+          <label for="gl-doc-goal">Objectif</label>
+          <input type="number" id="gl-doc-goal" data-int min="0" step="100" placeholder="aucun"><span>mots</span>
+        </div>
+        <div class="gl-row">
+          <label for="gl-deadline">Pour le</label>
+          <input type="date" id="gl-deadline"><span class="gl-hint">(facultatif)</span>
+        </div>
+        <div class="gl-progress" id="gl-doc-bar"><i></i></div>
+        <p class="gl-text" id="gl-doc-text"></p>
+      </section>
+      <section>
+        <h3>Aujourd'hui</h3>
+        <dl class="gl-stats">
+          <dt>Mots écrits</dt><dd id="gl-today"></dd>
+          <dt>Temps d'écriture</dt><dd id="gl-time"></dd>
+          <dt>Depuis l'ouverture</dt><dd id="gl-session"></dd>
+          <dt>Jours d'écriture d'affilée</dt><dd id="gl-streak"></dd>
+        </dl>
+        <div class="gl-row">
+          <label for="gl-daily">Objectif du jour</label>
+          <input type="number" id="gl-daily" data-int min="0" step="50" placeholder="aucun"><span>mots</span>
+        </div>
+        <div class="gl-progress" id="gl-day-bar"><i></i></div>
+        <p class="gl-text" id="gl-day-text"></p>
+      </section>
+    </div>
+    <h3 class="gl-chart-title">Les 14 derniers jours <span id="gl-total"></span></h3>
+    <div id="gl-chart"></div>
+    <p class="gl-note">Les mots écrits sont comptés dans tous les documents : mots ajoutés moins mots retirés.</p>
+    <div class="modal-actions"><button type="button" id="gl-readability">Lisibilité…</button><span class="spacer"></span><button type="button" id="gl-close" class="primary">Fermer</button></div>
+  </dialog>
+
+  <dialog id="versions-dialog">
+    <div class="vs-head">
+      <h2>Historique des versions</h2>
+      <span id="vs-doc"></span>
+      <span class="spacer"></span>
+      <button type="button" id="vs-snap">Créer une version maintenant…</button>
+    </div>
+    <div class="vs-body">
+      <div id="vs-list" class="vs-list"></div>
+      <div class="vs-view">
+        <div class="vs-bar">
+          <span id="vs-info"></span>
+          <span class="spacer"></span>
+          <label class="vs-diff-label"><input type="checkbox" id="vs-diff"> Voir les différences avec le texte actuel</label>
+        </div>
+        <p id="vs-legend" class="vs-legend" hidden><ins>En vert</ins> : ajouté depuis cette version. <del>En rouge barré</del> : retiré depuis.</p>
+        <div id="vs-preview" class="vs-preview"></div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button type="button" id="vs-delete">Supprimer cette version</button>
+      <span class="spacer"></span>
+      <button type="button" id="vs-copy">Ouvrir comme nouveau document</button>
+      <button type="button" id="vs-restore">Restaurer cette version</button>
+      <button type="button" id="vs-close" class="primary">Fermer</button>
+    </div>
+  </dialog>
+
+  <dialog id="lang-dialog">
+    <h2>Langues du document</h2>
+    <p class="lg-note">La langue de chaque passage est reconnue parmi les langues cochées. Orthographe, grammaire, synonymes et AAT suivent cette langue.</p>
+    <div id="lg-list" class="lg-list"></div>
+    <div class="lg-row">
+      <label for="lg-main">Langue principale</label>
+      <select id="lg-main"></select>
+    </div>
+    <p class="lg-hint">Appliquée aux passages trop courts pour être reconnus.</p>
+    <label class="lg-check"><input type="checkbox" id="lg-default"> Utiliser pour les nouveaux documents</label>
+    <div class="modal-actions"><span class="spacer"></span><button type="button" id="lg-cancel">Annuler</button><button type="button" id="lg-ok" class="primary">OK</button></div>
+  </dialog>
+
+  <dialog id="export-dialog">
+    <h2>Exporter le document</h2>
+    <p class="export-note">Choisissez le type de fichier.</p>
+    <div class="export-choices">
+      <button type="button" data-export="word"><span class="export-ext">.docx</span><b>Word</b><span>Pour continuer à modifier le texte dans Word ou LibreOffice.</span></button>
+      <button type="button" data-export="pdf"><span class="export-ext pdf">.pdf</span><b>PDF</b><span>Pour lire, imprimer ou envoyer le document tel quel.</span></button>
+      <button type="button" data-export="livre"><span class="export-ext livre">.pdf</span><b>Livre</b><span>Au format d’un livre, prêt pour l’imprimeur ou en livret à plier.</span></button>
+      <button type="button" data-export="epub"><span class="export-ext epub">.epub</span><b>EPUB</b><span>Livre numérique pour liseuses et tablettes.</span></button>
+    </div>
+    <label class="export-typo"><input type="checkbox" id="export-typo"> Typographie soignée dans le PDF : coupure des mots, justification équilibrée</label>
+    <div class="modal-actions"><span class="spacer"></span><button type="button" id="export-cancel">Annuler</button></div>
+  </dialog>
+
+  <dialog id="livre-dialog">
+    <h2>Exporter en livre</h2>
+    <div class="lv-row">
+      <label>Format <select id="lv-format"></select></label>
+      <span id="lv-size" class="lv-size"></span>
+    </div>
+    <div class="pg-title">Marges</div>
+    <div class="pg-margins">
+      <label title="Côté reliure">Intérieur <input id="lv-m-inner" type="text" inputmode="decimal" min="3" max="80" step="1"> mm</label>
+      <label>Extérieur <input id="lv-m-outer" type="text" inputmode="decimal" min="3" max="80" step="1"> mm</label>
+      <label>Haut <input id="lv-m-top" type="text" inputmode="decimal" min="3" max="80" step="1"> mm</label>
+      <label>Bas <input id="lv-m-bottom" type="text" inputmode="decimal" min="3" max="80" step="1"> mm</label>
+    </div>
+    <div class="pg-title">Typographie</div>
+    <label class="pg-check"><input type="checkbox" id="lv-cesure"> Coupure des mots en fin de ligne, selon la langue</label>
+    <label class="pg-check"><input type="checkbox" id="lv-justif"> Justification équilibrée sur tout le paragraphe</label>
+    <label class="pg-check"><input type="checkbox" id="lv-justify-text"> Texte courant justifié</label>
+    <div class="pg-title">Mise en pages</div>
+    <label class="pg-check"><input type="checkbox" id="lv-recto"> Chapitres (titres 1) sur une page de droite</label>
+    <label class="pg-check"><input type="checkbox" id="lv-tetes"> Titres courants : livre à gauche, chapitre à droite</label>
+    <div class="pg-title">Fichier</div>
+    <div class="lv-outputs">
+      <label class="pg-radio"><input type="radio" name="lv-sortie" value="pages"> Pages à la suite</label>
+      <label class="pg-radio"><input type="radio" name="lv-sortie" value="coupe"> Avec traits de coupe</label>
+      <label class="pg-radio"><input type="radio" name="lv-sortie" value="livret"> Livret à plier</label>
+    </div>
+    <p class="pg-help" id="lv-help"></p>
+    <div class="modal-actions"><span class="spacer"></span><button type="button" id="lv-cancel">Annuler</button><button type="button" id="lv-ok" class="primary">Exporter</button></div>
+  </dialog>
+
+  <dialog id="docstyles-dialog">
+    <h2>Styles du document</h2>
+    <div id="ds-tabs" class="styles-tabs"></div>
+    <div id="ds-scope"></div>
+    <div id="ds-panel"></div>
+    <div class="modal-actions">
+      <button type="button" id="ds-theme">Thème du document…</button>
+      <span class="spacer"></span>
+      <button type="button" id="ds-close" class="primary">Fermer</button>
+    </div>
+  </dialog>
+
+  <dialog id="custom-dialog">
+    <h2>Thème du logiciel</h2>
+    <div class="styles-tabs">
+      <button type="button" data-tab="theme">Thème global</button>
+      <button type="button" data-tab="aspect">Aspect</button>
+      <button type="button" data-tab="police">Police d'écriture</button>
+      <button type="button" data-tab="couleurs">Couleurs</button>
+    </div>
+    <div id="custom-panel"></div>
+    <div class="modal-actions">
+      <span class="spacer"></span>
+      <button type="button" id="custom-close" class="primary">Fermer</button>
+    </div>
+  </dialog>
+
+  <dialog id="theme-dialog">
+    <h2>Thème du document</h2>
+    <p class="custom-help">Un thème réunit des styles accordés pour tout le document : police du texte, titres, tirets, tableaux, encadrés, plan, schémas et marges. Chaque document conserve le sien. Le thème du logiciel (menu Affichage) ne modifie que l'interface de Tomatoes Text.</p>
+    <div class="styles-tabs">
+      <button type="button" data-tab="choisir">Choisir un thème</button>
+      <button type="button" data-tab="regler">Régler ce thème</button>
+    </div>
+    <div id="theme-panel"></div>
+    <div class="modal-actions">
+      <button type="button" id="theme-import" title="Ajouter à Mes thèmes un thème reçu en fichier .tttheme">Importer un thème…</button>
+      <span class="spacer"></span>
+      <button type="button" id="theme-close" class="primary">Fermer</button>
+    </div>
+  </dialog>
+
+  <dialog id="model-dialog">
+    <h2>Modèle de mise en page</h2>
+    <p class="custom-help">Un modèle règle le document en une fois : thème, format et marges des pages, numéros, en-tête, page de titre, sommaire et structure type. Le document passe en mode avancé.</p>
+    <div class="styles-tabs">
+      <button type="button" data-tab="choisir">Choisir un modèle</button>
+      <button type="button" data-tab="regler">Régler ce modèle</button>
+    </div>
+    <div id="model-panel"></div>
+    <div class="modal-actions">
+      <button type="button" id="model-import" title="Ajouter à Mes modèles un modèle reçu en fichier .ttmodele">Importer un modèle…</button>
+      <span class="spacer"></span>
+      <button type="button" id="model-close">Fermer</button>
+      <button type="button" id="model-apply" class="primary">Appliquer au document</button>
+    </div>
+  </dialog>
+
+  <dialog id="pages-dialog">
+    <h2>Réglages des pages</h2>
+    <p class="pg-help pg-note-only">En mode note, le texte défile sans pages : seuls le format et les marges comptent. Le mode avancé ajoute l'orientation, les numéros, l'en-tête et le pied de page.</p>
+    <div class="styles-tabs">
+      <button type="button" data-tab="format">Format et marges</button>
+      <button type="button" data-tab="numeros" class="pg-adv-only">Numéros de page</button>
+      <button type="button" data-tab="entetes" class="pg-adv-only">En-tête et pied de page</button>
+    </div>
+    <div class="pg-panel" data-panel="format">
+      <label class="pg-row">Taille des pages <select id="pg-size"></select></label>
+      <div class="pg-row" id="pg-custom" hidden>
+        <label>Largeur <input id="pg-w" type="text" inputmode="decimal" min="40" max="1000" step="1"> mm</label>
+        <label>Hauteur <input id="pg-h" type="text" inputmode="decimal" min="40" max="1000" step="1"> mm</label>
+      </div>
+      <div class="pg-row pg-adv-only">
+        <span>Orientation de tout le document :</span>
+        <label class="pg-radio"><input type="radio" name="pg-orient" value="portrait"> Portrait (verticale)</label>
+        <label class="pg-radio"><input type="radio" name="pg-orient" value="paysage"> Paysage (horizontale)</label>
+      </div>
+      <div class="pg-row pg-adv-only">
+        <label>Tourner seulement la page <input id="pg-turn-page" type="number" data-int min="1" max="9999"></label>
+        <button type="button" id="pg-turn-add">Tourner cette page</button>
+      </div>
+      <div class="pg-row pg-adv-only" id="pg-turned" hidden>
+        <span id="pg-turned-list"></span>
+        <button type="button" id="pg-turned-reset" class="small">Remettre comme le reste du document</button>
+      </div>
+      <div class="pg-title pg-adv-only">Sauts de page</div>
+      <label class="pg-check pg-adv-only"><input type="checkbox" id="pg-keep"> Conserver les sauts de page lors des modifications</label>
+      <p class="pg-help pg-adv-only">Les pages commençant par un titre ou un paragraphe conservent leur début. En cas de débordement, la page entière est reportée à la page suivante.</p>
+      <label class="pg-row pg-adv-only">Nouvelle page avant <select id="pg-chapters"><option value="0">Aucun titre</option><option value="1">Chaque titre 1</option><option value="2">Chaque titre 1 et 2</option></select></label>
+      <div class="pg-row pg-adv-only" id="pg-kept" hidden>
+        <span id="pg-kept-count"></span>
+        <button type="button" id="pg-release" class="small">Libérer les sauts de page</button>
+      </div>
+      <div class="pg-title">Marges</div>
+      <div class="pg-margins">
+        <label>Haut <input id="pg-m-top" type="text" inputmode="decimal" min="0" max="120" step="1"> mm</label>
+        <label>Bas <input id="pg-m-bottom" type="text" inputmode="decimal" min="0" max="120" step="1"> mm</label>
+        <label>Gauche <input id="pg-m-left" type="text" inputmode="decimal" min="0" max="120" step="1"> mm</label>
+        <label>Droite <input id="pg-m-right" type="text" inputmode="decimal" min="0" max="120" step="1"> mm</label>
+      </div>
+      <div class="pg-row pg-presets">
+        <span>Marges prêtes :</span>
+        <button type="button" data-margins="normales">Normales</button>
+        <button type="button" data-margins="etroites">Étroites</button>
+        <button type="button" data-margins="moyennes">Moyennes</button>
+        <button type="button" data-margins="larges">Larges</button>
+      </div>
+    </div>
+    <div class="pg-panel" data-panel="numeros" hidden>
+      <label class="pg-check"><input type="checkbox" id="pg-num-on"> Numéroter les pages</label>
+      <div id="pg-num-fields">
+        <div class="pg-grid">
+          <label>Emplacement <select id="pg-num-pos"></select></label>
+          <label>Forme <select id="pg-num-format"></select></label>
+          <label>Commencer à la page <input id="pg-num-from" type="number" data-int min="1" max="9999"></label>
+          <label>Avec le numéro <input id="pg-num-first" type="number" data-int min="0" max="99999"></label>
+        </div>
+        <p class="pg-help">Les pages avant la page choisie n'ont pas de numéro. Par exemple, « Commencer à la page 2 » avec le numéro 1 : la page de garde n'a pas de numéro et la suivante porte le 1.</p>
+        <div class="pg-grid">
+          <label>Police <select id="pg-num-font"></select></label>
+          <label>Taille <span class="pg-unit"><input id="pg-num-size" type="text" inputmode="decimal" min="6" max="72" step="0.5"> pt</span></label>
+          <label>Encadrement <select id="pg-num-box"></select></label>
+          <div class="pg-inline">
+            <span>Style</span>
+            <button type="button" id="pg-num-bold" class="pg-toggle" title="Gras"><b>G</b></button>
+            <button type="button" id="pg-num-italic" class="pg-toggle" title="Italique"><i>I</i></button>
+          </div>
+          <div class="pg-inline">
+            <span>Couleur</span>
+            <input type="color" id="pg-num-color" title="Couleur des numéros">
+            <button type="button" id="pg-num-color-auto" class="pg-toggle small" title="La couleur du texte, qui suit le mode jour/nuit">Automatique</button>
+          </div>
+        </div>
+        <div class="pg-preview">Aperçu : <span id="pg-num-preview"></span></div>
+        <div class="pg-title">Pages exclues de la numérotation</div>
+        <p class="pg-help">Une page sautée n'a pas de numéro et n'est pas comptée : la suivante reprend son numéro. Une page au numéro caché est comptée quand même.</p>
+        <div id="pg-skip-list"></div>
+        <div class="pg-row">
+          <label>Page <input id="pg-skip-page" type="number" data-int min="1" max="9999"></label>
+          <select id="pg-skip-kind">
+            <option value="saute">Sautée (pas comptée)</option>
+            <option value="cache">Numéro caché (comptée)</option>
+          </select>
+          <button type="button" id="pg-skip-add">Exclure cette page</button>
+        </div>
+      </div>
+    </div>
+    <div class="pg-panel" data-panel="entetes" hidden>
+      <p class="pg-help">Double-cliquez tout en haut ou tout en bas d'une page pour écrire l'en-tête ou le pied de page : il se répète sur toutes les pages. Cliquez dans le texte ou appuyez sur Échap pour terminer.</p>
+      <div class="pg-row">
+        <button type="button" id="pg-head-edit">Écrire l'en-tête</button>
+        <button type="button" id="pg-foot-edit">Écrire le pied de page</button>
+      </div>
+      <label class="pg-check"><input type="checkbox" id="pg-head-on"> Afficher l'en-tête</label>
+      <label class="pg-check"><input type="checkbox" id="pg-foot-on"> Afficher le pied de page</label>
+      <label class="pg-check"><input type="checkbox" id="pg-first-diff"> Première page sans en-tête, pied de page ni numéro (page de garde)</label>
+    </div>
+    <div class="modal-actions">
+      <span class="spacer"></span>
+      <button type="button" id="pg-close" class="primary">Fermer</button>
+    </div>
+  </dialog>
+
+  <dialog id="xref-dialog">
+    <h2>Renvoi</h2>
+    <div class="xr-body">
+      <div class="xr-left">
+        <input id="xr-search" type="search" placeholder="Rechercher un titre, une légende, un signet" spellcheck="false" autocomplete="off">
+        <div id="xr-list" class="xr-list" role="listbox" aria-label="Cibles"></div>
+      </div>
+      <div class="xr-right">
+        <div class="xr-sub">Texte du renvoi</div>
+        <div id="xr-formats" class="xr-formats"></div>
+        <label class="pop-check"><input type="checkbox" id="xr-upper"> Majuscule initiale</label>
+        <div class="xr-sub">Aperçu</div>
+        <div id="xr-preview" class="xr-preview"></div>
+        <p class="xr-note">Le renvoi se met à jour quand le numéro ou la page de la cible change. En mode note, la page est remplacée par « ci-dessus » ou « ci-dessous ».</p>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <span class="spacer"></span>
+      <button type="button" id="xr-cancel">Annuler</button>
+      <button type="button" id="xr-ok" class="primary">Insérer</button>
+    </div>
+  </dialog>
+
+  <dialog id="index-dialog">
+    <div class="coh-head">
+      <h2>Mots de l’index</h2>
+      <span class="spacer"></span>
+      <button type="button" id="ix-insert" title="Insérer le bloc « Index » à l’endroit du curseur">Insérer l’index</button>
+      <button type="button" id="ix-close" title="Fermer (Échap)">✕</button>
+    </div>
+    <div class="coh-body">
+      <div class="ix-add-row">
+        <input id="ix-add" type="text" placeholder="Mot ou expression à indexer" spellcheck="false" autocomplete="off">
+        <button type="button" id="ix-add-btn" class="primary">Ajouter</button>
+      </div>
+      <p class="coh-hint">Toutes les occurrences sont retenues, sans tenir compte des majuscules. Les autres formes (pluriel, féminin) se renseignent sur chaque ligne. Les occurrences sont surlignées tant que ce panneau est ouvert.</p>
+      <div id="ix-list" class="ix-list"></div>
+    </div>
+  </dialog>
+
+  <dialog id="cover-dialog">
+    <h2>Page de titre</h2>
+    <p class="cv-note">Première page du document, centrée verticalement, sans en-tête ni numéro. Les champs laissés vides ne sont ni imprimés ni exportés.</p>
+    <div id="cv-models" class="cv-models" role="listbox" aria-label="Modèles"></div>
+    <div class="modal-actions">
+      <button type="button" id="cv-remove" class="danger" hidden>Supprimer la page de titre</button>
+      <span class="spacer"></span>
+      <button type="button" id="cv-cancel">Annuler</button>
+      <button type="button" id="cv-ok" class="primary">Insérer</button>
+    </div>
+  </dialog>
+
+  <dialog id="update-dialog">
+    <h2>Mise à jour de Tomatoes Text</h2>
+    <p id="up-status" role="status"></p>
+    <div id="up-changes" hidden>
+      <div class="up-sub">Nouveautés</div>
+      <ul id="up-list"></ul>
+    </div>
+    <p id="up-error" class="up-error" hidden></p>
+    <details id="up-settings">
+      <summary>Sources des mises à jour</summary>
+      <div class="up-source">
+        <div class="up-sub">1. Dossier de travail (copie Git du dépôt)</div>
+        <div class="up-row"><span id="up-folder" class="up-path"></span><span id="up-folder-state" class="up-state"></span></div>
+        <button type="button" id="up-folder-change" class="small">Changer de dossier…</button>
+      </div>
+      <div class="up-source">
+        <div class="up-sub">2. Clé d'accès GitHub (si le dossier est absent)</div>
+        <div class="up-row"><span id="up-token-state" class="up-state"></span><button type="button" id="up-token-remove" class="small" hidden>Retirer la clé</button></div>
+        <div class="up-row">
+          <input id="up-token" type="password" placeholder="github_pat_…" spellcheck="false" autocomplete="off">
+          <button type="button" id="up-token-save">Enregistrer la clé</button>
+        </div>
+        <ol class="up-help">
+          <li>github.com : Settings &gt; Developer settings &gt; Personal access tokens &gt; Fine-grained tokens &gt; Generate new token.</li>
+          <li>Repository access : Only select repositories &gt; Tomatoes-Text.</li>
+          <li>Permissions &gt; Repository permissions &gt; Contents : Read-only.</li>
+        </ol>
+        <p class="up-note">La clé est enregistrée chiffrée sur cet ordinateur et ne sert qu'à lire le dépôt.</p>
+      </div>
+    </details>
+    <div class="modal-actions">
+      <button type="button" id="up-check">Rechercher</button>
+      <span class="spacer"></span>
+      <button type="button" id="up-close">Fermer</button>
+      <button type="button" id="up-apply" class="primary" hidden>Mettre à jour et redémarrer</button>
+    </div>
+  </dialog>
+
+  <dialog id="report-dialog">
+    <h2>Signaler un défaut</h2>
+    <p class="sum-info">Le document, les dernières actions dans le texte et une capture de la fenêtre sont enregistrés pour reproduire le défaut.</p>
+    <label class="rp-label">Description (facultatif)
+      <textarea id="rp-note" rows="3" spellcheck="true" placeholder="Ex. : le titre perd son style après Retour arrière."></textarea>
+    </label>
+    <p id="rp-info" class="sum-info" role="status"></p>
+    <div class="modal-actions">
+      <button type="button" id="rp-folder">Ouvrir le dossier</button>
+      <span class="spacer"></span>
+      <button type="button" id="rp-cancel">Annuler</button>
+      <button type="button" id="rp-save" class="primary">Enregistrer</button>
+    </div>
+  </dialog>
+
+  <dialog id="bio-dialog">
+    <h2>Repère biographique</h2>
+    <div class="bio-body">
+      <div class="bio-who">
+        <input id="bio-search" type="search" placeholder="Rechercher une personne ou un courant" spellcheck="false">
+        <div id="bio-list" class="bio-list" role="listbox" aria-label="Personnes"></div>
+        <div id="bio-libre" class="bio-libre" hidden>
+          <label>Nom <input id="bio-l-nom" type="text" maxlength="120"></label>
+          <label>Dates <input id="bio-l-dates" type="text" maxlength="80" placeholder="1818 — 1883"></label>
+          <label>Origine <input id="bio-l-lieux" type="text" maxlength="160" placeholder="Né à …"></label>
+          <label>Présentation <textarea id="bio-l-texte" rows="4" placeholder="Un paragraphe par ligne"></textarea></label>
+        </div>
+      </div>
+      <div class="bio-set">
+        <fieldset>
+          <legend>Contenu</legend>
+          <div class="bio-grid">
+            <label>Précision
+              <select id="bio-precision">
+                <option value="bref">Brève (une phrase)</option>
+                <option value="standard">Standard</option>
+                <option value="detaille">Détaillée</option>
+              </select>
+            </label>
+            <label>Angle
+              <select id="bio-angle">
+                <option value="equilibre">Parcours et pensée</option>
+                <option value="parcours">Parcours</option>
+                <option value="pensee">Pensée et apports</option>
+              </select>
+            </label>
+          </div>
+          <div class="bio-checks">
+            <div class="bio-pair"><label><input type="checkbox" id="bio-bandeau"> Intitulé</label><input id="bio-bandeauTexte" type="text" maxlength="60" aria-label="Intitulé"></div>
+            <div class="bio-pair"><label><input type="checkbox" id="bio-dates"> Dates</label><select id="bio-dateFormat" aria-label="Format des dates">
+              <option value="annees">Années</option>
+              <option value="complet">Dates complètes</option>
+            </select></div>
+            <label><input type="checkbox" id="bio-lieux"> Lieux de naissance et de mort</label>
+            <label><input type="checkbox" id="bio-nationalite"> Nationalité</label>
+            <label><input type="checkbox" id="bio-courant"> Courant de pensée</label>
+            <label><input type="checkbox" id="bio-texte"> Présentation</label>
+            <label><input type="checkbox" id="bio-idees"> Notions clés</label>
+            <label><input type="checkbox" id="bio-oeuvres"> Œuvres majeures</label>
+            <label><input type="checkbox" id="bio-sources"> Sources</label>
+          </div>
+        </fieldset>
+        <fieldset>
+          <legend>Forme</legend>
+          <div class="bio-grid">
+            <label>Modèle <select id="bio-modele"></select></label>
+            <label>Police
+              <select id="bio-police">
+                <option value="sans">Sans empattement</option>
+                <option value="serif">Avec empattement</option>
+                <option value="doc">Police du document</option>
+              </select>
+            </label>
+            <div class="bio-wide"><span class="bio-lab">Couleur</span><div id="bio-couleurs" class="bio-couleurs"></div></div>
+            <label>Portrait
+              <span class="bio-row">
+                <select id="bio-photo">
+                  <option value="commons">Wikimedia Commons</option>
+                  <option value="fichier">Image de l’ordinateur</option>
+                  <option value="silhouette">Silhouette</option>
+                  <option value="aucune">Aucun</option>
+                </select>
+                <button type="button" id="bio-pick" title="Choisir une image sur l’ordinateur">…</button>
+              </span>
+            </label>
+            <label>Cadrage
+              <select id="bio-forme">
+                <option value="ronde">Rond</option>
+                <option value="carree">Carré</option>
+                <option value="portrait">Rectangle</option>
+              </select>
+            </label>
+            <label>Alignement du texte
+              <select id="bio-aligne">
+                <option value="gauche">À gauche</option>
+                <option value="centre">Centré</option>
+                <option value="droite">À droite</option>
+                <option value="justifie">Justifié</option>
+              </select>
+            </label>
+            <label>Alignement de l’en-tête
+              <select id="bio-entete">
+                <option value="modele">Selon le modèle</option>
+                <option value="gauche">À gauche</option>
+                <option value="centre">Centré</option>
+                <option value="droite">À droite</option>
+              </select>
+            </label>
+            <label>Place
+              <select id="bio-position">
+                <option value="droite">À droite du texte</option>
+                <option value="gauche">À gauche du texte</option>
+                <option value="pleine">Sur toute la largeur</option>
+              </select>
+            </label>
+            <label>Largeur (%) <input id="bio-largeur" type="number" min="20" max="80" step="1" data-int></label>
+            <label>Taille du texte (%) <input id="bio-taille" type="number" min="50" max="160" step="5" data-int></label>
+          </div>
+        </fieldset>
+      </div>
+      <div class="bio-view">
+        <div id="bio-apercu" class="bio-apercu" aria-label="Aperçu"></div>
+        <p id="bio-info" class="sum-info"></p>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button type="button" id="bio-remove" class="danger" hidden>Supprimer le repère</button>
+      <label id="bio-scope" class="bio-scope" hidden><input type="checkbox" id="bio-scope-all"> Appliquer la forme à tous les repères du document</label>
+      <span class="spacer"></span>
+      <button type="button" id="bio-cancel">Annuler</button>
+      <button type="button" id="bio-ok" class="primary">Insérer</button>
+    </div>
+    <input type="file" id="bio-file" accept="image/*" hidden>
+  </dialog>
+
+  <dialog id="math-dialog">
+    <h2>Formule mathématique</h2>
+    <math-field id="math-input"></math-field>
+    <div class="math-modes">
+      <label><input type="radio" name="math-mode" value="inline" checked> Dans la ligne</label>
+      <label><input type="radio" name="math-mode" value="block"> Centrée, sur sa propre ligne</label>
+    </div>
+    <div class="math-modes math-box">
+      <span>Encadrement :</span>
+      <label><input type="radio" name="math-box" value="" checked> Aucun</label>
+      <label><input type="radio" name="math-box" value="cadre"> Cadre</label>
+      <label><input type="radio" name="math-box" value="colore"> Encadré coloré</label>
+      <select id="math-box-color" title="Couleur de l'encadré">
+        <option value="">Couleur principale</option>
+        <option value="bleu">Bleu</option>
+        <option value="vert">Vert</option>
+        <option value="ambre">Ambre</option>
+        <option value="rouge">Rouge</option>
+        <option value="violet">Violet</option>
+      </select>
+    </div>
+    <div id="math-tabs" class="styles-tabs"></div>
+    <div id="math-palette"></div>
+    <p class="math-help">Écrivez directement au clavier : <kbd>^</kbd> exposant, <kbd>_</kbd> indice, <kbd>/</kbd> fraction, <kbd>Tab</kbd> case suivante. Les noms comme <i>sqrt</i>, <i>pi</i>, <i>alpha</i>, <i>sum</i> ou <i>int</i> se transforment tout seuls.</p>
+    <div class="modal-actions">
+      <button type="button" id="math-delete" class="danger" hidden>Supprimer la formule</button>
+      <span class="spacer"></span>
+      <button type="button" id="math-cancel">Annuler</button>
+      <button type="button" id="math-ok" class="primary">Insérer</button>
+    </div>
+  </dialog>
+
+  <script src="erreurs.js"></script>
+  <script src="couleurs-recentes.js"></script>
+  <script src="number.js"></script>
+  <script src="toolbar.js"></script>
+  <script src="tags.js"></script>
+  <script src="vendor/prosemirror/prosemirror.js"></script>
+  <script src="moteur/schema.js"></script>
+  <script src="editor.js"></script>
+  <script src="minibarre.js"></script>
+  <script src="moteur/objets.js"></script>
+  <script src="moteur/grille.js"></script>
+  <script src="case.js"></script>
+  <script src="sort.js"></script>
+  <script src="paste.js"></script>
+  <script src="sidebar.js"></script>
+  <script src="structure.js"></script>
+  <script src="history.js"></script>
+  <script src="moteur/blocs.js"></script>
+  <script src="moteur/ecriture.js"></script>
+  <script src="moteur/notes.js"></script>
+  <script src="moteur/decoupage.js"></script>
+  <script src="moteur/visibles.js"></script>
+  <script src="moteur/generes.js"></script>
+  <script src="vendor/mathlive/mathlive.min.js"></script>
+  <script src="ordinals.js"></script>
+  <script src="insert.js"></script>
+  <script src="layout.js"></script>
+  <script src="links.js"></script>
+  <script src="reglages-vue.js"></script>
+  <script src="mindmap.js"></script>
+  <script src="timeline.js"></script>
+  <script src="customize.js"></script>
+  <script src="infobulles.js"></script>
+  <script src="pages.js"></script>
+  <script src="vendor/docx/docx.iife.js"></script>
+  <script src="word.js"></script>
+  <script src="omml.js"></script>
+  <script src="word-import.js"></script>
+  <script src="find.js"></script>
+  <script src="toc.js"></script>
+  <script src="cover.js"></script>
+  <script src="captions.js"></script>
+  <script src="xref.js"></script>
+  <script src="index-terms.js"></script>
+  <script src="comments.js"></script>
+  <script src="diagram.js"></script>
+  <script src="lettrine.js"></script>
+  <script src="pdf.js"></script>
+  <script src="livre.js"></script>
+  <script src="epub.js"></script>
+  <script src="languages.js"></script>
+  <script src="spell.js"></script>
+  <script src="moteur/correcteur.js"></script>
+  <script src="assistant.js"></script>
+  <script src="summary.js"></script>
+  <script src="lorem.js"></script>
+  <script src="coherence.js"></script>
+  <script src="readability.js"></script>
+  <script src="versions.js"></script>
+  <script src="goals.js"></script>
+  <script src="reading.js"></script>
+  <script src="zoom.js"></script>
+  <script src="track.js"></script>
+  <script src="bookmarks.js"></script>
+  <script src="theme.js"></script>
+  <script src="docstyles.js"></script>
+  <script src="modeles.js"></script>
+  <script src="dialogs.js"></script>
+  <script src="biblio.js"></script>
+  <script src="citations.js"></script>
+  <script src="sourcepdf.js"></script>
+  <script src="navpane.js"></script>
+  <script src="update.js"></script>
+  <script src="bio/economie.js"></script>
+  <script src="bio.js"></script>
+  <script src="shortcuts.js"></script>
+  <script src="palette.js"></script>
+  <script src="moteur/code.js"></script>
+  <script src="signaler.js"></script>
+  <script src="moteur/demarrage.js"></script>
+  <script src="moteur/clic.js"></script>
+  <script src="welcome.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

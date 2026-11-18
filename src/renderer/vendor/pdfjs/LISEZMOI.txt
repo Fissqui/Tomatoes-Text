@@ -1,0 +1,2 @@
+pdf.js 5.4.296 (Mozilla, Apache 2.0) : https://github.com/mozilla/pdf.js
+Fichiers repris de pdfjs-dist : build/pdf.min.mjs, build/pdf.worker.min.mjs, cmaps/, standard_fonts/, wasm/.

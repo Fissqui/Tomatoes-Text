@@ -1,0 +1,86 @@
+{
+  "folders": [
+    {
+      "path": ".",
+      "name": "Tomatoes Text"
+    }
+  ],
+  "settings": {
+    "files.encoding": "utf8",
+    "files.eol": "\n",
+    "editor.tabSize": 2,
+    "editor.insertSpaces": true,
+    "files.associations": {
+      "*.ftxt": "json"
+    },
+    "files.exclude": {
+      "node_modules": true,
+      "dist": true
+    },
+    "search.exclude": {
+      "node_modules": true,
+      "dist": true,
+      "installation": true
+    }
+  },
+  "extensions": {
+    "recommendations": [
+      "MS-CEINTL.vscode-language-pack-fr"
+    ]
+  },
+  "tasks": {
+    "version": "2.0.0",
+    "tasks": [
+      {
+        "label": "Installer les dépendances",
+        "type": "shell",
+        "problemMatcher": [],
+        "command": "npm install",
+        "options": {
+          "cwd": "${workspaceFolder:Tomatoes Text}"
+        }
+      },
+      {
+        "label": "Lancer Tomatoes Text",
+        "type": "shell",
+        "problemMatcher": [],
+        "group": {
+          "kind": "build",
+          "isDefault": true
+        },
+        "command": "npm start",
+        "options": {
+          "cwd": "${workspaceFolder:Tomatoes Text}"
+        }
+      },
+      {
+        "label": "Fabriquer la version Windows",
+        "type": "shell",
+        "problemMatcher": [],
+        "command": "npm run build:win",
+        "options": {
+          "cwd": "${workspaceFolder:Tomatoes Text}"
+        }
+      }
+    ]
+  },
+  "launch": {
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "name": "Lancer Tomatoes Text",
+        "type": "node",
+        "request": "launch",
+        "cwd": "${workspaceFolder:Tomatoes Text}",
+        "runtimeExecutable": "${workspaceFolder:Tomatoes Text}/node_modules/.bin/electron",
+        "windows": {
+          "runtimeExecutable": "${workspaceFolder:Tomatoes Text}/node_modules/.bin/electron.cmd"
+        },
+        "args": [
+          "."
+        ],
+        "outputCapture": "std"
+      }
+    ]
+  }
+}
