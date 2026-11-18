@@ -1,12 +1,11 @@
-// Essai de la mise à jour en un clic : version de développement (dossier de travail, puis GitHub avec une
-// clé) et version publiée (GitHub Releases du dépôt public, sans clé).
+// Essai de la mise à jour en un clic, sans aucun réglage : version de développement (dossier de travail,
+// puis GitHub Releases) et version publiée (GitHub Releases du dépôt public, sans clé).
 // Un faux dépôt « GitHub » est fabriqué à partir de ce dépôt, avec une version 9.9.9 en plus.
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const assert = require('assert');
 const { execFileSync } = require('child_process');
-const { installedVersion } = require('../../src/updater');
 
 module.exports = async ({ page, electron }) => {
   const { handlers } = electron._test;
@@ -55,13 +54,14 @@ module.exports = async ({ page, electron }) => {
   const installed = JSON.parse(fs.readFileSync(path.join(repo, 'src', 'version.json'), 'utf8')).version;
   const settingsFile = path.join(electron.app.getPath('userData'), 'mise-a-jour.json');
   // Version de développement (comme avec src/prive.json), quel que soit le dossier src essayé.
-  process.env.FT_UPDATE_PRIVE = JSON.stringify({ depot: 'proprietaire/depot', dossiers: [path.join(tmp, 'absent')] });
+  process.env.FT_UPDATE_PRIVE = JSON.stringify({ dossiers: [path.join(tmp, 'absent')] });
 
-  // 1. Dossier introuvable, pas de clé : recherche impossible, la clé est demandée.
+  // 1. Dossier introuvable et aucune version publiée : recherche impossible, message clair.
+  global.fetch = async () => new Response('', { status: 404 });
   fs.writeFileSync(settingsFile, JSON.stringify({ folder: path.join(tmp, 'absent') }));
   let res = await call('update:check', { interactive: false });
-  assert(!res.ok && res.needsToken, JSON.stringify(res));
-  ok('sans dossier ni clé : « ' + res.notes.join(' / ') + ' »');
+  assert(!res.ok && /aucune version publiée/i.test(res.notes.join(' ')), JSON.stringify(res));
+  ok('sans dossier ni version publiée : « ' + res.notes.join(' / ') + ' »');
 
   // 2. Dossier de travail : deux versions de retard.
   fs.writeFileSync(settingsFile, JSON.stringify({ folder }));
@@ -99,41 +99,8 @@ module.exports = async ({ page, electron }) => {
   sh(folder, 'fetch', '--quiet', 'origin');
   sh(folder, 'reset', '--quiet', '--hard', 'origin/main');
 
-  // 4. GitHub avec une clé (le dossier est absent) : faux serveur GitHub.
-  assert(!(await call('update:setToken', 'pas une clé')).ok);
-  assert((await call('update:setToken', 'github_pat_' + 'A'.repeat(40))).ok);
-  const stored = JSON.parse(fs.readFileSync(settingsFile, 'utf8'));
-  assert(stored.token && !stored.token.includes('AAAA'), 'clé non chiffrée');
-  fs.writeFileSync(settingsFile, JSON.stringify({ ...stored, folder: path.join(tmp, 'absent') }));
-  fs.writeFileSync(path.join(app, 'src', 'version.json'), JSON.stringify({ version: '9.9.7' }));
-  const tarball = execFileSync('git', ['archive', '--format=tar.gz', '--prefix=proprietaire-depot-abc1234/', 'main'], { cwd: remote, maxBuffer: 1 << 28 });
-  const seen = [];
-  global.fetch = async (url, opts) => {
-    seen.push(url);
-    assert.strictEqual(opts.headers.Authorization, 'Bearer github_pat_' + 'A'.repeat(40));
-    if (url.includes('/contents/package.json')) return new Response(execFileSync('git', ['show', 'main:package.json'], { cwd: remote }));
-    if (url.includes('/commits')) return Response.json(sh(remote, 'log', '-n', '5', '--format=%s', 'main').trim().split('\n').map((m) => ({ commit: { message: m + '\n\ndétail' } })));
-    if (url.includes('/tarball/')) return new Response(tarball);
-    return new Response('', { status: 404 });
-  };
-  res = await call('update:check', { interactive: false });
-  assert(res.ok && res.available && res.source === 'github' && res.latest === '9.9.9', JSON.stringify(res));
-  assert.deepStrictEqual(res.changes, ['Version 9.9.9 : second essai', 'Version 9.9.8 : premier essai']);
-  fs.rmSync(path.join(app, 'src', 'nouveau-fichier.js'));
-  res = await call('update:apply');
-  assert(res.ok && res.version === '9.9.9', JSON.stringify(res));
-  assert(fs.existsSync(path.join(app, 'src', 'nouveau-fichier.js')));
-  assert.strictEqual(fs.readFileSync(path.join(app, 'src', 'main.js'), 'utf8'), execFileSync('git', ['show', 'main:src/main.js'], { cwd: remote, encoding: 'utf8' }));
-  assert(!fs.existsSync(path.join(electron.app.getPath('userData'), 'mise-a-jour')), 'dossier temporaire resté');
-  ok('mise à jour par GitHub (clé) : archive lue, fichiers installés, dossier temporaire retiré (' + seen.length + ' requêtes)');
-
-  global.fetch = async () => new Response('', { status: 401 });
-  res = await call('update:check', { interactive: false });
-  assert(!res.ok && /refusée/.test(res.notes.join(' ')), JSON.stringify(res));
-  ok('clé expirée : « ' + res.notes.join(' / ') + ' »');
-
   // 5. Interface : fenêtre ouverte par le menu Aide.
-  fs.writeFileSync(settingsFile, JSON.stringify({ ...stored, folder }));
+  fs.writeFileSync(settingsFile, JSON.stringify({ folder }));
   sh(work, 'commit', '--quiet', '--allow-empty', '-m', 'Version 9.9.11 : encore');
   const pkg11 = JSON.parse(fs.readFileSync(path.join(work, 'package.json'), 'utf8'));
   pkg11.version = '9.9.11';
@@ -142,10 +109,10 @@ module.exports = async ({ page, electron }) => {
   sh(work, 'push', '--quiet', 'origin', 'HEAD:main');
   await page.evaluate(() => window.__ftEmit('menu', ['update']));
   await page.waitForFunction(() => /disponible|à jour|impossible/.test(document.getElementById('up-status').textContent), null, { timeout: 15000 });
-  const ui = await page.evaluate(() => ({ status: document.getElementById('up-status').textContent, items: document.querySelectorAll('#up-list li').length, apply: !document.getElementById('up-apply').hidden, folder: document.getElementById('up-folder').textContent, token: document.getElementById('up-token-state').textContent }));
+  const ui = await page.evaluate(() => ({ status: document.getElementById('up-status').textContent, items: document.querySelectorAll('#up-list li').length, apply: !document.getElementById('up-apply').hidden }));
   assert(/Version 9\.9\.11 disponible/.test(ui.status) && ui.apply, JSON.stringify(ui));
-  ok('fenêtre : « ' + ui.status + ' », ' + ui.items + ' nouveautés, ' + ui.token);
-  await page.evaluate(() => { document.getElementById('up-settings').open = true; });
+  assert(!(await page.$('#up-settings')), 'aucun réglage dans la fenêtre');
+  ok('fenêtre sans réglage : « ' + ui.status + ' », ' + ui.items + ' nouveautés');
   await page.screenshot({ path: path.join(tmp, 'fenetre.png') });
   console.log('      capture : ' + path.join(tmp, 'fenetre.png'));
   await page.click('#up-apply');
@@ -159,7 +126,6 @@ module.exports = async ({ page, electron }) => {
   // 6. Version publiée (sans src/prive.json) : GitHub Releases du dépôt public, sans clé (faux serveur).
   process.env.FT_UPDATE_PRIVE = '';
   process.env.FT_UPDATE_API = 'https://api.essai';
-  assert.deepStrictEqual(await call('update:settings'), { public: true, installed: installedVersion() });
   const stage = path.join(tmp, 'publication');
   const release = (v, extra = {}) => {
     fs.rmSync(stage, { recursive: true, force: true });
@@ -190,9 +156,16 @@ module.exports = async ({ page, electron }) => {
   };
   fs.writeFileSync(path.join(app, 'src', 'version.json'), JSON.stringify({ version: '9.9.10' }));
   res = await call('update:check', { interactive: false });
-  assert(res.ok && res.public && res.available && res.latest === '9.9.12', JSON.stringify(res));
+  assert(res.ok && res.source === 'public' && res.available && res.latest === '9.9.12', JSON.stringify(res));
   assert.deepStrictEqual(res.changes, ['Correctif A', 'Correctif B', 'Ancienne nouveauté']);
   ok(`version publiée : ${res.installed} → ${res.latest}, brouillon ignoré, nouveautés : ${res.changes.join(' / ')}`);
+  // Version de développement dont le dossier de travail est absent : même recherche, sur GitHub Releases.
+  process.env.FT_UPDATE_PRIVE = JSON.stringify({ dossiers: [path.join(tmp, 'absent')] });
+  fs.writeFileSync(settingsFile, JSON.stringify({ folder: path.join(tmp, 'absent') }));
+  res = await call('update:check', { interactive: false });
+  assert(res.ok && res.source === 'public' && res.latest === '9.9.12', JSON.stringify(res));
+  process.env.FT_UPDATE_PRIVE = '';
+  ok('développement sans dossier de travail : GitHub Releases en secours');
   res = await call('update:apply');
   assert(res.ok && res.version === '9.9.12' && !res.setup, JSON.stringify(res));
   assert.strictEqual(JSON.parse(fs.readFileSync(path.join(app, 'src', 'version.json'), 'utf8')).version, '9.9.12');
@@ -212,7 +185,7 @@ module.exports = async ({ page, electron }) => {
 
   published = null;
   res = await call('update:check', { interactive: false });
-  assert(!res.ok && /aucune version publiée/.test(res.notes.join(' ')), JSON.stringify(res));
+  assert(!res.ok && /aucune version publiée/i.test(res.notes.join(' ')), JSON.stringify(res));
   ok('dépôt sans version publiée (ou encore privé) : « ' + res.notes.join(' / ') + ' »');
   delete process.env.FT_UPDATE_PRIVE;
   delete process.env.FT_UPDATE_API;

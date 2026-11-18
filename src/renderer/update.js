@@ -1,4 +1,4 @@
-// Mise à jour en un clic (Aide > « Rechercher une mise à jour… », voir src/updater.js).
+// Mise à jour en un clic (Aide > « Rechercher une mise à jour… », voir src/updater.js), sans réglage.
 // Au démarrage, une recherche discrète affiche « Mise à jour disponible » dans la barre d'état.
 (function () {
   const api = window.frameText;
@@ -20,19 +20,6 @@
   function showChanges(list) {
     $('up-changes').hidden = !list.length;
     $('up-list').replaceChildren(...list.map((t) => Object.assign(document.createElement('li'), { textContent: t })));
-  }
-
-  async function fillSettings() {
-    const s = await api.updateSettings();
-    // Réglages des sources : version de développement seulement (la version publiée suit GitHub Releases).
-    $('up-settings').hidden = !!(s.disabled || s.public);
-    if (s.disabled || s.public) return s;
-    $('up-folder').textContent = s.folder;
-    $('up-folder-state').textContent = s.folderFound ? 'trouvé' : 'introuvable';
-    $('up-folder-state').classList.toggle('bad', !s.folderFound);
-    $('up-token-state').textContent = s.hasToken ? 'Clé enregistrée.' : 'Aucune clé enregistrée.';
-    $('up-token-remove').hidden = !s.hasToken;
-    return s;
   }
 
   function showNotice(res) {
@@ -60,7 +47,6 @@
     if (!res.ok) {
       status.textContent = 'Recherche impossible.';
       setError((res.notes || []).join('\n'));
-      if (res.needsToken && !res.disabled) $('up-settings').open = true;
       return;
     }
     if (res.available) {
@@ -97,7 +83,6 @@
 
   async function open() {
     if (!dialog.open) dialog.showModal();
-    await fillSettings();
     check(true);
   }
 
@@ -106,26 +91,6 @@
   $('up-close').addEventListener('click', () => dialog.close());
   dialog.addEventListener('cancel', (e) => { if (busy && !applyBtn.hidden) e.preventDefault(); });
   notice.addEventListener('click', open);
-
-  $('up-folder-change').addEventListener('click', async () => {
-    const res = await api.updateChooseFolder();
-    if (res) await fillSettings();
-  });
-  async function saveToken(value) {
-    const res = await api.updateSetToken(value);
-    if (!res.ok) { setError(res.error); return; }
-    setError('');
-    $('up-token').value = '';
-    await fillSettings();
-  }
-  $('up-token-save').addEventListener('click', () => {
-    const v = $('up-token').value.trim();
-    if (v) saveToken(v);
-  });
-  $('up-token').addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') { e.preventDefault(); $('up-token-save').click(); }
-  });
-  $('up-token-remove').addEventListener('click', () => saveToken(''));
 
   // Recherche discrète, une fois, peu après le démarrage (sans fenêtre de connexion).
   setTimeout(() => {

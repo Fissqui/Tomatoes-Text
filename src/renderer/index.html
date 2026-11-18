@@ -1389,28 +1389,6 @@
       <ul id="up-list"></ul>
     </div>
     <p id="up-error" class="up-error" hidden></p>
-    <details id="up-settings">
-      <summary>Sources des mises à jour</summary>
-      <div class="up-source">
-        <div class="up-sub">1. Dossier de travail (copie Git du dépôt)</div>
-        <div class="up-row"><span id="up-folder" class="up-path"></span><span id="up-folder-state" class="up-state"></span></div>
-        <button type="button" id="up-folder-change" class="small">Changer de dossier…</button>
-      </div>
-      <div class="up-source">
-        <div class="up-sub">2. Clé d'accès GitHub (si le dossier est absent)</div>
-        <div class="up-row"><span id="up-token-state" class="up-state"></span><button type="button" id="up-token-remove" class="small" hidden>Retirer la clé</button></div>
-        <div class="up-row">
-          <input id="up-token" type="password" placeholder="github_pat_…" spellcheck="false" autocomplete="off">
-          <button type="button" id="up-token-save">Enregistrer la clé</button>
-        </div>
-        <ol class="up-help">
-          <li>github.com : Settings &gt; Developer settings &gt; Personal access tokens &gt; Fine-grained tokens &gt; Generate new token.</li>
-          <li>Repository access : Only select repositories &gt; Tomatoes-Text.</li>
-          <li>Permissions &gt; Repository permissions &gt; Contents : Read-only.</li>
-        </ol>
-        <p class="up-note">La clé est enregistrée chiffrée sur cet ordinateur et ne sert qu'à lire le dépôt.</p>
-      </div>
-    </details>
     <div class="modal-actions">
       <button type="button" id="up-check">Rechercher</button>
       <span class="spacer"></span>

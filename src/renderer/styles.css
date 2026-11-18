@@ -2636,17 +2636,6 @@ body.tb-moving, body.tb-moving * { cursor: grabbing !important; user-select: non
 .up-sub { font-size: calc(12px * var(--ui-scale)); font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; color: var(--text-muted); margin-bottom: 4px; }
 .up-error { white-space: pre-line; color: #c0392b; font-size: calc(13px * var(--ui-scale)); }
 :root[data-theme="dark"] .up-error { color: #ff7b6b; }
-#up-settings { margin: 4px 0 14px; padding-top: 8px; border-top: 1px solid var(--border); font-size: calc(13px * var(--ui-scale)); }
-#up-settings summary { cursor: pointer; color: var(--text-muted); margin-bottom: 8px; }
-.up-source { margin: 0 0 12px; }
-.up-row { display: flex; align-items: center; gap: 8px; margin: 0 0 6px; flex-wrap: wrap; }
-.up-path { font-family: Consolas, monospace; font-size: calc(12px * var(--ui-scale)); word-break: break-all; }
-.up-state { color: var(--text-muted); }
-.up-state.bad { color: #c0392b; }
-#up-token { flex: 1; min-width: 200px; height: 28px; padding: 0 8px; border: 1px solid var(--border); border-radius: calc(6px * var(--round)); background: var(--page); }
-#update-dialog .up-row button, #up-folder-change { border-color: var(--border); }
-.up-help { margin: 4px 0 6px; padding-left: 1.4em; color: var(--text-muted); font-size: calc(12px * var(--ui-scale)); line-height: 1.45; }
-.up-note { margin: 0; color: var(--text-muted); font-size: calc(12px * var(--ui-scale)); }
 #statusbar #status-update { padding: 0 8px; border: 0; border-radius: 999px; background: var(--accent); color: var(--accent-text); font-size: inherit; line-height: 1.6; }
 #statusbar #status-update[hidden] { display: none; }
 

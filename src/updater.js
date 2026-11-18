@@ -3,11 +3,11 @@
 //   Si seuls les fichiers du logiciel changent, l'archive « Tomatoes-Text-<version>-fichiers.tar.gz » est
 //   recopiée dans le logiciel installé ; si Electron ou les composants changent, le programme d'installation
 //   de la nouvelle version est téléchargé et lancé.
-// - Version de développement (src/prive.json présent, jamais publié) : dossier de travail sur cet ordinateur,
-//   copie Git du dépôt (« git pull », puis copie de src), ou à défaut le dépôt lui-même avec une clé d'accès
-//   en lecture seule enregistrée chiffrée (safeStorage).
+// - Version de développement (src/prive.json présent, jamais publié) : d'abord le dossier de travail sur cet
+//   ordinateur, copie Git du dépôt (« git pull », puis copie de src) ; à défaut, GitHub Releases.
+// Aucun réglage n'est demandé à l'utilisateur.
 // Les fichiers sont recopiés par-dessus ceux du logiciel installé (comme robocopy /E), puis le logiciel redémarre.
-const { app, ipcMain, dialog } = require('electron');
+const { app, ipcMain } = require('electron');
 const electron = require('electron');
 const path = require('path');
 const fs = require('fs/promises');
@@ -19,12 +19,12 @@ const { readJson, writeJson } = require('./json-files');
 const readConf = (name) => {
   try { return JSON.parse(fsSync.readFileSync(path.join(__dirname, name), 'utf8')); } catch { return null; }
 };
-// Canal privé : { depot: "propriétaire/dépôt", dossiers: [dossier de travail, ancien nom…] }.
+// Version de développement : { dossiers: [dossier de travail, ancien nom…] }.
 // FT_UPDATE_PRIVE (banc d'essai) : JSON à la place du fichier, ou vide pour aucun.
 function privateConf() {
   const env = process.env.FT_UPDATE_PRIVE;
   const c = env !== undefined ? (env ? JSON.parse(env) : null) : readConf('prive.json');
-  return c && typeof c.depot === 'string' && c.depot.includes('/') ? c : null;
+  return c && Array.isArray(c.dossiers) ? c : null;
 }
 // Dépôt public : champ « repository » de package.json. FT_UPDATE_API (banc d'essai) : autre adresse que l'API GitHub.
 function publicRepo() {
@@ -34,8 +34,7 @@ function publicRepo() {
   return m ? m[1] : null;
 }
 const apiBase = () => process.env.FT_UPDATE_API || 'https://api.github.com';
-const channel = () => (privateConf() ? 'prive' : publicRepo() ? 'public' : null);
-const enabled = () => !!channel();
+const enabled = () => !!(privateConf() || publicRepo());
 
 // Une préversion (src/edition.json, absent de la version publiée) suit sa propre branche. Le dossier de travail reste sur
 // la branche principale : la préversion en extrait seulement ses fichiers (git archive), sans le changer.
@@ -51,9 +50,12 @@ function defaultFolder() {
 const targetSrc = () => process.env.FT_UPDATE_TARGET || __dirname;
 const settingsFile = () => path.join(app.getPath('userData'), 'mise-a-jour.json');
 
-async function readSettings() {
+// Dossier de travail : réglage enregistré (mise-a-jour.json), sinon le premier dossier existant de src/prive.json.
+async function workFolder() {
+  if (!privateConf()) return null;
   const s = await readJson(settingsFile(), {});
-  return { folder: typeof s.folder === 'string' && s.folder ? s.folder : defaultFolder(), token: typeof s.token === 'string' ? s.token : '' };
+  const folder = typeof s.folder === 'string' && s.folder ? s.folder : defaultFolder();
+  return folder && isClone(folder) ? folder : null;
 }
 
 // ----- Versions -----
@@ -88,22 +90,6 @@ function changesSince(subjects, version) {
     if (out.length >= 30) break;
   }
   return out;
-}
-
-// ----- Clé d'accès GitHub -----
-
-function encrypt(token) {
-  const { safeStorage } = electron;
-  if (!safeStorage || !safeStorage.isEncryptionAvailable()) throw new Error("Le chiffrement de Windows n'est pas disponible : la clé ne peut pas être enregistrée.");
-  return safeStorage.encryptString(token).toString('base64');
-}
-function decrypt(stored) {
-  if (!stored) return '';
-  try {
-    return electron.safeStorage.decryptString(Buffer.from(stored, 'base64'));
-  } catch {
-    return '';
-  }
 }
 
 // ----- Git (dossier de travail) -----
@@ -205,37 +191,12 @@ async function unpack(tar, relOf) {
   return { src: path.join(dir, 'src'), pkg, cleanup: () => fs.rm(dir, { recursive: true, force: true }) };
 }
 
-// ----- GitHub (clé d'accès) -----
+// ----- Réseau -----
 
 function httpFetch(url, options) {
   // net.fetch passe par les réglages réseau de Windows (proxy) ; fetch de Node sinon (banc d'essai).
   const f = electron.net && electron.net.fetch ? electron.net.fetch.bind(electron.net) : fetch;
   return f(url, options);
-}
-
-async function github(token, route, accept = 'application/vnd.github+json') {
-  const res = await httpFetch(`https://api.github.com/repos/${privateConf().depot}${route}`, {
-    headers: { Authorization: `Bearer ${token}`, Accept: accept, 'X-GitHub-Api-Version': '2022-11-28', 'User-Agent': 'Tomatoes-Text' }
-  });
-  if (res.status === 401) throw new Error('clé GitHub refusée (expirée ou retirée).');
-  if (res.status === 403 || res.status === 404) throw new Error("clé GitHub sans accès au dépôt (vérifiez l'accès « Contents : Read-only »).");
-  if (!res.ok) throw new Error(`GitHub répond ${res.status}.`);
-  return res;
-}
-
-async function checkGithub(token) {
-  const pkg = JSON.parse(await (await github(token, `/contents/package.json?ref=${encodeURIComponent(BRANCH)}`, 'application/vnd.github.raw')).text());
-  const commits = await (await github(token, `/commits?sha=${encodeURIComponent(BRANCH)}&per_page=40`)).json();
-  const subjects = (Array.isArray(commits) ? commits : []).map((c) => String((c.commit && c.commit.message) || '').split('\n')[0]);
-  return { source: 'github', version: pkg.version, behind: 0, subjects };
-}
-
-// Archive .tar.gz de la branche : seuls src/ et package.json sont extraits, dans un dossier temporaire.
-async function applyGithub(token) {
-  const res = await github(token, `/tarball/${encodeURIComponent(BRANCH)}`);
-  const tar = zlib.gunzipSync(Buffer.from(await res.arrayBuffer()));
-  // Sans le dossier « <propriétaire>-<dépôt>-<commit> » en tête de chaque nom.
-  return unpack(tar, (name) => name.split('/').slice(1).join('/'));
 }
 
 // Lecture d'une archive tar (format ustar, avec les en-têtes pax de GitHub pour les noms longs).
@@ -370,53 +331,32 @@ const firstLine = (s) => String(s || '').trim().split('\n').filter(Boolean).pop(
 // ----- Recherche -----
 
 async function check({ interactive }) {
-  if (!enabled()) return { ok: false, disabled: true, installed: installedVersion(), notes: ['Mise à jour automatique non disponible dans cette version.'] };
-  if (channel() === 'public') {
-    const installed = installedVersion();
-    try {
-      const found = await checkPublic(installed);
-      const available = compareVersions(found.version, installed) > 0;
-      return { ok: true, public: true, installed, latest: found.version, source: 'public', available, changes: available ? found.subjects : [], notes: [] };
-    } catch (err) {
-      return { ok: false, public: true, installed, notes: ['Recherche impossible : ' + err.message] };
-    }
-  }
-  const s = await readSettings();
-  const token = decrypt(s.token);
   const installed = installedVersion();
+  if (!enabled()) return { ok: false, disabled: true, installed, notes: ['Mise à jour automatique non disponible dans cette version.'] };
   const notes = [];
-  let found = null;
-  if (isClone(s.folder)) {
+  const folder = await workFolder();
+  if (folder) {
     try {
-      found = await checkFolder(s.folder, interactive);
+      const found = await checkFolder(folder, interactive);
+      return {
+        ok: true, installed, latest: found.version, source: 'dossier',
+        available: compareVersions(found.version, installed) > 0 || found.behind > 0,
+        changes: changesSince(found.subjects, installed), notes
+      };
     } catch (err) {
       notes.push('Dossier de travail : ' + firstLine(err.stderr || err.message));
     }
-  } else {
-    notes.push(`Dossier de travail introuvable : ${s.folder}`);
   }
-  if (!found && token) {
+  if (publicRepo()) {
     try {
-      found = await checkGithub(token);
+      const found = await checkPublic(installed);
+      const available = compareVersions(found.version, installed) > 0;
+      return { ok: true, installed, latest: found.version, source: 'public', available, changes: available ? found.subjects : [], notes };
     } catch (err) {
-      notes.push('GitHub : ' + err.message);
+      notes.push(err.message.charAt(0).toUpperCase() + err.message.slice(1));
     }
   }
-  if (!found) {
-    return { ok: false, installed, notes, needsToken: !token, folder: s.folder, hasToken: !!token };
-  }
-  const newer = compareVersions(found.version, installed) > 0;
-  return {
-    ok: true,
-    installed,
-    latest: found.version,
-    source: found.source,
-    available: newer || found.behind > 0,
-    changes: changesSince(found.subjects, installed),
-    notes,
-    folder: s.folder,
-    hasToken: !!token
-  };
+  return { ok: false, installed, notes };
 }
 
 let running = false;
@@ -426,38 +366,24 @@ async function update(send) {
   running = true;
   try {
     if (!enabled()) throw new Error('mise à jour automatique non disponible dans cette version.');
-    if (channel() === 'public') {
-      const got = await applyPublic(send);
-      if (got.setup) {
-        pendingSetup = got.setup;
-        return { version: got.pkg.version, setup: true };
-      }
-      send('Installation des fichiers…');
-      try {
-        await install(got);
-      } finally {
-        if (got.cleanup) await got.cleanup().catch(() => {});
-      }
-      return { version: got.pkg.version };
-    }
-    const s = await readSettings();
-    const token = decrypt(s.token);
     let got = null;
     let folderError = null;
-    if (isClone(s.folder)) {
+    const folder = await workFolder();
+    if (folder) {
       try {
         send('Récupération depuis le dossier de travail…');
-        await git(s.folder, ['fetch', '--quiet', 'origin', BRANCH], true);
-        got = await applyFolder(s.folder);
+        await git(folder, ['fetch', '--quiet', 'origin', BRANCH], true);
+        got = await applyFolder(folder);
       } catch (err) {
         folderError = err;
       }
     }
-    if (!got && token) {
-      send('Téléchargement depuis GitHub…');
-      got = await applyGithub(token);
+    if (!got && publicRepo()) got = await applyPublic(send);
+    if (!got) throw folderError || new Error('aucune source de mise à jour.');
+    if (got.setup) {
+      pendingSetup = got.setup;
+      return { version: got.pkg.version, setup: true };
     }
-    if (!got) throw folderError || new Error('aucune source : dossier de travail introuvable et aucune clé GitHub.');
     send('Installation des fichiers…');
     try {
       await install(got);
@@ -478,31 +404,6 @@ function registerUpdater({ getWindow }) {
     } catch (err) {
       return { ok: false, error: err.message };
     }
-  });
-  ipcMain.handle('update:settings', async () => {
-    if (!enabled()) return { disabled: true, installed: installedVersion() };
-    if (channel() === 'public') return { public: true, installed: installedVersion() };
-    const s = await readSettings();
-    return { folder: s.folder, hasToken: !!decrypt(s.token), folderFound: isClone(s.folder), installed: installedVersion() };
-  });
-  ipcMain.handle('update:chooseFolder', async () => {
-    const win = getWindow();
-    const { canceled, filePaths } = await dialog.showOpenDialog(win, { title: 'Dossier de travail de Tomatoes Text (copie Git du dépôt)', properties: ['openDirectory'] });
-    if (canceled || !filePaths[0]) return null;
-    const s = await readJson(settingsFile(), {});
-    await writeJson(settingsFile(), { ...s, folder: filePaths[0] });
-    return { folder: filePaths[0], folderFound: isClone(filePaths[0]) };
-  });
-  ipcMain.handle('update:setToken', async (_e, token) => {
-    const s = await readJson(settingsFile(), {});
-    token = String(token || '').trim();
-    if (token && !/^(github_pat_|ghp_)[A-Za-z0-9_]{20,}$/.test(token)) return { ok: false, error: "Ce texte n'a pas la forme d'une clé GitHub (github_pat_… ou ghp_…)." };
-    try {
-      await writeJson(settingsFile(), { ...s, token: token ? encrypt(token) : '' });
-    } catch (err) {
-      return { ok: false, error: err.message };
-    }
-    return { ok: true, hasToken: !!token };
   });
   // Redémarrage après la mise à jour : la fenêtre enregistre d'abord le document ouvert.
   // Programme d'installation : lancé seul, le logiciel se ferme pour qu'il remplace ses fichiers.
