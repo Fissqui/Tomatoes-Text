@@ -23,10 +23,11 @@
     open: '<path d="M3 7V5h6l2 2h8v3"/><path d="M3 7v12h15l3-9H6l-3 9"/>',
     word: '<path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4"/><path d="M8.5 11l1.5 6 2-4.5 2 4.5 1.5-6"/>',
     project: '<path d="M3 6V5h6l2 2h10v12H3z"/><path d="M12 10.5v6M9 13.5h6"/>',
+    tutorial: '<path d="M4 5.5c2.6-1 5.2-1 8 .8 2.8-1.8 5.4-1.8 8-.8v13c-2.6-1-5.2-1-8 .8-2.8-1.8-5.4-1.8-8-.8z"/><path d="M12 6.3v13.5"/>',
     model: '<path d="M4 3h10v14H4z"/><path d="M9 7h11v14H9"/><path d="M7 7h4M7 10h4M12 13h5M12 16h5"/>'
   };
   const icon = (k) => `<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round">${ICONS[k]}</svg>`;
-  for (const [id, k] of [['wl-new', 'plus'], ['wl-model', 'model'], ['wl-open', 'open'], ['wl-word', 'word'], ['wl-project-new', 'project']]) {
+  for (const [id, k] of [['wl-new', 'plus'], ['wl-model', 'model'], ['wl-open', 'open'], ['wl-word', 'word'], ['wl-project-new', 'project'], ['wl-tutorial', 'tutorial']]) {
     $(id).insertAdjacentHTML('afterbegin', icon(k));
   }
 
@@ -162,6 +163,7 @@
   $('wl-project-new').addEventListener('click', () => h.newProject());
   $('wl-project').addEventListener('change', async (e) => { await h.switchProject(e.target.value); render(); });
   $('wl-at-start').addEventListener('change', (e) => h.setAtStart(e.target.checked));
+  $('wl-tutorial').addEventListener('click', () => h.tutorial());
   $('wl-update').addEventListener('click', () => h.update());
   $('wl-close').addEventListener('click', () => h.close());
   search.addEventListener('input', render);

@@ -846,6 +846,46 @@ function setPresentationMenu(on) {
 ipcMain.handle('presentation:start', () => startPresentation());
 ipcMain.handle('presentation:stop', () => stopPresentation());
 
+// ---------- Tutoriel ----------
+// Projet « Tutoriel » (src/tutoriel) : recopié une fois dans le stockage, au premier lancement, puis
+// proposé à l'ouverture. Aide > « Tutoriel » le rouvre ; s'il a été supprimé, il est recopié.
+// (Rien n'est recopié par-dessus un dossier existant qui contient des documents.)
+const TUTORIAL_PROJECT = 'Tutoriel';
+const tutorialMark = () => path.join(app.getPath('userData'), 'tutoriel.json');
+
+async function installTutorial() {
+  const dir = path.join(projectsDir(), TUTORIAL_PROJECT);
+  if (await looksLikeProject(dir)) return false;
+  await fs.mkdir(dir, { recursive: true });
+  await fs.cp(path.join(__dirname, 'tutoriel'), dir, { recursive: true });
+  return true;
+}
+
+// Premier lancement : le projet est installé et l'ouverture du tutoriel proposée (une seule fois).
+// (Banc d'essai : rien, sauf s'il le demande.)
+ipcMain.handle('tutorial:first', async () => {
+  if (presentation || process.env.FT_SANS_TUTORIEL) return { offer: false };
+  if (fsSync.existsSync(tutorialMark())) return { offer: false };
+  try {
+    await installTutorial();
+  } catch (err) {
+    journal.write('tutoriel', 'Installation impossible : ' + ((err && err.message) || err));
+    return { offer: false };
+  }
+  await writeJson(tutorialMark(), { date: new Date().toISOString() });
+  return { offer: true, project: TUTORIAL_PROJECT };
+});
+
+ipcMain.handle('tutorial:open', async () => {
+  if (presentation) return { error: 'Quittez d’abord le mode présentation.' };
+  try {
+    await installTutorial();
+  } catch (err) {
+    return { error: 'Impossible d’installer le tutoriel dans le dossier de stockage.' };
+  }
+  return { project: TUTORIAL_PROJECT };
+});
+
 // ---------- Ouvrir un document depuis l'Explorateur (double-clic sur un .tmtx) ----------
 
 const OPENABLE = /\.(tmtx|ftxt|docx)$/i;
@@ -1310,6 +1350,8 @@ function buildMenu(settings) {
     {
       label: 'Aide',
       submenu: [
+        { label: 'Tutoriel', accelerator: acc('tutorial', ''), click: () => send('tutorial') },
+        { type: 'separator' },
         // (Sans dépôt public ni src/prive.json : pas de mise à jour automatique, voir updater.js.)
         ...(updatesEnabled() ? [
           { label: 'Rechercher une mise à jour…', accelerator: acc('update', ''), click: () => send('update') },

@@ -52,6 +52,7 @@
     ['Affichage', 'doc-theme', 'Thème du document', '', 'menu', '#doc-theme-tab'],
     ['Affichage', 'customize', 'Thème du logiciel', '', 'menu'],
     ['Affichage', 'shortcuts', 'Raccourcis clavier', '', 'menu'],
+    ['Aide', 'tutorial', 'Tutoriel', '', 'menu'],
     ['Aide', 'update', 'Rechercher une mise à jour', '', 'menu'],
     ['Aide', 'report', 'Signaler un défaut', 'Ctrl+Shift+F1', 'menu'],
     ['Mise en forme', 'bold', 'Gras', 'Ctrl+G', 'touche', '[data-tb="bold"]', ['Ctrl+B']],

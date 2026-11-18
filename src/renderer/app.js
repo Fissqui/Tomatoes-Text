@@ -36,7 +36,7 @@
   // Entrée valide (le bouton Annuler n'est pas celui du formulaire), Échap annule.
   $('modal-cancel').addEventListener('click', () => modal.close('cancel'));
 
-  function ask(message, value = '', { okLabel = 'Valider', input = true, maxLength = 80 } = {}) {
+  function ask(message, value = '', { okLabel = 'Valider', cancelLabel = 'Annuler', input = true, maxLength = 80 } = {}) {
     return new Promise((resolve) => {
       $('modal-message').textContent = message;
       const field = $('modal-input');
@@ -44,6 +44,7 @@
       field.maxLength = maxLength;
       field.value = value;
       $('modal-ok').textContent = okLabel;
+      $('modal-cancel').textContent = cancelLabel;
       modal.returnValue = '';
       modal.showModal();
       if (input) { field.focus(); field.select(); } else $('modal-ok').focus();
@@ -356,6 +357,32 @@
     $('app').classList.toggle('presenting', on);
   }
   $('presentation-quit').addEventListener('click', stopPresentation);
+
+  // ----- Tutoriel -----
+  // Projet « Tutoriel » installé dans le stockage (main.js) ; on y ouvre le document d'accueil.
+
+  const TUTORIAL_FIRST = '1. Bienvenue dans Tomatoes Text';
+
+  async function openTutorial() {
+    if (presenting) await stopPresentation();
+    const res = await api.tutorialOpen();
+    if (res.error) return flash(res.error);
+    window.FTWelcome.hide();
+    await flushSave();
+    if (current) closeDoc();
+    await reloadLibrary(res.project);
+    const first = lib.docs.find((d) => d.title === TUTORIAL_FIRST) || lib.docs[0];
+    if (first) await openDoc(first.fileName);
+  }
+
+  // Premier lancement : le tutoriel est proposé une fois.
+  async function offerTutorial() {
+    const res = await api.tutorialFirst().catch(() => ({ offer: false }));
+    if (!res || !res.offer) return;
+    const ok = await ask('Le tutoriel présente le logiciel et ses outils, dans un projet d’exemple modifiable. Il reste disponible dans Aide > Tutoriel.', '', { okLabel: 'Ouvrir le tutoriel', cancelLabel: 'Plus tard', input: false });
+    if (ok !== null) await openTutorial();
+    else if (lib.projects && !lib.projects.includes(res.project)) await reloadLibrary(lib.project);
+  }
 
   const handlers = {
     openDoc: (fileName) => openDoc(fileName),
@@ -1171,6 +1198,7 @@
       api.saveSettings(settings);
     },
     update: () => window.FTUpdate.open(),
+    tutorial: () => openTutorial(),
     close: closeWelcome
   });
   $('empty-home').addEventListener('click', showWelcome);
@@ -1487,6 +1515,7 @@
       case 'update': return window.FTUpdate.open();
       case 'report': return window.FTSignaler.open();
       case 'presentation': return presenting ? stopPresentation() : startPresentation();
+      case 'tutorial': return openTutorial();
       case 'track': return window.FTTrack.toggle();
       case 'bookmarks': return window.FTBookmarks.toggle();
       case 'tags-on':
@@ -1687,6 +1716,8 @@
         await showWelcome();
       }
     }
+    // (Pas quand le logiciel est lancé par un document.)
+    if (!(Array.isArray(pending) && pending.length)) await offerTutorial();
     api.onOpenFiles((files) => { openImported(files); });
     // Document Tomatoes Text ou Word glissé sur la fenêtre : ouvert (une image glissée reste insérée dans
     // la page, layout.js).

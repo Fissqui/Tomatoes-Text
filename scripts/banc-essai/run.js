@@ -6,6 +6,8 @@
 const path = require('path');
 const fs = require('fs');
 const Module = require('module');
+// Pas de tutoriel proposé au premier lancement (essai-tutoriel.js le rétablit).
+process.env.FT_SANS_TUTORIEL = '1';
 const SRC = process.env.FT_SRC || path.join(__dirname, '..', '..', 'src');
 const resolve = Module._resolveFilename;
 Module._resolveFilename = function (request, ...rest) {

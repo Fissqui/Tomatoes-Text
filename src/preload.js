@@ -13,6 +13,8 @@ contextBridge.exposeInMainWorld('frameText', {
   chooseStorage: () => ipcRenderer.invoke('storage:choose'),
   presentationStart: () => ipcRenderer.invoke('presentation:start'),
   presentationStop: () => ipcRenderer.invoke('presentation:stop'),
+  tutorialFirst: () => ipcRenderer.invoke('tutorial:first'),
+  tutorialOpen: () => ipcRenderer.invoke('tutorial:open'),
   createDoc: (title) => ipcRenderer.invoke('doc:create', title),
   readDoc: (fileName) => ipcRenderer.invoke('doc:read', fileName),
   saveDoc: (fileName, doc) => ipcRenderer.invoke('doc:save', fileName, doc),
