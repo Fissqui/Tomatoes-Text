@@ -56,6 +56,13 @@
     return url;
   }
 
+  // Autre version affichée d'une image (schéma avec ses polices, diagram.js) : le document garde saved.
+  function displayUrl(dataUrl, saved) {
+    const url = blobUrlFor(dataUrl);
+    images.set(url, saved);
+    return url;
+  }
+
   // Images d'un document ouvert ou collé : adresses blob:, et enveloppe .ft-image pour les images seules.
   function adopt(root) {
     root.querySelectorAll('img').forEach((img) => {
@@ -1890,10 +1897,11 @@
   const layoutBtn = document.getElementById('layout-btn');
   const layoutPop = document.getElementById('layout-pop');
 
-  function popButton(text, on, action, title) {
+  function popButton(text, on, action, title, off) {
     const b = document.createElement('button');
     b.type = 'button';
     b.textContent = text;
+    b.disabled = !!off;
     if (on) b.classList.add('on');
     if (title) b.title = title;
     b.addEventListener('mousedown', (e) => e.preventDefault());
@@ -1921,16 +1929,15 @@
     const paged = window.FTPages && window.FTPages.isPaged();
     layoutPop.replaceChildren(
       el('div', { className: 'pop-title', textContent: 'Tout le document' }),
+      // (En mode avancé : grisé, avec la raison.)
+      el('div', { className: 'seg' }, [
+        popButton('Texte normal', n === 1, () => setDocColumns(1), paged ? 'Disponible en mode note' : 'Une seule colonne, sur toute la largeur', paged),
+        popButton('2 colonnes', n === 2, () => setDocColumns(2), paged ? 'Disponible en mode note' : '', paged),
+        popButton('3 colonnes', n === 3, () => setDocColumns(3), paged ? 'Disponible en mode note' : '', paged)
+      ]),
       ...(paged
-        ? [el('p', { className: 'pop-help', textContent: 'En mode avancé, le texte est découpé en pages : mettez plutôt une partie du document en colonnes (ci-dessous).' })]
-        : [
-            el('div', { className: 'seg' }, [
-              popButton('Texte normal', n === 1, () => setDocColumns(1), 'Une seule colonne, sur toute la largeur'),
-              popButton('2 colonnes', n === 2, () => setDocColumns(2)),
-              popButton('3 colonnes', n === 3, () => setDocColumns(3))
-            ]),
-            ...(n > 1 ? [ruleCheck(docColumns.rule, (on) => setDocColumns(docColumns.count, on))] : [])
-          ]),
+        ? [el('p', { className: 'pop-help pop-off', textContent: 'Disponible en mode note. En mode avancé, mettez une partie du document en colonnes (ci-dessous).' })]
+        : (n > 1 ? [ruleCheck(docColumns.rule, (on) => setDocColumns(docColumns.count, on))] : [])),
       el('div', { className: 'pop-title', textContent: 'Seulement une partie du document' }),
       zone
         ? el('p', { className: 'pop-note', textContent: 'Le curseur est dans une zone en colonnes :' })
@@ -2059,6 +2066,7 @@
     closeImagePop,
     // Pour les schémas (diagram.js) : adresse affichable d'une image data:, et enveloppe .ft-image.
     imageUrl: blobUrlFor,
+    displayUrl,
     makeImage
   };
 })();

@@ -109,4 +109,28 @@ function forWord(names) {
   return out;
 }
 
-module.exports = { woff2ToTtf, forWord, list };
+// Polices des schémas (diagram.js) : un dessin SVG affiché comme image ne voit pas les polices du
+// logiciel ; elles y sont posées en WOFF2 (base 64). wanted : [{ name, bold, italic }].
+function forSvg(wanted) {
+  const all = list();
+  const out = [];
+  const seen = new Set();
+  for (const w of wanted || []) {
+    const f = w && all[w.name];
+    if (!f) continue;
+    const style = w.italic && (f.styles.italic || []).length ? 'italic' : 'normal';
+    const ws = f.styles[style] || [];
+    if (!ws.length) continue;
+    const target = w.bold ? 700 : 400;
+    const best = ws.reduce((a, b) => (Math.abs(b - target) < Math.abs(a - target) ? b : a));
+    const key = `${f.slug}-${best}-${style}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    try {
+      out.push({ name: w.name, weight: w.bold ? 700 : 400, style, data: fs.readFileSync(path.join(DIR, key + '.woff2')).toString('base64') });
+    } catch { /* absente : police du système */ }
+  }
+  return out;
+}
+
+module.exports = { woff2ToTtf, forWord, forSvg, list };

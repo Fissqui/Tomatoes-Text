@@ -863,6 +863,11 @@
   const TYPES = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/gif': 'gif', 'image/bmp': 'bmp' };
 
   async function loadImage(img) {
+    // (Schéma : redessiné avec les polices du logiciel qu'il emploie, diagram.js.)
+    if (window.FTDiagram) {
+      await window.FTDiagram.fontify(img);
+      try { await img.decode(); } catch { /* image déjà prête ou illisible */ }
+    }
     // Les images affichées viennent de la mémoire (blob:) ; layout.js garde leurs données d'origine.
     const src = window.FTLayout.serialize(img.currentSrc || img.src);
     const m = /^data:([^;,]+);base64,(.*)$/s.exec(src);

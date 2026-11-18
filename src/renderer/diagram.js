@@ -100,7 +100,11 @@
   const ARROWS = [['', 'Aucune'], ['fleche', 'Flèche'], ['pleine', 'Flèche pleine'], ['rond', 'Rond'], ['losange', 'Losange'], ['barre', 'Barre']];
   const ROUTES = [['droit', 'Droit'], ['coude', 'Coudé'], ['courbe', 'Courbe']];
   const DASHES = [['', 'Plein'], ['tirets', 'Tirets'], ['points', 'Pointillés'], ['mixte', 'Tiret-point']];
-  const FONTS = ['Segoe UI', 'Arial', 'Calibri', 'Verdana', 'Georgia', 'Times New Roman', 'Garamond', 'Trebuchet MS', 'Comic Sans MS', 'Consolas'];
+  // Polices du système, puis celles livrées avec le logiciel (posées dans le dessin, voir withFonts).
+  const SYSTEM_FONTS = ['Segoe UI', 'Arial', 'Calibri', 'Verdana', 'Georgia', 'Times New Roman', 'Garamond', 'Trebuchet MS', 'Comic Sans MS', 'Consolas'];
+  const BUILTIN_FONTS = ['Archivo', 'Atkinson Hyperlegible', 'Caveat', 'Crimson Pro', 'EB Garamond', 'Inter', 'JetBrains Mono', 'Libre Baskerville',
+    'Literata', 'Lora', 'Merriweather', 'Montserrat', 'Nunito', 'Open Sans', 'Playfair Display', 'Roboto', 'Source Serif 4'];
+  const FONTS = [...SYSTEM_FONTS, ...BUILTIN_FONTS];
   const PALETTE = ['#ffffff', '#f2f2f2', '#d9d9d9', '#7f7f7f', '#262626', '#fde2e1', '#f8b4ae', '#e74c3c', '#fdebd0', '#f5c28b', '#e67e22',
     '#fcf3cf', '#f7dc6f', '#d4ac0d', '#d5f5e3', '#82e0aa', '#27ae60', '#d6eaf8', '#85c1e9', '#2e86c1', '#e8daef', '#bb8fce', '#8e44ad', '#1f3a93'];
   // Styles rapides : remplissage, contour, texte.
@@ -558,8 +562,17 @@
   // ----- Texte des formes : coupé en lignes pour tenir dans la forme -----
 
   const measure = document.createElement('canvas').getContext('2d');
+  // Police du logiciel pas encore chargée dans la fenêtre : mesures fausses ; elle est chargée, puis le
+  // schéma redessiné.
+  const pendingFonts = new Set();
+  function ensureFont(spec) {
+    if (document.fonts.check(spec) || pendingFonts.has(spec)) return;
+    pendingFonts.add(spec);
+    document.fonts.load(spec).then(() => { if (data && dialog.open) render(); }).catch(() => {});
+  }
   function wrapText(text, n, box) {
     measure.font = `${n.italic ? 'italic ' : ''}${n.bold ? '700 ' : ''}${n.fontSize}px "${n.font}", sans-serif`;
+    if (BUILTIN_FONTS.includes(n.font)) ensureFont(measure.font);
     const lines = [];
     for (const para of String(text || '').split('\n')) {
       let line = '';
@@ -688,6 +701,72 @@
     return `<svg xmlns="${NS}" width="${Math.ceil(b.w)}" height="${Math.ceil(b.h)}" viewBox="${b.x} ${b.y} ${b.w} ${b.h}">${bg}${contentSvg(d)}</svg>`;
   }
   const svgDataUrl = (svg) => 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svg)));
+
+  // ----- Polices dans le dessin -----
+  // Un SVG affiché comme image ne voit pas les polices du logiciel : sans elles, le texte prendrait une
+  // police du système, à l'écran comme dans les exports. Les polices du logiciel qu'il emploie y sont
+  // posées (@font-face, en base 64) pour l'afficher et l'exporter ; le document garde le dessin sans elles.
+  const faceCache = new Map();   // nom|gras|italique -> Promise<règle @font-face ou ''>
+  const fontedCache = new Map(); // data: d'origine -> Promise<data: avec polices, ou null>
+  function svgOf(dataUrl) {
+    const m = /^data:image\/svg\+xml(;base64)?,([\s\S]*)$/.exec(dataUrl || '');
+    if (!m) return null;
+    try { return m[1] ? decodeURIComponent(escape(atob(m[2]))) : decodeURIComponent(m[2]); } catch { return null; }
+  }
+  function wantedFonts(svg) {
+    const out = new Map();
+    for (const [tag] of svg.matchAll(/<text\b[^>]*>/g)) {
+      const fam = /font-family="([^"]*)"/.exec(tag);
+      const name = fam ? fam[1].split(',')[0].replace(/&quot;|["']/g, '').trim() : '';
+      if (!BUILTIN_FONTS.includes(name)) continue;
+      const w = { name, bold: /font-weight="(700|bold)"/.test(tag), italic: /font-style="italic"/.test(tag) };
+      out.set(`${w.name}|${w.bold}|${w.italic}`, w);
+    }
+    return out;
+  }
+  function face(key, w) {
+    if (!faceCache.has(key)) {
+      const ask = window.frameText && window.frameText.fontsForSvg ? window.frameText.fontsForSvg([w]) : Promise.resolve([]);
+      faceCache.set(key, ask.then((list) => (list || []).map((f) =>
+        `@font-face{font-family:'${f.name}';font-weight:${f.weight};font-style:${f.style};src:url(data:font/woff2;base64,${f.data}) format('woff2')}`).join('')).catch(() => ''));
+    }
+    return faceCache.get(key);
+  }
+  function withFonts(dataUrl) {
+    if (!fontedCache.has(dataUrl)) {
+      fontedCache.set(dataUrl, (async () => {
+        const svg = svgOf(dataUrl);
+        if (!svg || svg.includes('@font-face')) return null;
+        const wanted = wantedFonts(svg);
+        if (!wanted.size) return null;
+        const css = (await Promise.all([...wanted].map(([k, w]) => face(k, w)))).join('');
+        if (!css) return null;
+        return svgDataUrl(svg.replace(/<svg\b[^>]*>/, (open) => `${open}<style>${css}</style>`));
+      })());
+    }
+    return fontedCache.get(dataUrl);
+  }
+  // Image d'un schéma affichée dans le document : la même, avec ses polices (l'adresse d'origine reste
+  // celle que le document enregistre).
+  async function fontify(img) {
+    const L = window.FTLayout;
+    const src = img && img.getAttribute('src');
+    if (!src || !L || img.dataset.ftFonts === src) return;
+    const data = src.startsWith('data:') ? src : L.serialize(src);
+    if (!data.startsWith('data:image/svg+xml')) return;
+    const fonted = await withFonts(data);
+    if (!fonted || img.getAttribute('src') !== src) return;
+    const shown = L.displayUrl(fonted, data);
+    img.dataset.ftFonts = shown;
+    img.setAttribute('src', shown);
+  }
+  // Exports (PDF, livre, EPUB) : les images de schémas d'une copie du document, avec leurs polices.
+  async function fontifyAll(box) {
+    await Promise.all([...box.querySelectorAll('img[src^="data:image/svg+xml"]')].map(async (img) => {
+      const fonted = await withFonts(img.getAttribute('src'));
+      if (fonted) img.setAttribute('src', fonted);
+    }));
+  }
 
   // ----- Fenêtre de dessin -----
 
@@ -2082,6 +2161,9 @@
     exportSvg,
     presets: () => STYLE_PRESETS.map(([id, name, v]) => ({ id, name, value: cleanStyle({ ...STYLE, ...v }) })),
     fonts: () => FONTS.slice(),
+    withFonts,
+    fontify,
+    fontifyAll,
     cleanStyle,
     styleOf,
     restyle,

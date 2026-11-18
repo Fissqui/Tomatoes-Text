@@ -130,6 +130,7 @@ ${body}
   async function build() {
     const P = window.FTPdf;
     const { box } = P.content();
+    if (window.FTDiagram) await window.FTDiagram.fontifyAll(box);
     // Dans un document à part, sans fenêtre : les images n'y sont pas chargées quand leur adresse change.
     const doc = document.implementation.createHTMLDocument('');
     doc.adoptNode(box);

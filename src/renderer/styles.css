@@ -1348,7 +1348,11 @@ dialog.ft-dragging * { cursor: grabbing !important; }
 #pg-num-fields { display: flex; flex-direction: column; gap: 10px; }
 #pg-num-fields.off { opacity: 0.45; pointer-events: none; }
 .pg-preview { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border: 1px dashed var(--border); border-radius: calc(8px * var(--round)); background: var(--page); }
-#pages-dialog.note-mode .pg-adv-only, #pages-dialog:not(.note-mode) .pg-note-only { display: none !important; }
+#pages-dialog:not(.note-mode) .pg-note-only { display: none !important; }
+/* Réglages propres au mode avancé : visibles mais grisés et inactifs en mode note. */
+#pages-dialog.note-mode .pg-adv-only { opacity: 0.45; }
+#pages-dialog.note-mode .styles-tabs .pg-adv-only { cursor: default; }
+.pop-help.pop-off { margin-top: 2px; }
 #pages-dialog .pg-note-only { margin-bottom: 10px; }
 .pg-skip-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 3px 0; }
 .pg-skip-row button { border-color: var(--border); }

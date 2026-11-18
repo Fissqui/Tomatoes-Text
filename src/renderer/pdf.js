@@ -123,6 +123,7 @@
     const [w, h] = custom ? info.size('portrait') : [210, 297];
     const m = custom ? c.margins : { top: 25, bottom: 25, left: 25, right: 25 };
     const { box, cls } = content();
+    if (window.FTDiagram) await window.FTDiagram.fontifyAll(box);
     const typo = opts.typo !== false;
     if (typo) await markLanguages(box);
     // Mode avancé : chaque note de bas de page au pied de sa page (notes-pied.js).

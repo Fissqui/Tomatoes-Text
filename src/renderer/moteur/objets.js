@@ -984,9 +984,12 @@
         }
       };
     })();
+    // (Schéma : affiché avec les polices du logiciel qu'il emploie, diagram.js.)
+    const fonts = () => { const img = base.dom.querySelector && base.dom.querySelector('img'); if (img && window.FTDiagram) window.FTDiagram.fontify(img); };
+    fonts();
     return {
       dom: base.dom,
-      update: (nw) => base.update(nw),
+      update: (nw) => { const ok = base.update(nw); if (ok) fonts(); return ok; },
       stopEvent: (e) => inCaption(e.target),
       ignoreMutation: (m) => m.type !== 'selection' || inCaption(m.target)
     };

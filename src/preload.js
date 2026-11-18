@@ -21,6 +21,7 @@ contextBridge.exposeInMainWorld('frameText', {
   exportDoc: (doc) => ipcRenderer.invoke('doc:export', doc),
   exportWord: (title, data) => ipcRenderer.invoke('doc:exportWord', title, data),
   fontsForWord: (names) => ipcRenderer.invoke('doc:fontsForWord', names),
+  fontsForSvg: (wanted) => ipcRenderer.invoke('doc:fontsForSvg', wanted),
   exportPdf: (title, job) => ipcRenderer.invoke('doc:exportPdf', title, job),
   exportBook: (title, job) => ipcRenderer.invoke('doc:exportBook', title, job),
   exportEpub: (title, files) => ipcRenderer.invoke('doc:exportEpub', title, files),

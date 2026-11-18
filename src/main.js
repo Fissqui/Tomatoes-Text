@@ -606,6 +606,7 @@ ipcMain.handle('doc:exportWord', async (_e, title, data) => {
 
 // Polices intégrées au logiciel que le document Word emploie (polices.js), jointes au fichier.
 ipcMain.handle('doc:fontsForWord', (_e, names) => require('./polices').forWord(Array.isArray(names) ? names.slice(0, 40) : []));
+ipcMain.handle('doc:fontsForSvg', (_e, wanted) => require('./polices').forSvg(Array.isArray(wanted) ? wanted.slice(0, 40) : []));
 
 // Thèmes de document (theme.js) : un fichier .tttheme (JSON) pour les partager.
 ipcMain.handle('theme:export', async (_e, name, theme) => {

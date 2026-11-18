@@ -1790,7 +1790,7 @@
         { text: 'Plan du document', action: at(() => window.FTToc.insert()) },
         { text: 'Table des illustrations', action: at(() => window.FTCaptions.insert('tout')) },
         { text: 'Index', action: at(() => window.FTIndex.insert()) },
-        ...(window.FTPages.isPaged() ? [{ text: 'Page de titre…', action: () => window.FTCover.open() }] : [])
+        { text: 'Page de titre…', disabled: !window.FTPages.isPaged(), action: () => window.FTCover.open() }
       ]
     }];
   }

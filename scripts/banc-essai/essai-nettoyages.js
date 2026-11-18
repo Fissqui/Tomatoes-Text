@@ -64,7 +64,7 @@ module.exports = async ({ page }) => {
   await page.waitForTimeout(400);
   ok('plan : double-clic le sélectionne, Suppr le retire');
 
-  // 2. Page de titre : bouton grisé et absent du menu en mode note ; disponible en mode avancé.
+  // 2. Page de titre : bouton et entrée du menu grisés en mode note ; disponibles en mode avancé.
   st = await page.evaluate(() => ({ disabled: document.getElementById('cover-btn').disabled, title: document.getElementById('cover-btn').title }));
   assert(st.disabled && /mode avancé/.test(st.title), JSON.stringify(st));
   r = await page.evaluate(() => { const e = document.getElementById('end'); e.scrollIntoView({ block: 'center' }); const b = e.getBoundingClientRect(); return { x: b.left + 10, y: b.top + 5 }; });
@@ -72,8 +72,8 @@ module.exports = async ({ page }) => {
   await page.waitForTimeout(100);
   await page.evaluate(() => [...document.querySelectorAll('#context-menu button')].find((b) => b.textContent.startsWith('Insérer')).click());
   await page.waitForTimeout(100);
-  st = await page.evaluate(() => [...document.querySelectorAll('.context-menu button')].map((b) => b.textContent));
-  assert(!st.some((t) => /Page de titre/.test(t)) && st.some((t) => /Plan du document/.test(t)), st.join(' | '));
+  st = await page.evaluate(() => [...document.querySelectorAll('.context-menu button')].map((b) => b.textContent + (b.disabled ? ' (grisé)' : '')));
+  assert(st.includes('Page de titre… (grisé)') && st.some((t) => /Plan du document/.test(t)), st.join(' | '));
   await page.keyboard.press('Escape');
   await page.keyboard.press('Escape');
   await page.click('#mode-switch button[data-mode="avance"]');

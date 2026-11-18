@@ -1398,6 +1398,22 @@
 
   // ----- Mode note / mode avancé -----
 
+  // Outils propres au mode avancé : grisés et inactifs en mode note (bouton « Numéros de page », onglets et
+  // réglages de la fenêtre « Réglages des pages » qui ne valent que pour des pages).
+  const numTitle = $('pagenum-btn').title;
+  function syncAdvanced() {
+    const adv = mode === 'avance';
+    const btn = $('pagenum-btn');
+    btn.disabled = !adv;
+    btn.title = adv ? numTitle : 'Numéros de page : disponible en mode avancé';
+    for (const el of dialog.querySelectorAll('.pg-adv-only')) {
+      el.inert = !adv;
+      if (el.matches('button')) el.disabled = !adv;
+      if (el.dataset.title === undefined) el.dataset.title = el.title;
+      el.title = adv ? el.dataset.title : 'Disponible en mode avancé';
+    }
+  }
+
   function setMode(m, byUser) {
     const next = m === 'avance' ? 'avance' : 'note';
     if (editing) endEdit();
@@ -1408,6 +1424,7 @@
     for (const b of modeButtons) b.setAttribute('aria-pressed', String(b.dataset.mode === mode));
     window.FTSwitch.place($('mode-switch'), byUser);
     dialog.classList.toggle('note-mode', mode === 'note');
+    syncAdvanced();
     if (mode === 'avance') {
       page.style.maxWidth = '';
       page.style.paddingBottom = '';
@@ -1444,10 +1461,10 @@
   }
   setupBtn.addEventListener('click', openDialog);
   // Numéros de page : l'onglet « Numéros de page » de la même fenêtre, directement. Les numéros n'existent
-  // qu'en mode avancé (texte découpé en pages) : le document y passe.
+  // qu'en mode avancé (texte découpé en pages) : en mode note, le bouton est grisé.
   const numBtn = $('pagenum-btn');
   numBtn.addEventListener('click', () => {
-    if (mode !== 'avance') setMode('avance', true);
+    if (mode !== 'avance') return;
     dialogTab = 'numeros';
     if (editing) endEdit();
     fillDialog();

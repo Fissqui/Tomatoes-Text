@@ -128,6 +128,7 @@
     const [inner, outer, top, bottom] = o.margins;
     const P = window.FTPdf;
     const { box, cls } = P.content({ keepPages: true });
+    if (window.FTDiagram) await window.FTDiagram.fontifyAll(box);
     if (o.cesure) await P.markLanguages(box);
     indexAnchors(box);
     // Chapitres : chaque titre 1 (et le titre du document) ouvre une page ; les notes de fin aussi. Les
