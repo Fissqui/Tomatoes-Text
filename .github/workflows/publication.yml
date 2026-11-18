@@ -63,7 +63,7 @@ jobs:
           range=${prev:+$prev..}HEAD
           git log --format=%s "$range" \
             | grep -E '^(Version )?[0-9]+\.[0-9]+(\.[0-9]+)? ?:' \
-            | sed -E 's/^(Version )?[0-9.]+ ?: ?/- /' > notes.md || true
+            | sed -E 's/^(Version )?[0-9.]+ ?: ?(.)/- \U\2/' > notes.md || true
           if [ ! -s notes.md ]; then echo "- Voir l'historique des versions (CHANGELOG.md)." > notes.md; fi
           cat notes.md
 
