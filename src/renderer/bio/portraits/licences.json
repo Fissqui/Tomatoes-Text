@@ -7,11 +7,12 @@
   "page": "https://commons.wikimedia.org/wiki/File:Colbert1666.jpg"
  },
  "Q278699": {
-  "fichier": "Sir William Petty. Mezzotint by J. Smith, 1696, after J. Clo Wellcome V0004638.jpg",
-  "licence": "CC BY 4.0",
-  "auteur": "John Closterman",
-  "attribution": true,
-  "page": "https://commons.wikimedia.org/wiki/File:Sir_William_Petty._Mezzotint_by_J._Smith,_1696,_after_J._Clo_Wellcome_V0004638.jpg"
+  "fichier": "Sir William Petty by Isaac Fuller.jpg",
+  "licence": "Public domain",
+  "auteur": "Isaac Fuller",
+  "attribution": false,
+  "page": "https://commons.wikimedia.org/wiki/File:Sir_William_Petty_by_Isaac_Fuller.jpg",
+  "recadre": true
  },
  "Q676456": {
   "fichier": "Pierre Le Pesant de Boisguilbert by Santerre.jpg",
@@ -49,11 +50,12 @@
   "page": "https://commons.wikimedia.org/wiki/File:AdamSmith.jpg"
  },
  "Q13526": {
-  "fichier": "Thomas Robert Malthus Wellcome L0069037 -crop.jpg",
-  "licence": "CC BY 4.0",
+  "fichier": "Thomas Robert Malthus.jpg",
+  "licence": "Public domain",
   "auteur": "John Linnell",
-  "attribution": true,
-  "page": "https://commons.wikimedia.org/wiki/File:Thomas_Robert_Malthus_Wellcome_L0069037_-crop.jpg"
+  "attribution": false,
+  "page": "https://commons.wikimedia.org/wiki/File:Thomas_Robert_Malthus.jpg",
+  "recadre": true
  },
  "Q160270": {
   "fichier": "Portrait of David Ricardo by Thomas Phillips.jpg",
@@ -126,11 +128,12 @@
   "page": "https://commons.wikimedia.org/wiki/File:Claude_Henri_de_Rouvroy.jpg"
  },
  "Q181707": {
-  "fichier": "Françoise Foliot - Jean Gigoux - Portrait de Charles Fourrier (cropped) (1).jpg",
-  "licence": "CC BY-SA 4.0",
-  "auteur": "Jean Gigoux",
-  "attribution": true,
-  "page": "https://commons.wikimedia.org/wiki/File:Fran%C3%A7oise_Foliot_-_Jean_Gigoux_-_Portrait_de_Charles_Fourrier_(cropped)_(1).jpg"
+  "fichier": "Fourier par Baugniet.jpg",
+  "licence": "Public domain",
+  "auteur": "Charles Baugniet",
+  "attribution": false,
+  "page": "https://commons.wikimedia.org/wiki/File:Fourier_par_Baugniet.jpg",
+  "recadre": true
  },
  "Q179374": {
   "fichier": "Robert Owen by William Henry Brooke.jpg",
@@ -293,14 +296,6 @@
   "attribution": false,
   "page": "https://commons.wikimedia.org/wiki/File:Pol%C3%A1nyi_K%C3%A1roly.jpg"
  },
- "Q975777": {
-  "fichier": "Ernest Labrousse 1986.jpg",
-  "licence": "CC BY-SA 4.0",
-  "auteur": "Aliesco",
-  "attribution": true,
-  "page": "https://commons.wikimedia.org/wiki/File:Ernest_Labrousse_1986.jpg",
-  "recadre": true
- },
  "Q185105": {
   "fichier": "Photo of Fernand Braudel on The Identity of France dustjacket.jpg",
   "licence": "Public domain",
@@ -309,11 +304,12 @@
   "page": "https://commons.wikimedia.org/wiki/File:Photo_of_Fernand_Braudel_on_The_Identity_of_France_dustjacket.jpg"
  },
  "Q243193": {
-  "fichier": "Douglass North.jpg",
-  "licence": "CC BY 2.0",
-  "auteur": "UNU-WIDER",
-  "attribution": true,
-  "page": "https://commons.wikimedia.org/wiki/File:Douglass_North.jpg"
+  "fichier": "Douglass North 1979.jpg",
+  "licence": "Public domain",
+  "auteur": "",
+  "attribution": false,
+  "page": "https://commons.wikimedia.org/wiki/File:Douglass_North_1979.jpg",
+  "recadre": true
  },
  "Q9317": {
   "fichier": "Keynes 1933.jpg",
@@ -330,18 +326,20 @@
   "page": "https://commons.wikimedia.org/wiki/File:Joseph_Schumpeter_ekonomialaria.jpg"
  },
  "Q84233": {
-  "fichier": "Ludwig von Mises.jpg",
-  "licence": "CC BY-SA 3.0",
-  "auteur": "Ludwig von Mises Institute",
-  "attribution": true,
-  "page": "https://commons.wikimedia.org/wiki/File:Ludwig_von_Mises.jpg"
+  "fichier": "Mises02UpscaleColorized.png",
+  "licence": "CC0",
+  "auteur": "",
+  "attribution": false,
+  "page": "https://commons.wikimedia.org/wiki/File:Mises02UpscaleColorized.png",
+  "recadre": true
  },
  "Q1325": {
-  "fichier": "Friedrich Hayek portrait.jpg",
-  "licence": "CC BY-SA 3.0",
-  "auteur": "DickClarkMises",
-  "attribution": true,
-  "page": "https://commons.wikimedia.org/wiki/File:Friedrich_Hayek_portrait.jpg"
+  "fichier": "Friedrich August Hayek 03 Upscaled Colorized.png",
+  "licence": "CC0",
+  "auteur": "",
+  "attribution": false,
+  "page": "https://commons.wikimedia.org/wiki/File:Friedrich_August_Hayek_03_Upscaled_Colorized.png",
+  "recadre": true
  },
  "Q370468": {
   "fichier": "Piero Sraffa (cropped).jpg",
@@ -351,11 +349,12 @@
   "page": "https://commons.wikimedia.org/wiki/File:Piero_Sraffa_(cropped).jpg"
  },
  "Q436745": {
-  "fichier": "Michal Kalecki.jpg",
-  "licence": "CC BY 2.5 es",
+  "fichier": "Kalecki.tif",
+  "licence": "Public domain",
   "auteur": "Manuel García Jódar",
-  "attribution": true,
-  "page": "https://commons.wikimedia.org/wiki/File:Michal_Kalecki.jpg"
+  "attribution": false,
+  "page": "https://commons.wikimedia.org/wiki/File:Kalecki.tif",
+  "recadre": true
  },
  "Q234793": {
   "fichier": "Joan Robinson (1973).jpg",
@@ -392,14 +391,6 @@
   "attribution": false,
   "page": "https://commons.wikimedia.org/wiki/File:Raul_Prebisch_(cropped).tif"
  },
- "Q2415107": {
-  "fichier": "François Perroux à l'ISMÉA.jpg",
-  "licence": "CC BY-SA 4.0",
-  "auteur": "Ismea",
-  "attribution": true,
-  "page": "https://commons.wikimedia.org/wiki/File:Fran%C3%A7ois_Perroux_%C3%A0_l%27ISM%C3%89A.jpg",
-  "recadre": true
- },
  "Q1398687": {
   "fichier": "Jacques Rueff 1938.png",
   "licence": "Public domain",
@@ -414,20 +405,13 @@
   "attribution": false,
   "page": "https://commons.wikimedia.org/wiki/File:John_Kenneth_Galbraith_from_the_back_cover_of_%22The_Affluent_Society%22.jpeg"
  },
- "Q704076": {
-  "fichier": "HymanMinsky-1.jpg",
-  "licence": "CC BY-SA 4.0",
-  "auteur": "Pontificador",
-  "attribution": true,
-  "page": "https://commons.wikimedia.org/wiki/File:HymanMinsky-1.jpg",
-  "recadre": true
- },
  "Q102454": {
-  "fichier": "Paul Samuelson.gif",
-  "licence": "CC BY 1.0",
-  "auteur": "Innovation & Business Architectures, Inc.",
-  "attribution": true,
-  "page": "https://commons.wikimedia.org/wiki/File:Paul_Samuelson.gif"
+  "fichier": "Paul A. Samuelson close-up (cropped).jpg",
+  "licence": "Public domain",
+  "auteur": "Bernard Gotfryd",
+  "attribution": false,
+  "page": "https://commons.wikimedia.org/wiki/File:Paul_A._Samuelson_close-up_(cropped).jpg",
+  "recadre": true
  },
  "Q47426": {
   "fichier": "Portrait Of Milton Friedman (cropped).jpg",
@@ -436,33 +420,12 @@
   "attribution": false,
   "page": "https://commons.wikimedia.org/wiki/File:Portrait_Of_Milton_Friedman_(cropped).jpg"
  },
- "Q192592": {
-  "fichier": "Kenneth Arrow, Stanford University.jpg",
-  "licence": "CC BY 3.0",
-  "auteur": "Linda A. Cicero, Stanford News Service",
-  "attribution": true,
-  "page": "https://commons.wikimedia.org/wiki/File:Kenneth_Arrow,_Stanford_University.jpg"
- },
- "Q210960": {
-  "fichier": "Debreu, Gérard (1921-2004).jpeg",
-  "licence": "CC BY-SA 2.0 de",
-  "auteur": "Konrad Jacobs",
-  "attribution": true,
-  "page": "https://commons.wikimedia.org/wiki/File:Debreu,_G%C3%A9rard_(1921-2004).jpeg"
- },
- "Q105962": {
-  "fichier": "ALLAIS PN Maurice-24x30-2001b.jpg",
-  "licence": "CC BY 3.0",
-  "auteur": "Studio Harcourt, Materialscientist",
-  "attribution": true,
-  "page": "https://commons.wikimedia.org/wiki/File:ALLAIS_PN_Maurice-24x30-2001b.jpg"
- },
  "Q157268": {
-  "fichier": "Robert Solow by Olaf Storbeck.jpg",
-  "licence": "CC BY-SA 2.0",
-  "auteur": "Olaf Storbeck",
-  "attribution": true,
-  "page": "https://commons.wikimedia.org/wiki/File:Robert_Solow_by_Olaf_Storbeck.jpg",
+  "fichier": "Solow natmedal.jpg",
+  "licence": "Public domain",
+  "auteur": "National Medal of Science",
+  "attribution": false,
+  "page": "https://commons.wikimedia.org/wiki/File:Solow_natmedal.jpg",
   "recadre": true
  },
  "Q181529": {
@@ -471,13 +434,6 @@
   "auteur": "",
   "attribution": false,
   "page": "https://commons.wikimedia.org/wiki/File:Herbert_Simon,_RIT_NandE_Vol13Num11_1981_Mar19_Complete.jpg"
- },
- "Q188113": {
-  "fichier": "Coase profile 2003.jpg",
-  "licence": "Attribution",
-  "auteur": "University of Chicago Law School",
-  "attribution": true,
-  "page": "https://commons.wikimedia.org/wiki/File:Coase_profile_2003.jpg"
  },
  "Q215949": {
   "fichier": "Albert O. Hirschman, 1945 (cropped).jpg",
@@ -493,75 +449,36 @@
   "attribution": false,
   "page": "https://commons.wikimedia.org/wiki/File:GaryBecker-May24-2008.jpg"
  },
- "Q205353": {
-  "fichier": "James Buchanan by Atlas network.jpg",
-  "licence": "CC BY-SA 3.0",
-  "auteur": "Atlas Network",
-  "attribution": true,
-  "page": "https://commons.wikimedia.org/wiki/File:James_Buchanan_by_Atlas_network.jpg"
- },
- "Q153761": {
-  "fichier": "Nobel Prize 2009-Press Conference KVA-30.jpg",
-  "licence": "CC BY-SA 3.0",
-  "auteur": "Holger Motzkau",
-  "attribution": true,
-  "page": "https://commons.wikimedia.org/wiki/File:Nobel_Prize_2009-Press_Conference_KVA-30.jpg"
- },
  "Q132489": {
-  "fichier": "Amartya Sen 2012.jpg",
-  "licence": "CC BY-SA 2.0",
-  "auteur": "Fronteiras do Pensamento",
-  "attribution": true,
-  "page": "https://commons.wikimedia.org/wiki/File:Amartya_Sen_2012.jpg"
- },
- "Q233950": {
-  "fichier": "Daniel Kahneman (3283955327) (cropped).jpg",
-  "licence": "CC BY-SA 2.0",
-  "auteur": "nrkbeta",
-  "attribution": true,
-  "page": "https://commons.wikimedia.org/wiki/File:Daniel_Kahneman_(3283955327)_(cropped).jpg"
+  "fichier": "Amartya Sen NIH.jpg",
+  "licence": "Public domain",
+  "auteur": "NIH",
+  "attribution": false,
+  "page": "https://commons.wikimedia.org/wiki/File:Amartya_Sen_NIH.jpg",
+  "recadre": true
  },
  "Q18430": {
-  "fichier": "Joseph E. Stiglitz, 2019 (cropped).jpg",
-  "licence": "CC BY-SA 2.0",
-  "auteur": "Jérémy Barande",
-  "attribution": true,
-  "page": "https://commons.wikimedia.org/wiki/File:Joseph_E._Stiglitz,_2019_(cropped).jpg"
+  "fichier": "Joseph Stiglitz.jpg",
+  "licence": "Public domain",
+  "auteur": "",
+  "attribution": false,
+  "page": "https://commons.wikimedia.org/wiki/File:Joseph_Stiglitz.jpg",
+  "recadre": true
  },
  "Q131112": {
-  "fichier": "Paul Krugman-press conference Dec 07th, 2008-4.jpg",
-  "licence": "GFDL 1.2",
-  "auteur": "Prolineserver",
-  "attribution": true,
-  "page": "https://commons.wikimedia.org/wiki/File:Paul_Krugman-press_conference_Dec_07th,_2008-4.jpg"
+  "fichier": "P20230814AS-0367 (cropped).jpg",
+  "licence": "Public domain",
+  "auteur": "Maison-Blanche",
+  "attribution": false,
+  "page": "https://commons.wikimedia.org/wiki/File:P20230814AS-0367_(cropped).jpg",
+  "recadre": true
  },
  "Q173994": {
-  "fichier": "Jean Tirole 2019.jpg",
-  "licence": "CC BY-SA 2.0",
-  "auteur": "Jérémy Barande",
-  "attribution": true,
-  "page": "https://commons.wikimedia.org/wiki/File:Jean_Tirole_2019.jpg"
- },
- "Q434509": {
-  "fichier": "Esther Duflo - Pop!Tech 2009 - 001 (cropped).jpg",
-  "licence": "CC BY-SA 2.0",
-  "auteur": "Kris Krüg",
-  "attribution": true,
-  "page": "https://commons.wikimedia.org/wiki/File:Esther_Duflo_-_Pop!Tech_2009_-_001_(cropped).jpg"
- },
- "Q984448": {
-  "fichier": "Thomas Piketty2.jpg",
-  "licence": "CC BY-SA 4.0",
-  "auteur": "librairie mollat",
-  "attribution": true,
-  "page": "https://commons.wikimedia.org/wiki/File:Thomas_Piketty2.jpg"
- },
- "Q107264": {
-  "fichier": "La Revolución Industrial Pasado y Futuro, Robert E. Lucas Jr. screenshot (cropped).jpg",
-  "licence": "CC BY 3.0",
-  "auteur": "Centro de Estudios Públicos",
-  "attribution": true,
-  "page": "https://commons.wikimedia.org/wiki/File:La_Revoluci%C3%B3n_Industrial_Pasado_y_Futuro,_Robert_E._Lucas_Jr._screenshot_(cropped).jpg",
+  "fichier": "2022-11-19 Professor Jean Tirole awarded Doctor of Laws Dhaka University 53rd convocation (PID-0019986).jpg",
+  "licence": "Public domain",
+  "auteur": "Press Information Department, Bangladesh",
+  "attribution": false,
+  "page": "https://commons.wikimedia.org/wiki/File:2022-11-19_Professor_Jean_Tirole_awarded_Doctor_of_Laws_Dhaka_University_53rd_convocation_(PID-0019986).jpg",
   "recadre": true
  }
 }

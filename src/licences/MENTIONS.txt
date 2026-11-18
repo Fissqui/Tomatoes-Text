@@ -1,0 +1,105 @@
+Tomatoes Text : mentions légales et licences des composants tiers
+==================================================================
+
+Tomatoes Text © 2026 Fissqui. Tous droits réservés.
+
+Le logiciel inclut les composants ci-dessous, chacun distribué sous sa propre licence. Les textes
+complets des licences se trouvent dans ce dossier (src/licences/) ou à côté des fichiers du
+composant, à l'emplacement indiqué. Les composants sont livrés sans modification, sauf mention
+contraire.
+
+
+1. Programme
+------------
+
+Electron 38 (Chromium, Node.js)          MIT ; Chromium et ses composants : voir LICENSES.chromium.html
+                                         dans le dossier d'installation du logiciel.
+ProseMirror (éditeur de texte)           MIT          src/renderer/vendor/prosemirror/LICENSE-prosemirror
+pdf.js 5.4.296 (Mozilla)                 Apache 2.0   src/renderer/vendor/pdfjs/LICENSE
+  - cartes de caractères (Adobe)         BSD          src/renderer/vendor/pdfjs/cmaps/LICENSE
+  - OpenJPEG, QCMS                       BSD, MIT     src/renderer/vendor/pdfjs/wasm/
+MathLive 0.111.1 (formules)              MIT          src/renderer/vendor/mathlive/LICENSE.txt
+docx (export Word), adapté               MIT          src/renderer/vendor/docx/LICENSE
+  Modification : prise en charge de l'intégration des polices dans le document Word.
+hunspell-wasm (correcteur orthographique) LGPL 2.0 / GPL 2.0 / MPL 1.1, au choix
+                                         src/vendor/hunspell-wasm/COPYING, COPYING.LESSER, COPYING.MPL
+node-llama-cpp et llama.cpp (Aide au Texte)  MIT (modules npm : MIT, ISC, BlueOak 1.0)
+
+
+2. Polices
+----------
+
+Archivo, Atkinson Hyperlegible, Caveat, Crimson Pro, EB Garamond, Inter, JetBrains Mono,
+Libre Baskerville, Literata, Lora, Merriweather, Montserrat, Nunito, Open Sans, Playfair Display,
+Roboto, Source Serif 4                   SIL Open Font License 1.1   src/renderer/fonts/LICENCES.txt
+  Le dossier statiques/ contient des graisses fixes tirées de ces polices, sous la même licence.
+Polices KaTeX (formules, avec MathLive)  SIL Open Font License 1.1 / MIT
+Foxit (aperçu PDF, avec pdf.js)          BSD          src/renderer/vendor/pdfjs/standard_fonts/LICENSE_FOXIT
+Liberation Sans (aperçu PDF)             SIL Open Font License 1.1
+                                         src/renderer/vendor/pdfjs/standard_fonts/LICENSE_LIBERATION
+
+Aucune police de Windows ni de Microsoft Office n'est incluse. Les polices d'Office (Aptos, etc.)
+sont proposées seulement si Office les a installées sur l'ordinateur ; leur usage relève de la
+licence Microsoft Office de l'utilisateur.
+
+
+3. Dictionnaires, thésaurus et données linguistiques
+----------------------------------------------------
+
+Dictionnaires orthographiques (src/vendor/dictionary-*/license) :
+  français (Grammalecte)                 MPL 2.0                     MPL-2.0.txt
+  anglais américain et britannique (SCOWL)  MIT et BSD
+  allemand (igerman98)                   GPL 2.0 ou 3.0              GPL-2.txt, GPL-3.txt
+  espagnol (RLA-ES)                      GPL 3.0 / LGPL 3.0 / MPL 1.1, au choix
+  italien                                GPL 3.0                     GPL-3.txt
+  portugais du Brésil (VERO)             LGPL 3.0 / MPL 2.0, au choix
+  portugais du Portugal                  GPL 2.0 / LGPL 2.1 / MPL 1.1, au choix
+
+Thésaurus (src/vendor/thesaurus-*/LISEZMOI.txt), tirés des dictionnaires de LibreOffice :
+  français (Dicollecte)                  LGPL 2.1 ou ultérieure      LGPL-2.1.txt
+  allemand (OpenThesaurus)               LGPL 2.1 ou ultérieure      LGPL-2.1.txt
+  anglais (dérivé de WordNet)            GPL 2.0                     GPL-2.txt
+  espagnol                               LGPL 2.1                    LGPL-2.1.txt
+  italien                                LGPL                        LGPL-2.1.txt
+  portugais                              GPL 2.0 ou ultérieure       GPL-2.txt
+  Modification (sauf français) : contraires, termes généraux et annotations retirés, sens
+  fusionnés, compression gzip, par scripts/thesaurus-langues.js. Les fichiers d'origine sont
+  disponibles dans le paquet libreoffice-dictionaries (https://archive.ubuntu.com/ubuntu/pool/).
+
+Motifs de césure (hyph-utf8), src/renderer/vendor/cesure/ : MIT (allemand, anglais, espagnol,
+  français), LPPL / MIT (italien), BSD 3 clauses (portugais). Licence reprise en tête de chaque fichier.
+
+Liste des mots courants du français, src/renderer/vendor/frequences-fr/ : dérivée de wordfreq
+  (Robyn Speer et contributeurs), Creative Commons BY-SA 4.0 (https://creativecommons.org/licenses/by-sa/4.0/).
+
+
+4. Composants installés avec la correction grammaticale
+-------------------------------------------------------
+
+LanguageTool 6.6                         LGPL 2.1     licence jointe dans le dossier de LanguageTool
+Java (Eclipse Temurin 21, JRE)           GPL 2.0 avec exception « Classpath »
+                                         licences jointes dans jre/legal/
+Ces deux composants sont livrés tels que publiés par leurs auteurs, dans le dossier
+resources/languagetool du logiciel, et tournent à part, dans leur propre programme.
+
+
+5. Modèles de langue (téléchargés à la demande)
+-----------------------------------------------
+
+Mistral 7B Instruct v0.3, Mistral Nemo Instruct 2407 (Mistral AI)   Apache 2.0   Apache-2.0.txt
+Ils ne sont pas inclus : l'utilisateur les télécharge s'il active l'Aide au Texte.
+
+
+6. Portraits des repères biographiques
+--------------------------------------
+
+Les portraits de src/renderer/bio/portraits/ proviennent de Wikimedia Commons et sont tous dans
+le domaine public ou sous CC0. Le fichier licences.json indique pour chacun le fichier d'origine,
+sa page Commons et sa licence.
+
+
+7. Couleurs des blocs de code
+-----------------------------
+
+Les palettes « Monokai », « Nord », « Solarized » et « One Dark » reprennent les couleurs de thèmes
+d'éditeurs de code bien connus ; les noms appartiennent à leurs auteurs respectifs.

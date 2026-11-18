@@ -46,7 +46,7 @@
       oeuvres: []
     },
     {
-      id: 'Q278699', bnf: '15330273r', photo: "Sir William Petty. Mezzotint by J. Smith, 1696, after J. Clo Wellcome V0004638.jpg", nom: 'William Petty', g: 'precurseurs', courant: 'Arithmétique politique',
+      id: 'Q278699', bnf: '15330273r', photo: "Sir William Petty by Isaac Fuller.jpg", nom: 'William Petty', g: 'precurseurs', courant: 'Arithmétique politique',
       n: '1623-05-26', ln: 'Romsey', d: '1687-12-16', ld: 'Londres', nat: 'anglais',
       role: "Médecin, statisticien et économiste anglais, fondateur de l'arithmétique politique.",
       parcours: "Professeur d'anatomie à Oxford, il dirige le grand relevé cadastral de l'Irlande (Down Survey) dans les années 1650. Il est l'un des membres fondateurs de la Royal Society.",
@@ -111,7 +111,7 @@
       oeuvres: [['Théorie des sentiments moraux', '1759'], ['Recherches sur la nature et les causes de la richesse des nations', '1776']]
     },
     {
-      id: 'Q13526', bnf: '122778124', photo: "Thomas Robert Malthus Wellcome L0069037 -crop.jpg", nom: 'Thomas Robert Malthus', court: 'Malthus', g: 'classiques', courant: 'École classique',
+      id: 'Q13526', bnf: '122778124', photo: "Thomas Robert Malthus.jpg", nom: 'Thomas Robert Malthus', court: 'Malthus', g: 'classiques', courant: 'École classique',
       n: '1766-02', ln: 'Westcott (Angleterre)', d: '1834-12', ld: 'Bath', nat: 'anglais',
       role: 'Pasteur et économiste anglais, théoricien de la population.',
       parcours: "Pasteur anglican, il devient en 1805 professeur d'histoire et d'économie politique au collège de la Compagnie des Indes orientales, à Haileybury. Il entretient une longue controverse amicale avec Ricardo.",
@@ -212,7 +212,7 @@
       oeuvres: [["L'Industrie", '1816-1818'], ['Nouveau Christianisme', '1825']]
     },
     {
-      id: 'Q181707', bnf: '11903258f', photo: "Françoise Foliot - Jean Gigoux - Portrait de Charles Fourrier (cropped) (1).jpg", nom: 'Charles Fourier', g: 'socialismes', courant: 'Socialisme utopique',
+      id: 'Q181707', bnf: '11903258f', photo: "Fourier par Baugniet.jpg", nom: 'Charles Fourier', g: 'socialismes', courant: 'Socialisme utopique',
       n: '1772-04-07', ln: 'Besançon', d: '1837-10-10', ld: 'Paris', nat: 'français',
       role: "Philosophe français, théoricien de l'association et du phalanstère.",
       parcours: "Fils de marchand, il exerce comme commis et courtier à Lyon et à Paris. Il publie une œuvre abondante qui rencontre peu d'écho de son vivant, malgré quelques disciples comme Victor Considerant.",
@@ -432,7 +432,7 @@
       oeuvres: [['La Grande Transformation', '1944']]
     },
     {
-      id: 'Q975777', bnf: '11910426v', photo: "Ernest Labrousse 1986.jpg", nom: 'Ernest Labrousse', g: 'institutions', courant: 'Histoire économique et sociale',
+      id: 'Q975777', bnf: '11910426v', nom: 'Ernest Labrousse', g: 'institutions', courant: 'Histoire économique et sociale',
       n: '1895-03-16', ln: 'Barbezieux', d: '1988-05-23', ld: 'Paris', nat: 'français',
       role: "Historien français, fondateur de l'histoire économique quantitative en France.",
       parcours: "Docteur en droit, il enseigne à la Sorbonne à partir de 1945, où il occupe la chaire d'histoire économique et sociale. Il forme une génération d'historiens.",
@@ -468,7 +468,7 @@
       oeuvres: [['La Grande Crise mondiale 1929-1939', '1973'], ['Manias, Panics, and Crashes', '1978']]
     },
     {
-      id: 'Q243193', bnf: '122782988', photo: "Douglass North.jpg", nom: 'Douglass North', g: 'institutions', courant: 'Nouvelle économie institutionnelle, cliométrie',
+      id: 'Q243193', bnf: '122782988', photo: "Douglass North 1979.jpg", nom: 'Douglass North', g: 'institutions', courant: 'Nouvelle économie institutionnelle, cliométrie',
       n: '1920-11-05', ln: 'Cambridge (Massachusetts)', d: '2015-11-23', ld: 'Benzonia (Michigan)', nat: 'américain',
       role: "Économiste et historien américain, prix Nobel d'économie en 1993.",
       parcours: "Professeur à l'université de Washington puis à l'université Washington de Saint-Louis, il est l'un des pionniers de la cliométrie, l'histoire économique quantitative. Il partage le prix Nobel 1993 avec Robert Fogel.",
@@ -497,7 +497,7 @@
       oeuvres: [["Théorie de l'évolution économique", '1911'], ['Capitalisme, socialisme et démocratie', '1942'], ["Histoire de l'analyse économique", '1954, posthume']]
     },
     {
-      id: 'Q84233', bnf: '11928674d', photo: "Ludwig von Mises.jpg", nom: 'Ludwig von Mises', g: 'xxe', courant: 'École autrichienne',
+      id: 'Q84233', bnf: '11928674d', photo: "Mises02UpscaleColorized.png", nom: 'Ludwig von Mises', g: 'xxe', courant: 'École autrichienne',
       n: '1881-09-29', ln: 'Lemberg (Galicie)', d: '1973-10-10', ld: 'New York', nat: 'autrichien puis américain',
       role: "Économiste autrichien naturalisé américain, figure de l'école autrichienne.",
       parcours: "Conseiller de la Chambre de commerce de Vienne, il anime un séminaire privé réputé. Il quitte l'Autriche pour Genève en 1934, puis émigre aux États-Unis en 1940 et enseigne à l'université de New York.",
@@ -506,7 +506,7 @@
       oeuvres: [['Théorie de la monnaie et du crédit', '1912'], ["L'Action humaine", '1949']]
     },
     {
-      id: 'Q1325', bnf: '119070534', photo: "Friedrich Hayek portrait.jpg", nom: 'Friedrich Hayek', complet: 'Friedrich August von Hayek', g: 'xxe', courant: 'École autrichienne, libéralisme',
+      id: 'Q1325', bnf: '119070534', photo: "Friedrich August Hayek 03 Upscaled Colorized.png", nom: 'Friedrich Hayek', complet: 'Friedrich August von Hayek', g: 'xxe', courant: 'École autrichienne, libéralisme',
       n: '1899-05-08', ln: 'Vienne', d: '1992-03-23', ld: 'Fribourg-en-Brisgau', nat: 'autrichien puis britannique',
       role: "Économiste et philosophe autrichien naturalisé britannique, prix Nobel d'économie en 1974.",
       parcours: "Élève de Mises, il est appelé à la London School of Economics en 1931, où il s'oppose à Keynes. Il enseigne ensuite à Chicago puis à Fribourg-en-Brisgau, et fonde en 1947 la Société du Mont-Pèlerin.",
@@ -524,7 +524,7 @@
       oeuvres: [['The Laws of Returns under Competitive Conditions', '1926'], ['Production de marchandises par des marchandises', '1960']]
     },
     {
-      id: 'Q436745', bnf: '120313693', photo: "Michal Kalecki.jpg", nom: 'Michał Kalecki', g: 'xxe', courant: 'Post-keynésianisme',
+      id: 'Q436745', bnf: '120313693', photo: "Kalecki.tif", nom: 'Michał Kalecki', g: 'xxe', courant: 'Post-keynésianisme',
       n: '1899-06-22', ln: 'Łódź', d: '1970-04-17', ld: 'Varsovie', nat: 'polonais',
       role: 'Économiste polonais, découvreur indépendant du principe de la demande effective.',
       parcours: "Autodidacte en économie, il travaille à l'Institut de recherche sur la conjoncture de Varsovie, puis à Oxford et aux Nations unies. Il rentre en Pologne en 1955.",
@@ -578,7 +578,7 @@
       oeuvres: [["Le Développement économique de l'Amérique latine et ses principaux problèmes", '1949']]
     },
     {
-      id: 'Q2415107', bnf: '11919308t', photo: "François Perroux à l'ISMÉA.jpg", nom: 'François Perroux', g: 'xxe', courant: 'Économie du développement',
+      id: 'Q2415107', bnf: '11919308t', nom: 'François Perroux', g: 'xxe', courant: 'Économie du développement',
       n: '1903-12-19', ln: 'Lyon', d: '1987-06-02', ld: 'Stains', nat: 'français',
       role: "Économiste français, théoricien des pôles de croissance et de la domination économique.",
       parcours: "Professeur à Lyon puis à Paris, il fonde en 1944 l'Institut de science économique appliquée. Il est professeur au Collège de France de 1955 à 1974.",
@@ -605,7 +605,7 @@
       oeuvres: [['La Crise économique de 1929', '1955'], ["L'Ère de l'opulence", '1958'], ['Le Nouvel État industriel', '1967']]
     },
     {
-      id: 'Q704076', bnf: '12292100d', photo: "HymanMinsky-1.jpg", nom: 'Hyman Minsky', g: 'xxe', courant: 'Post-keynésianisme',
+      id: 'Q704076', bnf: '12292100d', nom: 'Hyman Minsky', g: 'xxe', courant: 'Post-keynésianisme',
       n: '1919-09-23', ln: 'Chicago', d: '1996-10-24', ld: 'Rhinebeck (New York)', nat: 'américain',
       role: "Économiste américain, théoricien de l'instabilité financière.",
       parcours: "Élève de Schumpeter à Harvard, il enseigne à Brown, à Berkeley puis à l'université Washington de Saint-Louis. Ses travaux connaissent un regain d'intérêt après la crise de 2008.",
@@ -616,7 +616,7 @@
 
     // ----- Économie contemporaine -----
     {
-      id: 'Q102454', bnf: '11923583w', photo: "Paul Samuelson.gif", nom: 'Paul Samuelson', g: 'contemporains', courant: 'Synthèse néoclassique',
+      id: 'Q102454', bnf: '11923583w', photo: "Paul A. Samuelson close-up (cropped).jpg", nom: 'Paul Samuelson', g: 'contemporains', courant: 'Synthèse néoclassique',
       n: '1915-05-15', ln: 'Gary (Indiana)', d: '2009-12-13', ld: 'Belmont (Massachusetts)', nat: 'américain',
       role: "Économiste américain, premier Américain lauréat du prix Nobel d'économie, en 1970.",
       parcours: "Professeur au MIT de 1940 à sa mort, il y bâtit l'un des principaux départements d'économie du monde. Son manuel Economics est le plus vendu de l'histoire de la discipline.",
@@ -634,7 +634,7 @@
       oeuvres: [['Essays in Positive Economics', '1953'], ['Capitalisme et liberté', '1962'], ['A Monetary History of the United States (avec Anna Schwartz)', '1963']]
     },
     {
-      id: 'Q192592', bnf: '12277447p', photo: "Kenneth Arrow, Stanford University.jpg", nom: 'Kenneth Arrow', g: 'contemporains', courant: 'Économie néoclassique, choix social',
+      id: 'Q192592', bnf: '12277447p', nom: 'Kenneth Arrow', g: 'contemporains', courant: 'Économie néoclassique, choix social',
       n: '1921-08-23', ln: 'New York', d: '2017-02-21', ld: 'Palo Alto (Californie)', nat: 'américain',
       role: "Économiste américain, prix Nobel d'économie en 1972, le plus jeune lauréat à l'époque.",
       parcours: "Professeur à Stanford et à Harvard, il partage le prix Nobel 1972 avec John Hicks. Il contribue aussi à l'économie de la santé et de l'information.",
@@ -643,7 +643,7 @@
       oeuvres: [['Social Choice and Individual Values', '1951']]
     },
     {
-      id: 'Q210960', bnf: '122801806', photo: "Debreu, Gérard (1921-2004).jpeg", nom: 'Gérard Debreu', g: 'contemporains', courant: 'Économie mathématique',
+      id: 'Q210960', bnf: '122801806', nom: 'Gérard Debreu', g: 'contemporains', courant: 'Économie mathématique',
       n: '1921-07-04', ln: 'Calais', d: '2004-12-31', ld: 'Paris', nat: 'français puis américain',
       role: "Économiste et mathématicien français naturalisé américain, prix Nobel d'économie en 1983.",
       parcours: "Normalien, il découvre l'économie avec l'œuvre de Walras, puis rejoint la Cowles Commission à Chicago. Il enseigne à Yale puis à Berkeley.",
@@ -652,7 +652,7 @@
       oeuvres: [['Théorie de la valeur', '1959']]
     },
     {
-      id: 'Q105962', bnf: '11888473k', photo: "ALLAIS PN Maurice-24x30-2001b.jpg", nom: 'Maurice Allais', g: 'contemporains', courant: 'Économie mathématique',
+      id: 'Q105962', bnf: '11888473k', nom: 'Maurice Allais', g: 'contemporains', courant: 'Économie mathématique',
       n: '1911-05-31', ln: 'Paris', d: '2010-10-09', ld: 'Saint-Cloud', nat: 'français',
       role: "Économiste et physicien français, prix Nobel d'économie en 1988.",
       parcours: "Polytechnicien, ingénieur des mines, il enseigne à l'École des mines de Paris. Il est le premier Français à recevoir le prix Nobel d'économie.",
@@ -661,7 +661,7 @@
       oeuvres: [["À la recherche d'une discipline économique", '1943']]
     },
     {
-      id: 'Q157268', bnf: '12173977v', photo: "Robert Solow by Olaf Storbeck.jpg", nom: 'Robert Solow', g: 'contemporains', courant: 'Théorie de la croissance',
+      id: 'Q157268', bnf: '12173977v', photo: "Solow natmedal.jpg", nom: 'Robert Solow', g: 'contemporains', courant: 'Théorie de la croissance',
       n: '1924-08-23', ln: 'Brooklyn (New York)', d: '2023-12-21', ld: 'Lexington (Massachusetts)', nat: 'américain',
       role: "Économiste américain, prix Nobel d'économie en 1987 pour sa théorie de la croissance.",
       parcours: "Professeur au MIT pendant toute sa carrière, il est membre du Conseil des conseillers économiques du président Kennedy. Il forme plusieurs futurs lauréats du prix Nobel.",
@@ -679,7 +679,7 @@
       oeuvres: [['Administrative Behavior', '1947']]
     },
     {
-      id: 'Q188113', bnf: '12278813q', photo: "Coase profile 2003.jpg", nom: 'Ronald Coase', g: 'contemporains', courant: 'Nouvelle économie institutionnelle',
+      id: 'Q188113', bnf: '12278813q', nom: 'Ronald Coase', g: 'contemporains', courant: 'Nouvelle économie institutionnelle',
       n: '1910-12-29', ln: 'Willesden (Londres)', d: '2013-09-02', ld: 'Chicago', nat: 'britannique',
       role: "Économiste britannique, prix Nobel d'économie en 1991.",
       parcours: "Il enseigne à la London School of Economics, puis aux États-Unis, à Buffalo, à Virginie et à l'université de Chicago à partir de 1964.",
@@ -706,7 +706,7 @@
       oeuvres: [['The Economics of Discrimination', '1957'], ['Human Capital', '1964']]
     },
     {
-      id: 'Q205353', bnf: '120003724', photo: "James Buchanan by Atlas network.jpg", nom: 'James M. Buchanan', court: 'James Buchanan', g: 'contemporains', courant: 'École du choix public',
+      id: 'Q205353', bnf: '120003724', nom: 'James M. Buchanan', court: 'James Buchanan', g: 'contemporains', courant: 'École du choix public',
       n: '1919-10-03', ln: 'Murfreesboro (Tennessee)', d: '2013-01-09', ld: 'Blacksburg (Virginie)', nat: 'américain',
       role: "Économiste américain, fondateur de l'école du choix public, prix Nobel d'économie en 1986.",
       parcours: "Il enseigne à l'université de Virginie puis à George Mason, où il fonde le Center for Study of Public Choice.",
@@ -724,7 +724,7 @@
       oeuvres: [['Leçons de théorie microéconomique', '1969'], ['Réexamen de la théorie du chômage', '1977']]
     },
     {
-      id: 'Q107264', bnf: '12279448h', photo: "La Revolución Industrial Pasado y Futuro, Robert E. Lucas Jr. screenshot (cropped).jpg", nom: 'Robert Lucas', complet: 'Robert E. Lucas Jr.', g: 'contemporains', courant: 'Nouvelle économie classique',
+      id: 'Q107264', bnf: '12279448h', nom: 'Robert Lucas', complet: 'Robert E. Lucas Jr.', g: 'contemporains', courant: 'Nouvelle économie classique',
       n: '1937-09-15', ln: 'Yakima (Washington)', d: '2023-05-15', ld: 'Chicago', nat: 'américain',
       role: "Économiste américain, chef de file de la nouvelle économie classique, prix Nobel d'économie en 1995.",
       parcours: "Il enseigne à Carnegie-Mellon puis à l'université de Chicago à partir de 1974.",
@@ -733,7 +733,7 @@
       oeuvres: [['Expectations and the Neutrality of Money', '1972'], ['Econometric Policy Evaluation: A Critique', '1976']]
     },
     {
-      id: 'Q153761', bnf: '12895732f', photo: "Nobel Prize 2009-Press Conference KVA-30.jpg", nom: 'Elinor Ostrom', sexe: 'f', g: 'contemporains', courant: 'Nouvelle économie institutionnelle',
+      id: 'Q153761', bnf: '12895732f', nom: 'Elinor Ostrom', sexe: 'f', g: 'contemporains', courant: 'Nouvelle économie institutionnelle',
       n: '1933-08-07', ln: 'Los Angeles', d: '2012-06-12', ld: 'Bloomington (Indiana)', nat: 'américaine',
       role: "Politiste et économiste américaine, première femme lauréate du prix Nobel d'économie, en 2009.",
       parcours: "Docteure en science politique, elle enseigne à l'université de l'Indiana, où elle fonde avec Vincent Ostrom un atelier de recherche sur les institutions. Elle partage le prix Nobel 2009 avec Oliver Williamson.",
@@ -742,7 +742,7 @@
       oeuvres: [['La Gouvernance des biens communs', '1990']]
     },
     {
-      id: 'Q132489', bnf: '12041027j', photo: "Amartya Sen 2012.jpg", nom: 'Amartya Sen', g: 'contemporains', courant: 'Économie du bien-être, choix social',
+      id: 'Q132489', bnf: '12041027j', photo: "Amartya Sen NIH.jpg", nom: 'Amartya Sen', g: 'contemporains', courant: 'Économie du bien-être, choix social',
       n: '1933-11-03', ln: 'Santiniketan (Inde)', vivant: true, nat: 'indien',
       role: "Économiste et philosophe indien, prix Nobel d'économie en 1998.",
       parcours: "Témoin enfant de la famine du Bengale de 1943, il enseigne à Delhi, à la London School of Economics, à Oxford, à Harvard et dirige le Trinity College de Cambridge.",
@@ -751,7 +751,7 @@
       oeuvres: [['Collective Choice and Social Welfare', '1970'], ['Poverty and Famines', '1981'], ['Un nouveau modèle économique', '1999']]
     },
     {
-      id: 'Q233950', bnf: '12848609b', photo: "Daniel Kahneman (3283955327) (cropped).jpg", nom: 'Daniel Kahneman', g: 'contemporains', courant: 'Économie comportementale',
+      id: 'Q233950', bnf: '12848609b', nom: 'Daniel Kahneman', g: 'contemporains', courant: 'Économie comportementale',
       n: '1934-03-05', ln: 'Tel-Aviv', d: '2024-03-27', ld: 'Nunningen (Suisse)', nat: 'israélien et américain',
       role: "Psychologue israélo-américain, prix Nobel d'économie en 2002.",
       parcours: "Il mène avec Amos Tversky, à l'Université hébraïque de Jérusalem puis aux États-Unis, une collaboration sur le jugement et la décision. Il enseigne à Princeton à partir de 1993.",
@@ -760,7 +760,7 @@
       oeuvres: [['Prospect Theory (avec Amos Tversky)', '1979'], ['Système 1, système 2', '2011']]
     },
     {
-      id: 'Q18430', bnf: '12278641d', photo: "Joseph E. Stiglitz, 2019 (cropped).jpg", nom: 'Joseph Stiglitz', complet: 'Joseph E. Stiglitz', g: 'contemporains', courant: 'Nouveau keynésianisme, économie de l’information',
+      id: 'Q18430', bnf: '12278641d', photo: "Joseph Stiglitz.jpg", nom: 'Joseph Stiglitz', complet: 'Joseph E. Stiglitz', g: 'contemporains', courant: 'Nouveau keynésianisme, économie de l’information',
       n: '1943-02-09', ln: 'Gary (Indiana)', vivant: true, nat: 'américain',
       role: "Économiste américain, prix Nobel d'économie en 2001.",
       parcours: "Professeur à Yale, Princeton, Stanford puis Columbia, il préside le Conseil des conseillers économiques du président Clinton puis devient économiste en chef de la Banque mondiale de 1997 à 2000.",
@@ -769,7 +769,7 @@
       oeuvres: [['La Grande Désillusion', '2002'], ['Le Prix de l’inégalité', '2012']]
     },
     {
-      id: 'Q131112', bnf: '12277570g', photo: "Paul Krugman-press conference Dec 07th, 2008-4.jpg", nom: 'Paul Krugman', g: 'contemporains', courant: 'Nouvelle théorie du commerce international',
+      id: 'Q131112', bnf: '12277570g', photo: "P20230814AS-0367 (cropped).jpg", nom: 'Paul Krugman', g: 'contemporains', courant: 'Nouvelle théorie du commerce international',
       n: '1953-02-28', ln: 'Albany (New York)', vivant: true, nat: 'américain',
       role: "Économiste américain, prix Nobel d'économie en 2008.",
       parcours: "Il enseigne au MIT, à Stanford, à Princeton puis à la City University of New York. Il tient de 2000 à 2024 une chronique dans le New York Times.",
@@ -778,7 +778,7 @@
       oeuvres: [['Scale Economies, Product Differentiation, and the Pattern of Trade', '1980'], ['Increasing Returns and Economic Geography', '1991']]
     },
     {
-      id: 'Q173994', bnf: '12051073x', photo: "Jean Tirole 2019.jpg", nom: 'Jean Tirole', g: 'contemporains', courant: 'Économie industrielle',
+      id: 'Q173994', bnf: '12051073x', photo: "2022-11-19 Professor Jean Tirole awarded Doctor of Laws Dhaka University 53rd convocation (PID-0019986).jpg", nom: 'Jean Tirole', g: 'contemporains', courant: 'Économie industrielle',
       n: '1953-08-09', ln: 'Troyes', vivant: true, nat: 'français',
       role: "Économiste français, prix Nobel d'économie en 2014.",
       parcours: "Polytechnicien, docteur du MIT, il fonde à Toulouse l'Institut d'économie industrielle puis la Toulouse School of Economics. Il est récompensé pour son analyse du pouvoir de marché et de la régulation.",
@@ -787,7 +787,7 @@
       oeuvres: [['The Theory of Industrial Organization', '1988'], ['Économie du bien commun', '2016']]
     },
     {
-      id: 'Q434509', bnf: '16080743v', photo: "Esther Duflo - Pop!Tech 2009 - 001 (cropped).jpg", nom: 'Esther Duflo', sexe: 'f', g: 'contemporains', courant: 'Économie du développement',
+      id: 'Q434509', bnf: '16080743v', nom: 'Esther Duflo', sexe: 'f', g: 'contemporains', courant: 'Économie du développement',
       n: '1972-10-25', ln: 'Paris', vivant: true, nat: 'française',
       role: "Économiste française, prix Nobel d'économie en 2019.",
       parcours: "Normalienne, docteure du MIT, où elle enseigne, elle cofonde en 2003 le laboratoire J-PAL de lutte contre la pauvreté. Elle partage le prix Nobel 2019 avec Abhijit Banerjee et Michael Kremer.",
@@ -796,7 +796,7 @@
       oeuvres: [['Repenser la pauvreté (avec Abhijit Banerjee)', '2011']]
     },
     {
-      id: 'Q984448', bnf: '12408843j', photo: "Thomas Piketty2.jpg", nom: 'Thomas Piketty', g: 'contemporains', courant: 'Économie des inégalités',
+      id: 'Q984448', bnf: '12408843j', nom: 'Thomas Piketty', g: 'contemporains', courant: 'Économie des inégalités',
       n: '1971-05-07', ln: 'Clichy', vivant: true, nat: 'français',
       role: 'Économiste français, spécialiste des inégalités de revenus et de patrimoine.',
       parcours: "Directeur d'études à l'École des hautes études en sciences sociales et professeur à l'École d'économie de Paris, il codirige le World Inequality Lab.",

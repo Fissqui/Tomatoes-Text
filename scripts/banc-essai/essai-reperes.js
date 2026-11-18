@@ -264,10 +264,10 @@ module.exports = async ({ page }) => {
   await caretIn('Le capital avancé');
   await page.click('#bio-btn');
   await page.waitForTimeout(150);
-  await pick('Piketty');
+  await pick('Krugman');
   await page.waitForTimeout(150);
   pv = await preview();
-  assert(pv.text.includes('Né en 1971'), 'personne en vie : « Né en 1971 »');
+  assert(pv.text.includes('Né en 1953'), 'personne en vie : « Né en 1953 »');
   assert(pv.text.includes('Portrait : Photographe Essai, CC BY-SA 4.0, Wikimedia Commons.'), 'crédit imposé par la licence');
   await setSel('bio-photo', 'aucune');
   pv = await preview();

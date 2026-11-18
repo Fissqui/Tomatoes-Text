@@ -1357,7 +1357,9 @@ function buildMenu(settings) {
           { label: 'Rechercher une mise à jour…', accelerator: acc('update', ''), click: () => send('update') },
           { type: 'separator' }
         ] : []),
-        { label: 'Signaler un défaut…', accelerator: acc('report', 'CmdOrCtrl+Shift+F1'), click: () => send('report') }
+        { label: 'Signaler un défaut…', accelerator: acc('report', 'CmdOrCtrl+Shift+F1'), click: () => send('report') },
+        { type: 'separator' },
+        { label: 'Mentions et licences', click: () => shell.openPath(path.join(__dirname, 'licences', 'MENTIONS.txt')) }
       ]
     }
   ];

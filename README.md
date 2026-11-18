@@ -148,12 +148,17 @@ Tomatoes Text s'appuie notamment sur [Electron](https://www.electronjs.org) (MIT
 [ProseMirror](https://prosemirror.net) (MIT), [pdf.js](https://mozilla.github.io/pdf.js/) (Apache 2.0),
 [MathLive](https://cortexjs.io/mathlive/) (MIT), [docx](https://docx.js.org) (MIT),
 [node-llama-cpp](https://node-llama-cpp.withcat.ai) (MIT), [Hunspell](https://hunspell.github.io)
-(LGPL/GPL/MPL) et ses dictionnaires, les thésaurus LibreOffice, [LanguageTool](https://languagetool.org)
-(LGPL 2.1, installé séparément) et des polices sous licence SIL Open Font License. Les licences de chaque
-composant sont jointes à ses fichiers ; les portraits des repères biographiques proviennent de Wikimedia
-Commons (`src/renderer/bio/portraits/licences.json`).
+(LGPL/GPL/MPL) et ses dictionnaires, les thésaurus de LibreOffice (LGPL/GPL),
+[LanguageTool](https://languagetool.org) (LGPL 2.1) avec Java [Eclipse Temurin](https://adoptium.net)
+(GPL 2.0 avec exception « Classpath »), livrés avec le programme d'installation, et des polices sous
+licence SIL Open Font License. Les modèles Mistral (Apache 2.0) de l'Aide au Texte sont téléchargés à la
+demande. Les portraits des repères biographiques, tirés de Wikimedia Commons, sont dans le domaine public.
+
+La liste complète des composants, de leurs licences et de leurs auteurs est dans
+[`src/licences/MENTIONS.txt`](src/licences/MENTIONS.txt), avec les textes des licences ; elle est aussi
+accessible dans le logiciel par Aide > Mentions et licences.
 
 ## Licence
 
-© Tomatoes Text. Tous droits réservés. Le code source est publié pour consultation ; les composants tiers
+© 2026 Fissqui. Tous droits réservés. Le code source est publié pour consultation ; les composants tiers
 restent soumis à leurs licences respectives.
