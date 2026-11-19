@@ -69,14 +69,82 @@ function defaultModelsDir() {
   return process.platform === 'win32' ? 'C:\\Local LLM' : path.join(app.getPath('userData'), 'Local LLM');
 }
 
-// Réglages de l'AAT : dossier des modèles et modèle choisi.
+// Réglages de l'AAT : dossier des modèles, modèle indiqué par l'utilisateur (fichier .gguf) et modèle choisi.
 async function readSettings() {
   let s = {};
   try { s = JSON.parse(await fs.readFile(settingsFile(), 'utf8')); } catch { /* valeurs par défaut */ }
+  const modelFile = typeof s.modelFile === 'string' ? s.modelFile : '';
+  local.setCustomModel(modelFile);
   return {
     modelsDir: typeof s.modelsDir === 'string' && s.modelsDir ? s.modelsDir : defaultModelsDir(),
+    modelFile,
     localModel: local.MODELS[s.localModel] ? s.localModel : local.DEFAULT_MODEL
   };
+}
+
+// ----- Emplacement d'un LLM déjà présent sur l'ordinateur -----
+
+// Un vrai modèle GGUF commence par « GGUF ».
+async function isGguf(file) {
+  let h;
+  try {
+    h = await fs.open(file, 'r');
+    const { buffer, bytesRead } = await h.read(Buffer.alloc(4), 0, 4, 0);
+    return bytesRead === 4 && buffer.toString('latin1') === 'GGUF';
+  } catch {
+    return false;
+  } finally {
+    if (h) await h.close().catch(() => {});
+  }
+}
+
+// Fichiers .gguf du dossier et de ses sous-dossiers (trois niveaux). Écartés : les projecteurs d'images
+// (mmproj), les parties 2 et suivantes d'un modèle découpé, les téléchargements inachevés.
+async function findModels(dir, depth = 3) {
+  const found = [];
+  let entries = [];
+  try { entries = await fs.readdir(dir, { withFileTypes: true }); } catch { return found; }
+  for (const e of entries) {
+    const full = path.join(dir, e.name);
+    if (e.isDirectory() && depth > 1) found.push(...await findModels(full, depth - 1));
+    else if (e.isFile() && /\.gguf$/i.test(e.name) && !/mmproj/i.test(e.name) && !/-0*([2-9]|\d{2,})-of-\d+\.gguf$/i.test(e.name)) {
+      let size = 0;
+      try { size = (await fs.stat(full)).size; } catch { continue; }
+      const known = Object.values(local.MODELS).find((m) => !m.custom && m.file.toLowerCase() === e.name.toLowerCase());
+      if (known && size < known.size) continue;
+      if (await isGguf(full)) found.push({ file: full, size, known: known ? Object.keys(local.MODELS).find((id) => local.MODELS[id] === known) : null });
+    }
+  }
+  return found;
+}
+
+// Choix parmi les modèles trouvés : le fichier déjà utilisé, sinon un modèle proposé (Mistral Nemo 12B
+// d'abord), sinon le plus gros fichier.
+function pickModel(found, current) {
+  if (!found.length) return null;
+  const same = found.find((f) => f.file === current);
+  if (same) return same;
+  const order = Object.keys(local.MODELS).filter((id) => !local.MODELS[id].custom);
+  const known = found.filter((f) => f.known).sort((a, b) => order.indexOf(a.known) - order.indexOf(b.known));
+  return known[0] || [...found].sort((a, b) => b.size - a.size)[0];
+}
+
+// Dossier (ou fichier .gguf) indiqué : le modèle trouvé devient le modèle de l'AAT.
+async function connectModel(target) {
+  const s = await readSettings();
+  let found;
+  try {
+    found = (await fs.stat(target)).isDirectory() ? await findModels(target)
+      : (/\.gguf$/i.test(target) && await isGguf(target) ? [{ file: target }] : []);
+  } catch {
+    found = [];
+  }
+  const pick = pickModel(found, s.modelFile);
+  if (!pick) return { error: 'Aucun modèle au format GGUF (.gguf) dans ce dossier.' };
+  await writeSettings({ ...s, modelFile: pick.file, localModel: local.CUSTOM });
+  const next = await publicSettings();
+  local.preload(local.CUSTOM).catch(() => {}); // chargé à l'avance ; une erreur réelle sera signalée à la première demande
+  return { ok: true, label: local.MODELS[local.CUSTOM].label, file: pick.file, settings: next };
 }
 
 function writeSettings(s) {
@@ -213,6 +281,18 @@ function registerAssistant() {
     if (!canceled && filePaths[0]) await writeSettings({ ...s, modelsDir: filePaths[0] });
     return publicSettings();
   });
+  // « Indiquer l'emplacement du LLM… » (accueil du premier lancement, réglages de l'AAT).
+  ipcMain.handle('assist:locateModel', async (e) => {
+    const win = BrowserWindow.fromWebContents(e.sender);
+    const s = await readSettings();
+    const { canceled, filePaths } = await dialog.showOpenDialog(win, {
+      title: 'Dossier du LLM local (fichier .gguf)',
+      defaultPath: s.modelFile ? path.dirname(s.modelFile) : s.modelsDir,
+      properties: ['openDirectory']
+    });
+    if (canceled || !filePaths[0]) return { cancelled: true };
+    return connectModel(filePaths[0]);
+  });
   ipcMain.handle('assist:setModel', async (e, id) => {
     const s = await readSettings();
     if (local.MODELS[id]) await writeSettings({ ...s, localModel: id });
@@ -241,7 +321,12 @@ function registerAssistant() {
     const s = await readSettings();
     local.setModelsDir(s.modelsDir);
     await local.deleteModel(s.localModel);
+    // Modèle indiqué par l'utilisateur : retiré de la liste, son fichier reste en place.
+    if (s.localModel === local.CUSTOM) {
+      await writeSettings({ ...s, modelFile: '', localModel: local.DEFAULT_MODEL });
+      local.setCustomModel('');
+    }
   });
 }
 
-module.exports = { registerAssistant, readSettings, buildPrompt, maxTokens, systemFor };
+module.exports = { registerAssistant, readSettings, connectModel, findModels, buildPrompt, maxTokens, systemFor };

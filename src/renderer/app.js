@@ -375,14 +375,87 @@
     if (first) await openDoc(first.fileName);
   }
 
-  // Premier lancement : le tutoriel est proposé une fois.
+  // Premier lancement (une seule fois) : fenêtre qui présente LanguageTool (bouton d'installation, avec
+  // l'avancement), le LLM local de l'aide au texte (bouton pour indiquer son emplacement), puis le tutoriel.
+  let firstRunOpen = false;
+  const LT_STEPS = {
+    download: 'Téléchargement…',
+    extract: 'Installation des fichiers…',
+    start: 'Premier démarrage…',
+    done: 'Installé.',
+    error: 'Installation impossible.'
+  };
+
+  function firstRunState(id, text, kind) {
+    const el = $(id);
+    el.textContent = text || '';
+    el.classList.toggle('fr-ok', kind === 'ok');
+    el.classList.toggle('fr-error', kind === 'error');
+  }
+
+  // Avancement de l'installation de LanguageTool, dans la fenêtre.
+  function firstRunLanguageTool(p) {
+    const finished = p.step === 'done' || p.step === 'error';
+    $('fr-lt-install').hidden = p.step !== 'error';
+    $('fr-lt-install').textContent = 'Réessayer';
+    firstRunState('fr-lt-state', LT_STEPS[p.step] + (finished ? '' : ` ${p.pct} %`), p.step === 'done' ? 'ok' : p.step === 'error' ? 'error' : '');
+    $('fr-lt-bar').hidden = finished;
+    $('fr-lt-bar').querySelector('.fr-fill').style.width = (p.pct || 0) + '%';
+    $('fr-lt-detail').textContent = p.detail || '';
+  }
+
+  function firstRunModel(res) {
+    if (!res || res.cancelled) return;
+    if (res.error) firstRunState('fr-llm-state', res.error, 'error');
+    else {
+      firstRunState('fr-llm-state', `Connecté : ${res.label}`, 'ok');
+      $('fr-llm-state').title = res.file || '';
+      $('fr-llm-locate').textContent = 'Changer…';
+    }
+  }
+
   async function offerTutorial() {
     const res = await api.tutorialFirst().catch(() => ({ offer: false }));
     if (!res || !res.offer) return;
-    const ok = await ask('Le tutoriel présente le logiciel et ses outils, dans un projet d’exemple modifiable. Il reste disponible dans Aide > Tutoriel.', '', { okLabel: 'Ouvrir le tutoriel', cancelLabel: 'Plus tard', input: false });
-    if (ok !== null) await openTutorial();
+    const dlg = $('first-run');
+    // État actuel : LanguageTool livré avec le programme d'installation ou déjà installé, LLM déjà réglé.
+    const lt = await api.languageToolStatus().catch(() => ({}));
+    $('fr-lt-install').hidden = !!lt.installed;
+    $('fr-lt-install').textContent = 'Télécharger et installer';
+    $('fr-lt-bar').hidden = true;
+    $('fr-lt-detail').textContent = '';
+    firstRunState('fr-lt-state', lt.installed ? 'LanguageTool est installé.' : '', lt.installed ? 'ok' : '');
+    if (lt.installing && lt.progress) firstRunLanguageTool(lt.progress);
+    const aat = await api.assistGetSettings().catch(() => null);
+    const model = aat && aat.models.find((m) => m.id === aat.localModel);
+    $('fr-llm-locate').textContent = 'Indiquer l’emplacement du LLM…';
+    if (model && model.downloaded) firstRunModel({ label: model.label, file: model.file });
+    else firstRunState('fr-llm-state', '');
+    firstRunOpen = true;
+    const choice = await new Promise((resolve) => {
+      const done = (value) => { dlg.close(); resolve(value); };
+      $('fr-tutorial').onclick = () => done(true);
+      $('fr-later').onclick = () => done(false);
+      dlg.oncancel = (e) => { e.preventDefault(); done(false); };
+      dlg.showModal();
+      $('fr-tutorial').focus();
+    });
+    firstRunOpen = false;
+    // Installation toujours en cours : l'encadré en bas à droite prend le relais.
+    const now = await api.languageToolStatus().catch(() => ({}));
+    if (now.installing && now.progress) showLanguageToolProgress(now.progress);
+    if (choice) await openTutorial();
     else if (lib.projects && !lib.projects.includes(res.project)) await reloadLibrary(lib.project);
   }
+
+  $('fr-lt-install').addEventListener('click', async () => {
+    firstRunLanguageTool({ step: 'download', pct: 0, detail: '' });
+    const res = await api.installLanguageTool().catch(() => null);
+    if (res && res.installed && firstRunOpen) firstRunLanguageTool({ step: 'done', pct: 100, detail: '' });
+  });
+  $('fr-llm-locate').addEventListener('click', async () => {
+    firstRunModel(await api.assistLocateModel().catch((err) => ({ error: String((err && err.message) || err) })));
+  });
 
   const handlers = {
     openDoc: (fileName) => openDoc(fileName),
@@ -1224,6 +1297,11 @@
   // d'avancement et, en cas d'échec, la raison. Il reste affiché jusqu'à la fin.
   let ltBox = null;
   function showLanguageToolProgress(p) {
+    // (Fenêtre du premier lancement ouverte : l'avancement s'y affiche.)
+    if (firstRunOpen) {
+      firstRunLanguageTool(p);
+      return;
+    }
     if (!ltBox) {
       ltBox = document.createElement('div');
       ltBox.id = 'lt-progress';

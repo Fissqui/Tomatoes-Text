@@ -8,7 +8,7 @@ const electron = require('electron');
 const path = require('path');
 const moteur = require('./llm-moteur');
 
-const { MODELS, DEFAULT_MODEL } = moteur;
+const { MODELS, DEFAULT_MODEL, CUSTOM } = moteur;
 const utilityProcess = electron.utilityProcess;
 
 let dir = path.join(electron.app.getPath('userData'), 'modeles');
@@ -23,6 +23,13 @@ function modelsDir() {
 function setModelsDir(newDir) {
   dir = newDir;
   moteur.setModelsDir(newDir);
+}
+
+// Modèle indiqué par l'utilisateur (fichier .gguf), ou '' : transmis aussi au processus à part.
+let custom = '';
+function setCustomModel(file) {
+  custom = file || '';
+  moteur.setCustomModel(custom);
 }
 
 const isDownloaded = (id) => moteur.isDownloaded(id);
@@ -90,7 +97,7 @@ function ask(op, args, extra = {}) {
     if (broken || (!child && !start())) return direct(job);
     const id = ++seq;
     pending.set(id, job);
-    child.postMessage({ id, op, args, dir });
+    child.postMessage({ id, op, args, dir, custom });
     if (extra.signal) {
       extra.signal.addEventListener('abort', () => {
         if (child && pending.has(id)) child.postMessage({ op: 'abort', ref: id });
@@ -126,4 +133,4 @@ const cancelDownload = () => (downloading ? ask('cancelDownload', []) : Promise.
 const deleteModel = (id) => ask('deleteModel', [id]);
 const memoryState = () => ask('memoryState', []);
 
-module.exports = { memoryState, MODELS, DEFAULT_MODEL, setModelsDir, modelsDir, listModels, isDownloaded, downloadModel, cancelDownload, deleteModel, preload, generate };
+module.exports = { memoryState, MODELS, DEFAULT_MODEL, CUSTOM, setCustomModel, setModelsDir, modelsDir, listModels, isDownloaded, downloadModel, cancelDownload, deleteModel, preload, generate };

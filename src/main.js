@@ -1218,19 +1218,23 @@ function sendLtProgress(p) {
   else mainWindow.setProgressBar(-1);
 }
 
-async function installLanguageTool() {
+// (Bouton de la fenêtre du premier lancement : pas de confirmation, l'utilisateur vient de cliquer
+// « Télécharger et installer ».)
+async function installLanguageTool({ confirm = true } = {}) {
   if (languagetool.isInstalling()) { if (ltProgress) sendLtProgress(ltProgress); return; }
-  const { response } = await dialog.showMessageBox(mainWindow, {
-    type: 'question',
-    buttons: ['Installer', 'Annuler'],
-    defaultId: 0,
-    cancelId: 1,
-    title: 'LanguageTool',
-    message: 'Installer LanguageTool ?',
-    detail: 'Correcteur de grammaire à règles, exécuté sur cet ordinateur : aucun texte n\'est envoyé en ligne.\n' +
-      'Téléchargement unique d\'environ 300 Mo (Java et LanguageTool). L\'IA locale reste utilisée pour le mandarin.'
-  });
-  if (response !== 0) return;
+  if (confirm) {
+    const { response } = await dialog.showMessageBox(mainWindow, {
+      type: 'question',
+      buttons: ['Installer', 'Annuler'],
+      defaultId: 0,
+      cancelId: 1,
+      title: 'LanguageTool',
+      message: 'Installer LanguageTool ?',
+      detail: 'Correcteur de grammaire à règles, exécuté sur cet ordinateur : aucun texte n\'est envoyé en ligne.\n' +
+        'Téléchargement unique d\'environ 300 Mo (Java et LanguageTool). L\'IA locale reste utilisée pour le mandarin.'
+    });
+    if (response !== 0) return;
+  }
   try {
     await languagetool.install(({ step, pct, detail }) => sendLtProgress({ step, pct, detail }));
     // Vérification : LanguageTool démarre et relit une phrase.
@@ -1244,6 +1248,12 @@ async function installLanguageTool() {
     buildMenu(await readJson(settingsPath(), {}));
   }
 }
+
+ipcMain.handle('lt:status', () => ({ installed: languagetool.installed(), installing: languagetool.isInstalling(), progress: ltProgress }));
+ipcMain.handle('lt:install', async () => {
+  if (!languagetool.installed()) await installLanguageTool({ confirm: false });
+  return { installed: languagetool.installed() };
+});
 
 function buildMenu(settings) {
   // Raccourcis choisis dans « Raccourcis clavier… » (shortcuts.js) : '' = aucun.

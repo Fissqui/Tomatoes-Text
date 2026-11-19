@@ -661,6 +661,7 @@
           <select id="assist-model"></select>
           <p class="assist-folder">Dossier des modèles :<br><span id="assist-folder"></span></p>
           <button id="assist-folder-change" class="small">Changer de dossier…</button>
+          <button id="assist-model-locate" class="small" title="Dossier contenant un LLM local au format GGUF : il est détecté et utilisé par l’AAT">Indiquer l’emplacement du LLM…</button>
           <p id="assist-model-status"></p>
           <progress id="assist-model-progress" max="100" value="0" hidden></progress>
           <div class="assist-actions">
@@ -721,6 +722,39 @@
         <button value="ok" id="modal-ok" class="primary">Valider</button>
       </div>
     </form>
+  </dialog>
+
+  <!-- Premier lancement : LanguageTool, LLM local de l'aide au texte, puis tutoriel (app.js). -->
+  <dialog id="first-run" aria-labelledby="fr-title">
+    <h2 id="fr-title">Bienvenue dans Tomatoes Text</h2>
+    <section class="fr-part" id="fr-lt">
+      <h3>Correcteur grammatical : LanguageTool</h3>
+      <p>La vérification de la grammaire requiert LanguageTool. Gratuit et libre, il est exécuté sur cet ordinateur : aucun texte n’est envoyé en ligne. Site officiel : <a href="https://languagetool.org" target="_blank" rel="noopener">languagetool.org</a></p>
+      <p class="fr-note">Téléchargement unique d’environ 300 Mo (LanguageTool et Java).</p>
+      <div class="fr-row">
+        <button type="button" id="fr-lt-install" class="primary">Télécharger et installer</button>
+        <span class="fr-state" id="fr-lt-state" role="status"></span>
+      </div>
+      <div class="fr-bar" id="fr-lt-bar" hidden><div class="fr-fill"></div></div>
+      <p class="fr-detail" id="fr-lt-detail"></p>
+    </section>
+    <section class="fr-part" id="fr-llm">
+      <h3>Aide au texte : LLM local <span class="fr-optional">(facultatif)</span></h3>
+      <p>L’aide au texte reformule un passage selon le style choisi et propose des synonymes adaptés au contexte. Elle résume aussi le document et vérifie sa cohérence (noms, dates, faits).</p>
+      <p class="fr-note">Elle requiert un LLM local au format GGUF (par exemple Mistral Nemo 12B). Le logiciel fonctionne sans, à l’exception de l’aide au texte. Réglage modifiable ensuite dans Aide au texte > Réglages de l’AAT.</p>
+      <div class="fr-row">
+        <button type="button" id="fr-llm-locate">Indiquer l’emplacement du LLM…</button>
+        <span class="fr-state" id="fr-llm-state" role="status"></span>
+      </div>
+    </section>
+    <section class="fr-part" id="fr-tuto">
+      <h3>Tutoriel</h3>
+      <p>Le tutoriel présente le logiciel et ses outils, dans un projet d’exemple modifiable. Il reste disponible dans Aide > Tutoriel.</p>
+    </section>
+    <div class="modal-actions">
+      <button type="button" id="fr-later">Plus tard</button>
+      <button type="button" id="fr-tutorial" class="primary">Ouvrir le tutoriel</button>
+    </div>
   </dialog>
 
   <div id="reading-bar" role="toolbar" aria-label="Mode lecture">

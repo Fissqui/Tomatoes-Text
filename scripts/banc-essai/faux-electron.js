@@ -63,8 +63,9 @@ class BrowserWindow {
       this.destroy = () => { if (this.page) this.page.close().catch(() => {}); };
     }
   }
-  on() {} isMinimized() { return false; } restore() {} focus() {} loadFile() { return Promise.resolve(); } destroy() {} close() {} setFullScreen() {}
+  on() {} isMinimized() { return false; } isDestroyed() { return false; } setProgressBar() {} restore() {} focus() {} loadFile() { return Promise.resolve(); } destroy() {} close() {} setFullScreen() {}
   static getAllWindows() { return BrowserWindow.all; }
+  static fromWebContents() { return BrowserWindow.all[0] || null; }
 }
 BrowserWindow.all = [];
 module.exports = {

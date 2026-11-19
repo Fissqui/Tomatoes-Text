@@ -257,7 +257,7 @@
     const downloading = !!(m && m.downloading);
     const select = $('assist-model');
     select.replaceChildren(...settings.models.map((x) => {
-      const o = new Option(x.label + (x.downloaded ? '' : ' (non téléchargé)'), x.id);
+      const o = new Option(x.label + (x.downloaded ? '' : x.custom ? ' (introuvable)' : ' (non téléchargé)'), x.id);
       o.selected = x.id === settings.localModel;
       return o;
     }));
@@ -265,14 +265,19 @@
     $('assist-folder').textContent = settings.modelsDir;
     $('assist-model-status').textContent = downloading
       ? 'Téléchargement en cours…'
+      : m && m.custom && m.downloaded ? `${m.label} : prêt (${m.file}).`
+      : m && m.custom ? `${m.label} : fichier introuvable (${m.file}).`
       : m && m.downloaded ? `${m.label} : prêt.`
       : m && m.partial ? `${m.label} : le fichier est incomplet (téléchargement en cours ou interrompu).`
       : `${m ? m.label : 'Le modèle'} n’est pas encore téléchargé.`;
-    $('assist-model-download').hidden = downloading || !!(m && m.downloaded);
+    $('assist-model-download').hidden = downloading || !!(m && (m.downloaded || m.custom));
     $('assist-model-cancel').hidden = !downloading;
     $('assist-model-progress').hidden = !downloading;
-    $('assist-model-delete').hidden = downloading || !(m && m.downloaded);
+    // Modèle indiqué par l'utilisateur : retiré de la liste, jamais effacé.
+    $('assist-model-delete').hidden = downloading || !(m && (m.downloaded || m.custom));
+    $('assist-model-delete').textContent = m && m.custom ? 'Retirer ce modèle' : 'Supprimer le modèle';
     $('assist-folder-change').disabled = downloading;
+    $('assist-model-locate').disabled = downloading;
     if (!modelReady()) $('assist-settings').open = true;
   }
 
@@ -291,6 +296,19 @@
   $('assist-folder-change').addEventListener('click', async () => {
     settings = await api.assistChooseFolder();
     renderSettings();
+  });
+  $('assist-model-locate').addEventListener('click', async () => {
+    const res = await api.assistLocateModel();
+    if (!res || res.cancelled) return;
+    if (res.error) {
+      $('assist-model-status').textContent = res.error;
+      return;
+    }
+    settings = res.settings;
+    renderSettings();
+    lastKey = '';
+    setStatus('');
+    if (modelReady()) onSelection(source.value);
   });
   $('assist-model-download').addEventListener('click', async () => {
     $('assist-model-progress').value = 0;

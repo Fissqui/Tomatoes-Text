@@ -22,7 +22,7 @@ module.exports = async ({ page, electron }) => {
   delete process.env.FT_SANS_TUTORIEL;
   await page.reload();
   await page.waitForTimeout(1800);
-  let st = await app(() => ({ open: document.getElementById('modal').open, text: document.getElementById('modal-message').textContent, ok: document.getElementById('modal-ok').textContent, cancel: document.getElementById('modal-cancel').textContent }));
+  let st = await app(() => ({ open: document.getElementById('first-run').open, text: document.querySelector('#fr-tuto p').textContent, ok: document.getElementById('fr-tutorial').textContent, cancel: document.getElementById('fr-later').textContent }));
   assert(st.open, 'question posée au premier lancement');
   assert.strictEqual(st.ok, 'Ouvrir le tutoriel');
   assert.strictEqual(st.cancel, 'Plus tard');
@@ -30,7 +30,7 @@ module.exports = async ({ page, electron }) => {
   await page.screenshot({ path: path.join(SHOTS, 'tutoriel-0-question.png') });
   ok(`premier lancement : projet « Tutoriel » installé (${shipped.length} documents), question « ${st.text.slice(0, 40)}… »`);
 
-  await page.click('#modal-ok');
+  await page.click('#fr-tutorial');
   await page.waitForTimeout(1500);
   st = await app(() => ({
     project: document.getElementById('project-select').value,
@@ -72,7 +72,7 @@ module.exports = async ({ page, electron }) => {
   // 3. Lancement suivant : plus de question.
   await page.reload();
   await page.waitForTimeout(1800);
-  assert(!(await app(() => document.getElementById('modal').open)), 'question posée une seule fois');
+  assert(!(await app(() => document.getElementById('first-run').open)), 'question posée une seule fois');
   ok('lancement suivant : pas de nouvelle question');
 
   // 4. Tutoriel supprimé : Aide > Tutoriel le réinstalle et l'ouvre.

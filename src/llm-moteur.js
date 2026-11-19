@@ -46,9 +46,23 @@ function setModelsDir(newDir) {
   dir = newDir;
 }
 
+// Modèle déjà présent sur l'ordinateur, indiqué par l'utilisateur (fichier .gguf, « Indiquer
+// l'emplacement du LLM… ») : modèle « perso », à côté des modèles proposés. '' : aucun.
+const CUSTOM = 'perso';
+function setCustomModel(file) {
+  if (!file) {
+    delete MODELS[CUSTOM];
+    return;
+  }
+  if (MODELS[CUSTOM] && MODELS[CUSTOM].path === file) return;
+  const name = path.basename(file);
+  const known = Object.values(MODELS).find((m) => !m.custom && m.file.toLowerCase() === name.toLowerCase());
+  MODELS[CUSTOM] = { label: known ? known.label.replace(/ \(.*\)$/, '') : name.replace(/\.gguf$/i, ''), folder: '', file: name, path: file, size: 1, custom: true };
+}
+
 // Chaque modèle a son propre sous-dossier, au nom du modèle (ex. « C:\Local LLM\Mistral 7B »).
 function modelPath(id) {
-  return path.join(modelsDir(), MODELS[id].folder, MODELS[id].file);
+  return MODELS[id].path || path.join(modelsDir(), MODELS[id].folder, MODELS[id].file);
 }
 
 // Le modèle n'est prêt que si le fichier est complet (pas en cours de téléchargement).
@@ -121,14 +135,16 @@ function listModels() {
   return Object.entries(MODELS).map(([id, m]) => ({
     id,
     label: m.label,
+    custom: !!m.custom,
+    file: m.custom ? m.path : '',
     downloaded: isDownloaded(id),
-    partial: !isDownloaded(id) && fsSync.existsSync(modelPath(id)),
+    partial: !m.custom && !isDownloaded(id) && fsSync.existsSync(modelPath(id)),
     downloading: !!download && download.id === id
   }));
 }
 
 async function downloadModel(id, onProgress) {
-  if (!MODELS[id]) throw new Error('Modèle inconnu.');
+  if (!MODELS[id] || MODELS[id].custom) throw new Error('Modèle inconnu.');
   if (download) throw new Error('Un téléchargement est déjà en cours.');
   download = { id, downloader: null };
   try {
@@ -155,7 +171,8 @@ async function cancelDownload() {
 function deleteModel(id) {
   return enqueue(async () => {
     if (loaded && loaded.id === id) await unload();
-    await fs.rm(modelPath(id), { force: true });
+    // (Le fichier d'un modèle indiqué par l'utilisateur n'est jamais effacé : il est seulement retiré.)
+    if (MODELS[id] && !MODELS[id].custom) await fs.rm(modelPath(id), { force: true });
   }, true);
 }
 
@@ -233,4 +250,4 @@ async function memoryState() {
   return { gpuLayers: loaded.model.gpuLayers, contextSize: loaded.context.contextSize, tokens: loaded.sequence.nextTokenIndex, vramFree: vram.free };
 }
 
-module.exports = { memoryState, MODELS, DEFAULT_MODEL, setModelsDir, modelsDir, listModels, isDownloaded, downloadModel, cancelDownload, deleteModel, preload, generate };
+module.exports = { memoryState, MODELS, DEFAULT_MODEL, CUSTOM, setCustomModel, setModelsDir, modelsDir, listModels, isDownloaded, downloadModel, cancelDownload, deleteModel, preload, generate };

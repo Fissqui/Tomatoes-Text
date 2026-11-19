@@ -14,6 +14,7 @@ port.on('message', async (e) => {
     return;
   }
   if (m.dir) moteur.setModelsDir(m.dir);
+  if ('custom' in m) moteur.setCustomModel(m.custom);
   const args = m.args || [];
   try {
     let value;
