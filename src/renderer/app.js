@@ -548,6 +548,25 @@
       const path = await api.exportDoc(doc);
       if (path) flash('Copie enregistrée : ' + path);
     },
+    // « Changer de projet » : le document passe dans « Non classés » de l'autre projet.
+    async changeDocProject(docId, project) {
+      const entry = lib.docs.find((d) => d.id === docId);
+      if (!entry) return;
+      let fileName = entry.fileName;
+      if (current && current.doc && current.doc.id === docId) {
+        await flushSave();
+        fileName = current.fileName;
+        clearTimeout(saveTimer);
+        dirty = false;
+        closeDoc();
+      }
+      const res = await api.changeDocProject(fileName, project);
+      if (res && res.error) { flash(res.error); await reloadLibrary(); return; }
+      for (const r of recents()) if (r.project === lib.project && r.id === docId) r.project = project;
+      api.saveSettings(settings);
+      await reloadLibrary();
+      flash(`« ${entry.title} » déplacé dans le projet « ${project} ».`);
+    },
     async deleteDoc(fileName) {
       const entry = lib.docs.find((d) => d.fileName === fileName);
       const ok = await confirmAction(`Mettre « ${entry ? entry.title : fileName} » à la corbeille ?`, 'Supprimer');

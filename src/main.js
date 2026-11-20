@@ -564,6 +564,43 @@ async function forgetDoc(id) {
   await writeIndex(index);
 }
 
+// « Changer de projet » : le document passe dans l'index d'un autre projet (« Non classés »). Un fichier
+// rangé dans le dossier du projet est déplacé dans le dossier de l'autre projet, avec son historique des
+// versions ; un fichier rangé ailleurs sur l'ordinateur reste à sa place.
+ipcMain.handle('doc:changeProject', async (_e, fileName, target) => {
+  const name = String(target || '');
+  const projects = await listProjects();
+  if (!projects.includes(name) || name === storage.project) return { error: 'Projet introuvable.' };
+  const destDir = path.join(projectsDir(), name);
+  const from = inLibrary(fileName);
+  const doc = await readJson(from, null);
+  if (!isFrameTextDoc(doc) || !doc.id) return { error: 'Ce document ne peut pas être lu.' };
+  const dest = await readIndex(destDir);
+  if (path.isAbsolute(String(fileName))) {
+    dest.files[doc.id] = { path: from, title: doc.title };
+  } else {
+    const base = safeFileName(doc.title);
+    let file = `${base}.${FILE_EXT}`;
+    for (let n = 2; fsSync.existsSync(path.join(destDir, file)); n++) file = `${base} (${n}).${FILE_EXT}`;
+    try {
+      await fs.rename(from, path.join(destDir, file));
+    } catch {
+      return { error: 'Impossible de déplacer le fichier (il est peut-être ouvert ailleurs).' };
+    }
+    dest.files[doc.id] = { path: path.join(destDir, file), title: doc.title };
+    const versions = path.join(libraryDir(), 'Historique des versions', path.basename(doc.id));
+    const versionsTo = path.join(destDir, 'Historique des versions', path.basename(doc.id));
+    if (fsSync.existsSync(versions) && !fsSync.existsSync(versionsTo)) {
+      await fs.mkdir(path.dirname(versionsTo), { recursive: true });
+      await fs.rename(versions, versionsTo).catch(() => {});
+    }
+  }
+  delete dest.placement[doc.id];
+  await writeIndex(dest, destDir);
+  await forgetDoc(doc.id);
+  return { ok: true, project: name };
+});
+
 // Document introuvable : retiré de la liste, ou retrouvé (fichier choisi, même document).
 ipcMain.handle('library:forget', (_e, id) => forgetDoc(String(id)));
 ipcMain.handle('library:locate', async (_e, id) => {

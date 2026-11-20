@@ -20,6 +20,7 @@ contextBridge.exposeInMainWorld('frameText', {
   saveDoc: (fileName, doc) => ipcRenderer.invoke('doc:save', fileName, doc),
   saveImage: (id, head, data) => ipcRenderer.invoke('doc:image', id, head, data),
   deleteDoc: (fileName) => ipcRenderer.invoke('doc:delete', fileName),
+  changeDocProject: (fileName, project) => ipcRenderer.invoke('doc:changeProject', fileName, project),
   exportDoc: (doc) => ipcRenderer.invoke('doc:export', doc),
   exportWord: (title, data) => ipcRenderer.invoke('doc:exportWord', title, data),
   fontsForWord: (names) => ipcRenderer.invoke('doc:fontsForWord', names),

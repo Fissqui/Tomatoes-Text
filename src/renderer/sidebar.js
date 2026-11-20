@@ -361,6 +361,10 @@
       const moves = targets
         .filter((t) => t.id !== current && (t.id === null ? current !== null : true))
         .map((t) => ({ text: '\u00a0\u00a0\u00a0'.repeat(t.depth) + '→ ' + t.name, action: () => h.moveDoc(doc.id, t.id) }));
+      const others = (state.projects || []).filter((p) => p !== state.project);
+      const projectMoves = others.length
+        ? ['-', { text: 'Changer de projet', submenu: () => others.map((p) => ({ text: p, action: () => h.changeDocProject(doc.id, p) })) }]
+        : [];
       if (doc.missing) {
         return [
           { note: 'Fichier introuvable : ' + doc.fileName },
@@ -383,6 +387,7 @@
         ...targets
           .filter((t) => t.id !== current && (t.id === null ? current !== null : true))
           .map((t) => ({ text: '\u00a0\u00a0\u00a0'.repeat(t.depth) + '→ ' + t.name, action: () => h.moveDoc(doc.id, t.id) })),
+        ...projectMoves,
         '-',
         { text: 'Supprimer (corbeille)', danger: true, action: () => h.deleteDoc(doc.fileName) }
       ];
