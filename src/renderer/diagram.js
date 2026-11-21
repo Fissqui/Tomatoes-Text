@@ -471,6 +471,81 @@
 
   // ----- Connecteurs : tracé, pointes, étiquette -----
 
+  // Le segment p → q traverse-t-il l'intérieur de la forme n ? (Les bords ne comptent pas.)
+  function crosses(p, q, n) {
+    const m = 1.5;
+    const x0 = n.x + m; const x1 = n.x + n.w - m; const y0 = n.y + m; const y1 = n.y + n.h - m;
+    if (Math.max(p[0], q[0]) <= x0 || Math.min(p[0], q[0]) >= x1 || Math.max(p[1], q[1]) <= y0 || Math.min(p[1], q[1]) >= y1) return false;
+    const steps = Math.max(1, Math.ceil(Math.hypot(q[0] - p[0], q[1] - p[1]) / 3));
+    for (let i = 0; i <= steps; i++) {
+      const x = p[0] + ((q[0] - p[0]) * i) / steps;
+      const y = p[1] + ((q[1] - p[1]) * i) / steps;
+      if (x > x0 && x < x1 && y > y0 && y < y1) return true;
+    }
+    return false;
+  }
+  const crossesAny = (pts, boxes) => pts.some((p, i) => i > 0 && boxes.some((n) => crosses(pts[i - 1], p, n)));
+
+  // Tracé coudé automatique (à la façon de Visio) : il sort de la forme de départ par le côté choisi,
+  // arrive par le côté choisi de la forme d'arrivée, et contourne les deux formes au lieu de les
+  // traverser. Parmi les tracés possibles, le plus court, avec le moins de coudes.
+  function orthoRoute(a, s1, p1, b, s2, p2) {
+    const out = 18;
+    const n1 = NORMAL[s1];
+    const n2 = NORMAL[s2];
+    const q1 = [p1[0] + n1[0] * out, p1[1] + n1[1] * out];
+    const q2 = [p2[0] + n2[0] * out, p2[1] + n2[1] * out];
+    const xs = [q1[0], q2[0], (q1[0] + q2[0]) / 2, Math.min(a.x, b.x) - out, Math.max(a.x + a.w, b.x + b.w) + out];
+    const ys = [q1[1], q2[1], (q1[1] + q2[1]) / 2, Math.min(a.y, b.y) - out, Math.max(a.y + a.h, b.y + b.h) + out];
+    // (Entre deux formes proches : passer au milieu de l'espace qui les sépare.)
+    if (a.x + a.w <= b.x) xs.push((a.x + a.w + b.x) / 2); else if (b.x + b.w <= a.x) xs.push((b.x + b.w + a.x) / 2);
+    if (a.y + a.h <= b.y) ys.push((a.y + a.h + b.y) / 2); else if (b.y + b.h <= a.y) ys.push((b.y + b.h + a.y) / 2);
+    const middles = [[[q2[0], q1[1]]], [[q1[0], q2[1]]]];
+    for (const x of xs) middles.push([[x, q1[1]], [x, q2[1]]]);
+    for (const y of ys) middles.push([[q1[0], y], [q2[0], y]]);
+    for (const x of xs) for (const y of ys) middles.push([[x, q1[1]], [x, y], [q2[0], y]], [[q1[0], y], [x, y], [x, q2[1]]]);
+    let best = null;
+    for (const mid of middles) {
+      let pts = [p1, q1, ...mid, q2, p2].filter((p, i, arr) => i === 0 || Math.abs(p[0] - arr[i - 1][0]) > 0.01 || Math.abs(p[1] - arr[i - 1][1]) > 0.01);
+      let ok = true;
+      for (let i = 1; i < pts.length; i++) {
+        const [u, v] = [pts[i - 1], pts[i]];
+        // (Seuls les segments horizontaux ou verticaux.)
+        if (Math.abs(u[0] - v[0]) > 0.01 && Math.abs(u[1] - v[1]) > 0.01) { ok = false; break; }
+        // (Pas de demi-tour sur soi-même.)
+        if (i > 1) {
+          const w = pts[i - 2];
+          const d1 = [u[0] - w[0], u[1] - w[1]];
+          const d2 = [v[0] - u[0], v[1] - u[1]];
+          if (d1[0] * d2[0] + d1[1] * d2[1] < 0) { ok = false; break; }
+        }
+      }
+      if (!ok || crossesAny(pts, [a, b])) continue;
+      // Points alignés retirés.
+      pts = pts.filter((p, i) => {
+        if (i === 0 || i === pts.length - 1) return true;
+        const [u, v] = [pts[i - 1], pts[i + 1]];
+        return !((Math.abs(u[0] - p[0]) < 0.01 && Math.abs(p[0] - v[0]) < 0.01) || (Math.abs(u[1] - p[1]) < 0.01 && Math.abs(p[1] - v[1]) < 0.01));
+      });
+      let len = 0;
+      for (let i = 1; i < pts.length; i++) len += Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]);
+      const cost = len + (pts.length - 2) * 25;
+      if (!best || cost < best.cost - 0.01) best = { pts, cost };
+    }
+    return best && best.pts;
+  }
+  function polyGeometry(pts, p1, p2, r) {
+    const path = roundedPolyline(pts, r);
+    // Étiquette au milieu du plus long segment.
+    let longest = 0;
+    let mid = pts[0];
+    for (let i = 1; i < pts.length; i++) {
+      const len = Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]);
+      if (len > longest) { longest = len; mid = [(pts[i][0] + pts[i - 1][0]) / 2, (pts[i][1] + pts[i - 1][1]) / 2]; }
+    }
+    return { path, mid, startDir: pts[1], endDir: pts[pts.length - 2], p1, p2, pts };
+  }
+
   function linkGeometry(d, l) {
     const a = d.nodes.find((n) => n.id === l.from.node);
     const b = d.nodes.find((n) => n.id === l.to.node);
@@ -494,10 +569,21 @@
       const c1 = [p1[0] + n1[0] * dist + bx / 0.75, p1[1] + n1[1] * dist + by / 0.75];
       const c2 = [p2[0] + n2[0] * dist + bx / 0.75, p2[1] + n2[1] * dist + by / 0.75];
       path = `M${p1}C${c1} ${c2} ${p2}`;
-      const t = 0.5;
-      const bz = (i) => (1 - t) ** 3 * p1[i] + 3 * (1 - t) ** 2 * t * c1[i] + 3 * (1 - t) * t * t * c2[i] + t ** 3 * p2[i];
-      mid = [bz(0), bz(1)];
+      const bz = (i, t) => (1 - t) ** 3 * p1[i] + 3 * (1 - t) ** 2 * t * c1[i] + 3 * (1 - t) * t * t * c2[i] + t ** 3 * p2[i];
+      // (Courbe qui traverserait l'une des deux formes : elle suit le tracé qui les contourne, arrondi.)
+      if (!bx && !by) {
+        const samples = Array.from({ length: 33 }, (_, i) => [bz(0, i / 32), bz(1, i / 32)]);
+        if (crossesAny(samples, [a, b])) {
+          const r = orthoRoute(a, s1, p1, b, s2, p2);
+          if (r) return polyGeometry(r, p1, p2, 22);
+        }
+      }
+      mid = [bz(0, 0.5), bz(1, 0.5)];
       return { path, mid, startDir: c1, endDir: c2, p1, p2, pts: [p1, c1, c2, p2] };
+    }
+    if (l.route === 'coude' && !bx && !by) {
+      const r = orthoRoute(a, s1, p1, b, s2, p2);
+      if (r) return polyGeometry(r, p1, p2, 6);
     }
     if (l.route === 'coude') {
       const out = 18;
@@ -534,6 +620,11 @@
       // Droit, tiré par le milieu : un point de passage.
       const v = [(p1[0] + p2[0]) / 2 + bx, (p1[1] + p2[1]) / 2 + by];
       return { path: `M${p1}L${v}L${p2}`, mid: v, startDir: v, endDir: v, p1, p2, pts: [p1, v, p2] };
+    }
+    // (Droit qui traverserait l'une des deux formes : il la contourne.)
+    if (crossesAny([p1, p2], [a, b])) {
+      const r = orthoRoute(a, s1, p1, b, s2, p2);
+      if (r) return polyGeometry(r, p1, p2, 6);
     }
     path = `M${p1}L${p2}`;
     return { path, mid: [(p1[0] + p2[0]) / 2, (p1[1] + p2[1]) / 2], startDir: p2, endDir: p1, p1, p2, pts: [p1, p2] };
@@ -1042,20 +1133,29 @@
         out += `<circle class="dg-anchor" data-anchor="${side}" data-node="${n.id}" cx="${p[0]}" cy="${p[1]}" r="${5 / k}" stroke-width="${1.2 / k}"/>`;
       }
     }
-    if (dragState && dragState.kind === 'connect') {
-      const { from, to, hover } = dragState;
-      if (hover) { const hn = nodeById(hover); out += `<rect class="dg-target" x="${hn.x - 4 / k}" y="${hn.y - 4 / k}" width="${hn.w + 8 / k}" height="${hn.h + 8 / k}" stroke-width="${2 / k}"/>`; }
-      out += `<path class="dg-temp" d="M${from}L${to}" stroke-width="${1.5 / k}" stroke-dasharray="${5 / k},${4 / k}"/>`;
+    // Connecteur tiré (nouveau, ou extrémité déplacée) : points de connexion de toutes les formes,
+    // celui qui sera retenu en grand.
+    if (dragState && (dragState.kind === 'connect' || dragState.kind === 'end')) {
+      const { to, target } = dragState;
+      const from = dragState.kind === 'connect' ? dragState.from : dragState.fixed;
+      const skip = dragState.kind === 'connect' ? dragState.node : dragState.other;
+      if (target) { const hn = nodeById(target.node); out += `<rect class="dg-target" x="${hn.x - 4 / k}" y="${hn.y - 4 / k}" width="${hn.w + 8 / k}" height="${hn.h + 8 / k}" stroke-width="${2 / k}"/>`; }
+      for (const n of data.nodes) {
+        if (n.id === skip) continue;
+        for (const side of ['n', 'e', 's', 'w']) {
+          const q = anchor(n, side);
+          const on = target && target.node === n.id && target.side === side;
+          const r = (on ? 4.5 : 3) / k;
+          out += `<path class="dg-cpoint${on ? ' on' : ''}" d="M${q[0] - r},${q[1] - r}L${q[0] + r},${q[1] + r}M${q[0] - r},${q[1] + r}L${q[0] + r},${q[1] - r}" stroke-width="${(on ? 2.2 : 1.5) / k}"/>`;
+        }
+      }
+      out += `<path class="dg-temp" d="M${from}L${target ? target.pt : to}" stroke-width="${1.5 / k}" stroke-dasharray="${5 / k},${4 / k}"/>`;
     }
     // Connecteur seul sélectionné : ses deux extrémités se tirent vers une autre forme.
     if (selection.length === 1 && selLinks().length === 1 && !(dragState && dragState.kind === 'end')) {
       const g = linkGeometry(data, selLinks()[0]);
-      if (g) for (const [end, q] of [['from', g.p1], ['to', g.p2]]) out += `<circle class="dg-lend" data-lend="${end}" cx="${q[0]}" cy="${q[1]}" r="${5.5 / k}" stroke-width="${1.5 / k}"/>`;
-    }
-    if (dragState && dragState.kind === 'end') {
-      const { fixed, to, hover } = dragState;
-      if (hover) { const hn = nodeById(hover); out += `<rect class="dg-target" x="${hn.x - 4 / k}" y="${hn.y - 4 / k}" width="${hn.w + 8 / k}" height="${hn.h + 8 / k}" stroke-width="${2 / k}"/>`; }
-      out += `<path class="dg-temp" d="M${fixed}L${to}" stroke-width="${1.5 / k}" stroke-dasharray="${5 / k},${4 / k}"/>`;
+      // (Un rond visible, et une zone plus large, invisible, pour l'attraper facilement.)
+      if (g) for (const [end, q] of [['from', g.p1], ['to', g.p2]]) out += `<circle class="dg-lend" data-lend="${end}" cx="${q[0]}" cy="${q[1]}" r="${6.5 / k}" stroke-width="${1.8 / k}"/><circle class="dg-lend-hit" data-lend="${end}" cx="${q[0]}" cy="${q[1]}" r="${13 / k}"/>`;
     }
     if (dragState && dragState.kind === 'band') {
       const [a, b] = [dragState.start, dragState.now];
@@ -1809,7 +1909,7 @@
       const g = l && linkGeometry(data, l);
       if (g) {
         const other = t.dataset.lend === 'from' ? 'to' : 'from';
-        dragState = { kind: 'end', link: l.id, end: t.dataset.lend, other: l[other].node, fixed: other === 'from' ? g.p1 : g.p2, to: p, hover: null };
+        dragState = { kind: 'end', link: l.id, end: t.dataset.lend, other: l[other].node, fixed: other === 'from' ? g.p1 : g.p2, to: p, target: null };
         canvas.setPointerCapture(e.pointerId);
         drawOverlay();
       }
@@ -1841,6 +1941,18 @@
       if (nid && selection.includes(nid)) {
         dragState = { kind: 'move', start: p, orig: new Map(selNodes().map((n) => [n.id, [n.x, n.y]])), recorded: false };
         canvas.setPointerCapture(e.pointerId);
+      }
+      // Connecteur pris près d'un bout : on tire cette extrémité (comme dans Visio).
+      if (lid && !e.shiftKey && selection.length === 1) {
+        const l = linkById(lid);
+        const g = linkGeometry(data, l);
+        const end = g && [['from', g.p1, g.p2, 'to'], ['to', g.p2, g.p1, 'from']].find(([, q]) => Math.hypot(q[0] - p[0], q[1] - p[1]) <= 16 / view.k);
+        if (end) {
+          dragState = { kind: 'end', link: lid, end: end[0], other: l[end[3]].node, fixed: end[2], to: p, target: null };
+          canvas.setPointerCapture(e.pointerId);
+          drawOverlay();
+          return;
+        }
       }
       // Connecteur : glisser le trait décale son tracé.
       if (lid && !e.shiftKey && selection.length === 1) {
@@ -1913,15 +2025,9 @@
       if (b[0] || b[1]) l.bend = b; else delete l.bend;
       content.innerHTML = contentSvg(data);
       drawOverlay();
-    } else if (dragState.kind === 'end') {
+    } else if (dragState.kind === 'end' || dragState.kind === 'connect') {
       dragState.to = p;
-      const over = nodeAtPoint(p, dragState.other);
-      dragState.hover = over ? over.id : null;
-      drawOverlay();
-    } else if (dragState.kind === 'connect') {
-      dragState.to = p;
-      const over = nodeAtPoint(p, dragState.node);
-      dragState.hover = over ? over.id : null;
+      dragState.target = snapTarget(p, dragState.kind === 'end' ? dragState.other : dragState.node);
       drawOverlay();
     } else if (dragState.kind === 'band') {
       dragState.now = p;
@@ -1934,6 +2040,25 @@
     }
   });
 
+  // Point de connexion visé : le plus proche dans un large rayon (aimant), sinon le côté le plus proche
+  // de la forme survolée.
+  function snapTarget(p, skip) {
+    let best = null;
+    const R = 26 / view.k;
+    for (const n of data.nodes) {
+      if (n.id === skip) continue;
+      for (const side of ['n', 'e', 's', 'w']) {
+        const q = anchor(n, side);
+        const d = Math.hypot(q[0] - p[0], q[1] - p[1]);
+        if (d <= R && (!best || d < best.d)) best = { node: n.id, side, pt: q, d };
+      }
+    }
+    if (best) return best;
+    const over = nodeAtPoint(p, skip);
+    if (!over) return null;
+    const side = nearestSide(over, p);
+    return { node: over.id, side, pt: anchor(over, side) };
+  }
   // Point d'accroche de n le plus proche de p.
   const nearestSide = (n, p) => ['n', 'e', 's', 'w'].reduce((best, s) => { const a = anchor(n, s); const d = Math.hypot(a[0] - p[0], a[1] - p[1]); return !best || d < best.d ? { s, d } : best; }, null).s;
   const insideMargin = (n, p, m) => p[0] >= n.x - m && p[0] <= n.x + n.w + m && p[1] >= n.y - m && p[1] <= n.y + n.h + m;
@@ -1944,12 +2069,10 @@
     dragState = null;
     if (st.kind === 'connect') {
       const p = point(e);
-      const over = nodeAtPoint(p, st.node);
-      if (over) {
+      const tg = snapTarget(p, st.node);
+      if (tg) {
         record();
-        // Côté d'arrivée : le point d'accroche le plus proche du lâcher.
-        const side = nearestSide(over, p);
-        const l = { ...clone(lastLink), id: newId('l'), from: { node: st.node, side: st.side }, to: { node: over.id, side } };
+        const l = { ...clone(lastLink), id: newId('l'), from: { node: st.node, side: st.side }, to: { node: tg.node, side: tg.side } };
         data.links.push(l);
         selection = [l.id];
       } else if (Math.hypot(p[0] - st.from[0], p[1] - st.from[1]) > 30 / view.k) {
@@ -1970,12 +2093,13 @@
       return;
     }
     if (st.kind === 'end') {
-      const p = point(e);
-      const over = nodeAtPoint(p, st.other);
+      const tg = snapTarget(point(e), st.other);
       const l = linkById(st.link);
-      if (over && l) {
+      if (tg && l && (tg.node !== l[st.end].node || tg.side !== l[st.end].side)) {
         record();
-        l[st.end] = { node: over.id, side: nearestSide(over, p) };
+        l[st.end] = { node: tg.node, side: tg.side };
+        // (Nouveau point de connexion : le décalage posé à la main ne vaut plus.)
+        delete l.bend;
       }
       render();
       return;

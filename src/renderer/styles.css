@@ -1767,6 +1767,9 @@ body.tb-moving, body.tb-moving * { cursor: grabbing !important; user-select: non
 #diagram-dialog .dg-anchor:hover { fill: #e67e22; }
 #diagram-dialog .dg-lend { fill: #ffffff; stroke: #2e86c1; cursor: move; }
 #diagram-dialog .dg-lend:hover { fill: #2e86c1; }
+#diagram-dialog .dg-lend-hit { fill: transparent; stroke: none; cursor: move; }
+#diagram-dialog .dg-cpoint { fill: none; stroke: #2e86c1; pointer-events: none; }
+#diagram-dialog .dg-cpoint.on { stroke: #e67e22; }
 #diagram-dialog .dg-temp { fill: none; stroke: #e67e22; pointer-events: none; }
 #diagram-dialog .dg-target { fill: none; stroke: #e67e22; pointer-events: none; }
 #diagram-dialog .dg-edit { position: absolute; z-index: 2; resize: none; border: 2px solid #2e86c1; border-radius: 4px; background: rgba(255, 255, 255, 0.96); color: #1f1f1f; padding: 4px; line-height: 1.25; outline: none; }

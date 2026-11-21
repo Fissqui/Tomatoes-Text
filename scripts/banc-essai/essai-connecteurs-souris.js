@@ -1,7 +1,9 @@
-// Essai 2.4.32 : connecteurs déplacés à la souris dans les schémas.
+// Essai 2.4.32–2.4.33 : connecteurs déplacés à la souris dans les schémas (à la façon de Visio).
 // - glisser le trait d'un connecteur décale son tracé (coudé, droit, courbe) ; « Rétablir le tracé » ;
 // - glisser une extrémité vers une autre forme y rattache le connecteur (côté le plus proche) ;
-// - lâchée dans le vide, l'extrémité reste où elle était ; Annuler revient en arrière.
+// - lâchée dans le vide, l'extrémité reste où elle était ; Annuler revient en arrière ;
+// - 2.4.33 : points de connexion affichés et aimantés pendant le glisser, extrémité attrapée près du bout
+//   du trait, tracés (coudé, droit, courbe) qui contournent les formes au lieu de les traverser.
 const assert = require('assert');
 
 module.exports = async ({ page }) => {
@@ -115,6 +117,66 @@ module.exports = async ({ page }) => {
   d = await cur();
   assert.strictEqual(d.links[0].to.node, suite.id);
   ok('lâchée dans le vide : inchangé ; Annuler : de nouveau relié à « Suite »');
+
+  // 7. Points de connexion : affichés pendant le glisser ; lâché à 15 px du point gauche de « Autre »
+  // (hors de la forme), l'aimant le retient. L'extrémité s'attrape à 10 px du bout, sans la sélectionner d'abord.
+  { const [x, y] = await at(mx, cy + 100); await page.mouse.click(x, y); }
+  assert.strictEqual(await panel(), 'Schéma');
+  const g0 = await v(() => { const c = document.querySelector('#diagram-dialog .dg-content [data-link="l1"] path:not(.hit)'); const q = c.getPointAtLength(c.getTotalLength() - 10); return [q.x, q.y]; });
+  const wpt = [autre.x, autre.y + autre.h / 2];
+  {
+    const [x0, y0] = await at(...g0);
+    const [x1, y1] = await at(wpt[0] - 15, wpt[1] + 4);
+    await page.mouse.move(x0, y0);
+    await page.mouse.down();
+    await page.mouse.move((x0 + x1) / 2, (y0 + y1) / 2, { steps: 4 });
+    await page.mouse.move(x1, y1, { steps: 4 });
+    const shown = await v(() => [document.querySelectorAll('#diagram-dialog .dg-overlay .dg-cpoint').length, document.querySelectorAll('#diagram-dialog .dg-overlay .dg-cpoint.on').length]);
+    assert.deepStrictEqual(shown, [8, 1], JSON.stringify(shown));
+    await page.mouse.up();
+  }
+  d = await cur();
+  assert.deepStrictEqual(d.links[0].to, { node: 'n-autre', side: 'w' });
+  ok('points de connexion visibles (8, celui visé en couleur), aimant de 26 px, extrémité prise près du bout');
+
+  // 8. Tracés qui contournent : Début (côté droit) → Suite (côté droit), comme dans le signalement.
+  const inside = (q, n) => q[0] > n.x + 2 && q[0] < n.x + n.w - 2 && q[1] > n.y + 2 && q[1] < n.y + n.h - 2;
+  const pathPoints = () => v(() => {
+    const c = document.querySelector('#diagram-dialog .dg-content [data-link="l1"] path:not(.hit)');
+    const L = c.getTotalLength();
+    return Array.from({ length: 121 }, (_, i) => { const q = c.getPointAtLength((L * i) / 120); return [q.x, q.y]; });
+  });
+  for (const route of ['coude', 'droit', 'courbe']) {
+    d = await cur();
+    d.links[0] = { ...d.links[0], route, from: { node: debut.id, side: 'e' }, to: { node: suite.id, side: 'e' } };
+    delete d.links[0].bend;
+    await v((json) => {
+      document.getElementById('diagram-dialog').close();
+      const box = document.createElement('div');
+      box.dataset.diagram = json;
+      window.FTDiagram.open(box);
+    }, JSON.stringify(d));
+    await page.waitForTimeout(100);
+    const pts = await pathPoints();
+    const bad = pts.filter((q) => inside(q, suite) || inside(q, debut));
+    assert.strictEqual(bad.length, 0, route + ' ' + JSON.stringify(bad.slice(0, 3)));
+    const end = pts[pts.length - 1];
+    assert.ok(Math.abs(end[0] - (suite.x + suite.w)) < 1 && Math.abs(end[1] - (suite.y + suite.h / 2)) < 1, route + ' ' + end);
+    const svg = await v(() => window.FTDiagram.exportSvg(window.FTDiagram.current()));
+    assert.ok(!/NaN/.test(svg), route);
+  }
+  // (Cas ordinaire, côtés face à face : tracé inchangé, une ligne droite.)
+  d = await cur();
+  d.links[0] = { ...d.links[0], route: 'coude', from: { node: debut.id, side: 'e' }, to: { node: suite.id, side: 'w' } };
+  await v((json) => {
+    document.getElementById('diagram-dialog').close();
+    const box = document.createElement('div');
+    box.dataset.diagram = json;
+    window.FTDiagram.open(box);
+  }, JSON.stringify(d));
+  assert.strictEqual(await linkPath(), `M${debut.x + debut.w},${cy}L${suite.x},${cy}`);
+  await page.screenshot({ path: require('path').join(process.env.FT_SHOTS || require('os').tmpdir(), 'connecteurs-contournent.png') });
+  ok('coudé, droit et courbe de côté droit à côté droit : contournent les formes et arrivent sur le bord');
 
   // 6. Une forme se déplace toujours normalement (le glisser des connecteurs ne la gêne pas).
   await page.mouse.click(10, 10);
