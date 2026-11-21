@@ -483,13 +483,16 @@
     const p2 = anchor(b, s2);
     const n1 = NORMAL[s1];
     const n2 = NORMAL[s2];
+    // Décalage du tracé, posé en glissant le trait à la souris (relatif : suit les formes).
+    const [bx, by] = Array.isArray(l.bend) ? l.bend.map((v) => Number(v) || 0) : [0, 0];
     let pts;
     let path;
     let mid;
     if (l.route === 'courbe') {
       const dist = Math.max(40, Math.hypot(p2[0] - p1[0], p2[1] - p1[1]) / 2.5);
-      const c1 = [p1[0] + n1[0] * dist, p1[1] + n1[1] * dist];
-      const c2 = [p2[0] + n2[0] * dist, p2[1] + n2[1] * dist];
+      // (Milieu de la courbe = 3/4 du déplacement des points de contrôle : il suit la souris.)
+      const c1 = [p1[0] + n1[0] * dist + bx / 0.75, p1[1] + n1[1] * dist + by / 0.75];
+      const c2 = [p2[0] + n2[0] * dist + bx / 0.75, p2[1] + n2[1] * dist + by / 0.75];
       path = `M${p1}C${c1} ${c2} ${p2}`;
       const t = 0.5;
       const bz = (i) => (1 - t) ** 3 * p1[i] + 3 * (1 - t) ** 2 * t * c1[i] + 3 * (1 - t) * t * t * c2[i] + t ** 3 * p2[i];
@@ -502,10 +505,15 @@
       const q2 = [p2[0] + n2[0] * out, p2[1] + n2[1] * out];
       const h1 = s1 === 'e' || s1 === 'w';
       const h2 = s2 === 'e' || s2 === 'w';
-      if (h1 && h2) { const mx = (q1[0] + q2[0]) / 2; pts = [p1, q1, [mx, q1[1]], [mx, q2[1]], q2, p2]; }
-      else if (!h1 && !h2) { const my = (q1[1] + q2[1]) / 2; pts = [p1, q1, [q1[0], my], [q2[0], my], q2, p2]; }
-      else if (h1) pts = [p1, q1, [q2[0], q1[1]], q2, p2];
-      else pts = [p1, q1, [q1[0], q2[1]], q2, p2];
+      // (Deux sorties parallèles : le segment du milieu suit la souris ; tiré surtout dans l'autre sens,
+      // le tracé fait un détour par la hauteur, ou l'abscisse, choisie.)
+      if (h1 && h2 && Math.abs(by) > Math.abs(bx)) { const y = (q1[1] + q2[1]) / 2 + by; pts = [p1, q1, [q1[0], y], [q2[0], y], q2, p2]; }
+      else if (h1 && h2) { const mx = (q1[0] + q2[0]) / 2 + bx; pts = [p1, q1, [mx, q1[1]], [mx, q2[1]], q2, p2]; }
+      else if (!h1 && !h2 && Math.abs(bx) > Math.abs(by)) { const x = (q1[0] + q2[0]) / 2 + bx; pts = [p1, q1, [x, q1[1]], [x, q2[1]], q2, p2]; }
+      else if (!h1 && !h2) { const my = (q1[1] + q2[1]) / 2 + by; pts = [p1, q1, [q1[0], my], [q2[0], my], q2, p2]; }
+      // (Un seul coude : décalé, le tracé passe par un palier à la hauteur, ou à l'abscisse, choisie.)
+      else if (h1) pts = by ? [p1, q1, [q1[0], q1[1] + by], [q2[0], q1[1] + by], q2, p2] : [p1, q1, [q2[0], q1[1]], q2, p2];
+      else pts = bx ? [p1, q1, [q1[0] + bx, q1[1]], [q1[0] + bx, q2[1]], q2, p2] : [p1, q1, [q1[0], q2[1]], q2, p2];
       // Points alignés retirés.
       pts = pts.filter((p, i) => {
         if (i === 0 || i === pts.length - 1) return true;
@@ -521,6 +529,11 @@
         if (len > best) { best = len; mid = [(pts[i][0] + pts[i - 1][0]) / 2, (pts[i][1] + pts[i - 1][1]) / 2]; }
       }
       return { path, mid, startDir: pts[1], endDir: pts[pts.length - 2], p1, p2, pts };
+    }
+    if (bx || by) {
+      // Droit, tiré par le milieu : un point de passage.
+      const v = [(p1[0] + p2[0]) / 2 + bx, (p1[1] + p2[1]) / 2 + by];
+      return { path: `M${p1}L${v}L${p2}`, mid: v, startDir: v, endDir: v, p1, p2, pts: [p1, v, p2] };
     }
     path = `M${p1}L${p2}`;
     return { path, mid: [(p1[0] + p2[0]) / 2, (p1[1] + p2[1]) / 2], startDir: p2, endDir: p1, p1, p2, pts: [p1, p2] };
@@ -1034,6 +1047,16 @@
       if (hover) { const hn = nodeById(hover); out += `<rect class="dg-target" x="${hn.x - 4 / k}" y="${hn.y - 4 / k}" width="${hn.w + 8 / k}" height="${hn.h + 8 / k}" stroke-width="${2 / k}"/>`; }
       out += `<path class="dg-temp" d="M${from}L${to}" stroke-width="${1.5 / k}" stroke-dasharray="${5 / k},${4 / k}"/>`;
     }
+    // Connecteur seul sélectionné : ses deux extrémités se tirent vers une autre forme.
+    if (selection.length === 1 && selLinks().length === 1 && !(dragState && dragState.kind === 'end')) {
+      const g = linkGeometry(data, selLinks()[0]);
+      if (g) for (const [end, q] of [['from', g.p1], ['to', g.p2]]) out += `<circle class="dg-lend" data-lend="${end}" cx="${q[0]}" cy="${q[1]}" r="${5.5 / k}" stroke-width="${1.5 / k}"/>`;
+    }
+    if (dragState && dragState.kind === 'end') {
+      const { fixed, to, hover } = dragState;
+      if (hover) { const hn = nodeById(hover); out += `<rect class="dg-target" x="${hn.x - 4 / k}" y="${hn.y - 4 / k}" width="${hn.w + 8 / k}" height="${hn.h + 8 / k}" stroke-width="${2 / k}"/>`; }
+      out += `<path class="dg-temp" d="M${fixed}L${to}" stroke-width="${1.5 / k}" stroke-dasharray="${5 / k},${4 / k}"/>`;
+    }
     if (dragState && dragState.kind === 'band') {
       const [a, b] = [dragState.start, dragState.now];
       out += `<rect class="dg-band" x="${Math.min(a[0], b[0])}" y="${Math.min(a[1], b[1])}" width="${Math.abs(a[0] - b[0])}" height="${Math.abs(a[1] - b[1])}" stroke-width="${1 / k}"/>`;
@@ -1252,7 +1275,8 @@
     if (ls.length) {
       const l = ls[0];
       props.append(section(ls.length > 1 ? `${ls.length} connecteurs` : 'Connecteur'));
-      props.append(field('Tracé', select(ROUTES, l.route, setLinks('route'))));
+      props.append(field('Tracé', select(ROUTES, l.route, (v) => { selLinks().forEach((x) => { delete x.bend; }); setLinks('route')(v); })));
+      if (ls.some((x) => x.bend)) props.append(toggles([['Rétablir le tracé', 'Annuler le décalage posé à la souris', false, () => { record(); selLinks().forEach((x) => { delete x.bend; }); render(); }]]));
       props.append(section('Couleur'), colors(l.color, setLinks('color'), false));
       props.append(field('Épaisseur', number(l.width, 0.5, 10, 0.5, setLinks('width'))));
       props.append(field('Trait', select(DASHES, l.dash, setLinks('dash'))));
@@ -1282,7 +1306,7 @@
       })));
       const p = document.createElement('p');
       p.className = 'dg-help';
-      p.innerHTML = 'Sélectionnez une forme ou un connecteur pour changer son apparence.<br><br>Maj+clic ou un cadre tracé à la souris : plusieurs éléments à la fois.<br>Flèches du clavier : déplacer finement.<br>Molette : se déplacer ; Ctrl+molette : zoom.';
+      p.innerHTML = 'Sélectionnez une forme ou un connecteur pour changer son apparence.<br><br>Maj+clic ou un cadre tracé à la souris : plusieurs éléments à la fois.<br>Flèches du clavier : déplacer finement.<br>Connecteur : glisser le trait pour décaler son tracé, ses extrémités pour le relier à une autre forme.<br>Molette : se déplacer ; Ctrl+molette : zoom.';
       props.append(p);
     }
   }
@@ -1779,6 +1803,18 @@
     if (ds.rangeCount && canvas.contains(ds.anchorNode)) ds.removeAllRanges();
     const p = point(e);
     const t = e.target;
+    // Extrémité d'un connecteur : on la tire vers une autre forme.
+    if (t.dataset && t.dataset.lend) {
+      const l = selLinks()[0];
+      const g = l && linkGeometry(data, l);
+      if (g) {
+        const other = t.dataset.lend === 'from' ? 'to' : 'from';
+        dragState = { kind: 'end', link: l.id, end: t.dataset.lend, other: l[other].node, fixed: other === 'from' ? g.p1 : g.p2, to: p, hover: null };
+        canvas.setPointerCapture(e.pointerId);
+        drawOverlay();
+      }
+      return;
+    }
     // Point d'accroche : on tire un connecteur.
     if (t.dataset && t.dataset.anchor) {
       const n = nodeById(t.dataset.node);
@@ -1804,6 +1840,12 @@
       refreshSelection();
       if (nid && selection.includes(nid)) {
         dragState = { kind: 'move', start: p, orig: new Map(selNodes().map((n) => [n.id, [n.x, n.y]])), recorded: false };
+        canvas.setPointerCapture(e.pointerId);
+      }
+      // Connecteur : glisser le trait décale son tracé.
+      if (lid && !e.shiftKey && selection.length === 1) {
+        const l = linkById(lid);
+        dragState = { kind: 'bend', link: lid, start: p, orig: Array.isArray(l.bend) ? [...l.bend] : [0, 0], recorded: false };
         canvas.setPointerCapture(e.pointerId);
       }
       return;
@@ -1861,6 +1903,21 @@
       Object.assign(n, { x, y, w, h: hh });
       content.innerHTML = contentSvg(data);
       drawOverlay();
+    } else if (dragState.kind === 'bend') {
+      const dx = p[0] - dragState.start[0];
+      const dy = p[1] - dragState.start[1];
+      if (!dragState.recorded && Math.hypot(dx, dy) > 3 / view.k) { record(); dragState.recorded = true; }
+      if (!dragState.recorded) return;
+      const l = linkById(dragState.link);
+      const b = [snap(dragState.orig[0] + dx), snap(dragState.orig[1] + dy)];
+      if (b[0] || b[1]) l.bend = b; else delete l.bend;
+      content.innerHTML = contentSvg(data);
+      drawOverlay();
+    } else if (dragState.kind === 'end') {
+      dragState.to = p;
+      const over = nodeAtPoint(p, dragState.other);
+      dragState.hover = over ? over.id : null;
+      drawOverlay();
     } else if (dragState.kind === 'connect') {
       dragState.to = p;
       const over = nodeAtPoint(p, dragState.node);
@@ -1877,6 +1934,8 @@
     }
   });
 
+  // Point d'accroche de n le plus proche de p.
+  const nearestSide = (n, p) => ['n', 'e', 's', 'w'].reduce((best, s) => { const a = anchor(n, s); const d = Math.hypot(a[0] - p[0], a[1] - p[1]); return !best || d < best.d ? { s, d } : best; }, null).s;
   const insideMargin = (n, p, m) => p[0] >= n.x - m && p[0] <= n.x + n.w + m && p[1] >= n.y - m && p[1] <= n.y + n.h + m;
 
   canvas.addEventListener('pointerup', (e) => {
@@ -1889,7 +1948,7 @@
       if (over) {
         record();
         // Côté d'arrivée : le point d'accroche le plus proche du lâcher.
-        const side = ['n', 'e', 's', 'w'].reduce((best, s) => { const a = anchor(over, s); const d = Math.hypot(a[0] - p[0], a[1] - p[1]); return !best || d < best.d ? { s, d } : best; }, null).s;
+        const side = nearestSide(over, p);
         const l = { ...clone(lastLink), id: newId('l'), from: { node: st.node, side: st.side }, to: { node: over.id, side } };
         data.links.push(l);
         selection = [l.id];
@@ -1910,7 +1969,18 @@
       render();
       return;
     }
-    if (st.kind === 'move' && !st.recorded) return;
+    if (st.kind === 'end') {
+      const p = point(e);
+      const over = nodeAtPoint(p, st.other);
+      const l = linkById(st.link);
+      if (over && l) {
+        record();
+        l[st.end] = { node: over.id, side: nearestSide(over, p) };
+      }
+      render();
+      return;
+    }
+    if ((st.kind === 'move' || st.kind === 'bend') && !st.recorded) return;
     if (st.kind === 'band') { refreshSelection(); return; }
     render();
   });
