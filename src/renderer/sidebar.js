@@ -350,7 +350,7 @@
     li.addEventListener('click', () => h.openDoc(doc.fileName));
     li.addEventListener('dragstart', (e) => {
       e.dataTransfer.setData('application/x-frametext-doc', doc.id);
-      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.effectAllowed = 'copyMove'; // déplacer dans la liste ou lier dans le texte
       li.classList.add('dragging');
     });
     li.addEventListener('dragend', () => li.classList.remove('dragging'));
@@ -377,6 +377,7 @@
       }
       return [
         { text: 'Ouvrir', action: () => h.openDoc(doc.fileName) },
+        ...(active && doc.fileName !== active ? [{ text: 'Insérer un lien dans le document ouvert', action: () => h.insertDocLink(doc.id) }] : []),
         { text: 'Renommer', action: () => h.renameDoc(doc.fileName) },
         { text: 'Enregistrer une copie sous…', action: () => h.exportDoc(doc.fileName) },
         { text: 'Historique des versions…', action: () => h.versions(doc.fileName) },

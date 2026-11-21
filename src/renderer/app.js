@@ -584,6 +584,10 @@
       const path = await api.exportDoc(doc);
       if (path) flash('Copie enregistrée : ' + path);
     },
+    // Lien vers ce document, au curseur du document ouvert (comme « ((titre)) »).
+    insertDocLink(docId) {
+      if (!current || !window.FTEcriture || !window.FTEcriture.insertDocLink(docId)) flash('Placez le curseur dans le texte du document ouvert.');
+    },
     // « Changer de projet » : le document passe dans « Non classés » de l'autre projet.
     async changeDocProject(docId, project) {
       const entry = lib.docs.find((d) => d.id === docId);

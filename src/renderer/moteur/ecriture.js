@@ -320,7 +320,40 @@
     }
   };
 
+  // Document de la liste à gauche : lien à l'endroit du curseur (clic droit) ou de la souris (glisser-déposer).
+  const DOC_TYPE = 'application/x-frametext-doc';
+  const isDocDrag = (e) => e.dataTransfer && [...e.dataTransfer.types].includes(DOC_TYPE);
+  const closed = () => !view.editable || document.getElementById('app').classList.contains('reading-mode');
+  function insertDocLink(id, at) {
+    const html = Lk() && Lk().docLinkTo(id);
+    if (!html || closed()) return false;
+    if (at !== undefined) view.dispatch(view.state.tr.setSelection(TextSelection.near(view.state.doc.resolve(at))));
+    const $p = view.state.selection.$from;
+    if (!$p.parent.inlineContent || $p.parent.type.spec.code) return false;
+    return insertInline(html, null);
+  }
+  M.addPlugin(new Plugin({
+    props: {
+      handleDOMEvents: {
+        dragover(v, e) {
+          if (!isDocDrag(e) || closed()) return false;
+          e.preventDefault();
+          e.dataTransfer.dropEffect = 'copy';
+          return false; // le trait du point d'insertion suit la souris
+        },
+        drop(v, e) {
+          if (!isDocDrag(e)) return false;
+          e.preventDefault();
+          const hit = v.posAtCoords({ left: e.clientX, top: e.clientY });
+          if (hit) insertDocLink(e.dataTransfer.getData(DOC_TYPE), hit.pos);
+          return true;
+        }
+      }
+    }
+  }), true);
+
   window.FTEcriture = {
+    insertDocLink,
     insertText,
     insertInline,
     // Moteur 2.0 : les boutons des versions 1.x écrivent par le moteur.

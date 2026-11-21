@@ -643,8 +643,18 @@
     return a.outerHTML;
   }
 
+  // Lien vers un document de la liste (clic droit ou document glissé depuis la liste).
+  function docLinkTo(id) {
+    const doc = App() && App().docs().find((d) => d.id === id);
+    if (!doc || id === App().currentId()) return null;
+    const a = docLinkElement(doc.title || 'Sans titre');
+    setTarget(a, doc);
+    return a.outerHTML;
+  }
+
   window.FTLinks = {
     openLinkDialog,
+    docLinkTo,
     selectionItems,
     refresh,
     urlBefore,
