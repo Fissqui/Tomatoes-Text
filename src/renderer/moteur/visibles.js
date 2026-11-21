@@ -431,6 +431,7 @@
     const off = pagesApi.offset();
     const keepOn = pagesApi.keep();
     const turned = !!(pagesApi.turned && pagesApi.turned());
+    const cover = !!(pagesApi.cover && pagesApi.cover());
     if (turned) altShift = getComputedStyle(pageEl).getPropertyValue('--pg-shift').trim();
     const ms = new Array(n);
     const fl = new Uint8Array(n);
@@ -442,7 +443,7 @@
     }
     if (fnOut) measureNotes();
     const nSig = fnOut ? noteSig : '';
-    if (memo && !turned && memo.gen === gen && memo.n === n && memo.head === head && memo.off === off && memo.keepOn === keepOn && memo.nSig === nSig) {
+    if (memo && !turned && memo.gen === gen && memo.n === n && memo.head === head && memo.off === off && memo.keepOn === keepOn && memo.cover === cover && memo.nSig === nSig) {
       let same = true;
       // (Places à un quart de pixel près, comme les mesures enregistrées.)
       for (let i = 0; i < n && same; i++) same = Math.abs(sl[i] - memo.sl[i]) <= 0.25 && fl[i] === memo.fl[i] && sameMeas(ms[i], memo.ms[i]);
@@ -464,6 +465,7 @@
     const result = D.paginate({
       n,
       head,
+      cover,
       slot: (i) => sl[i],
       meas: (i) => ms[i],
       keep: (i) => (keepOn && !!(fl[i] & 1)) || !!(fl[i] & 32),
@@ -487,7 +489,7 @@
       for (const br of result.breaks.get(i) || []) inner[i] += br.add;
     }
     lay = { ...result, push, inner, region };
-    memo = { gen, n, head, off, keepOn, sl, ms, fl, lay, nSig };
+    memo = { gen, n, head, off, keepOn, cover, sl, ms, fl, lay, nSig };
     for (const fn of layoutFns) fn();
     // Nombre de pages donné à pages.js à la fin du passage (un découpage intermédiaire, fait avec la
     // place estimée d'un bloc modifié, ferait redessiner toutes les feuilles pour rien).

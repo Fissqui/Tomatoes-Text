@@ -249,7 +249,7 @@
   //   alt(i) (facultatif : { m, slot } du bloc i à la largeur d'une page tournée),
   //   note(id) (facultatif : notes de bas de page, { h, cuts } : hauteur de la note et endroits où elle
   //   peut être coupée, haut de chacune de ses lignes après la première), sep (place du filet qui les
-  //   précède) }
+  //   précède), cover (le bloc 0 est la page de titre : il reste sur la première page) }
   // Renvoie { R (haut de chaque bloc, pages comprises ; R[n] : bas du texte), breaks (Map i →
   // [{ j, kind, target }] : coupures dans le bloc i, avant son morceau j ; target : où ce morceau
   // commence), pageOf (page du haut de chaque bloc), opens (blocs entiers poussés en haut d'une page),
@@ -447,7 +447,9 @@
         j = jj;
         // Le morceau j ne tient pas. S'il commence déjà en haut de la page, plus grand qu'elle : il dépasse.
         const uTop = Y + shift + units[j].y;
-        if (uTop <= g.ct + EPS || (j === 0 && !g.full)) {
+        // (Page de titre en tête du document : elle couvre la première page, même mesurée avant d'en
+        // prendre la place, par exemple sous les tags du document.)
+        if (uTop <= g.ct + EPS || (j === 0 && !g.full) || (i === 0 && cur === 0 && o.cover)) {
           commit(cur, units, k, j);
           if (split) commitSplit(cur, units[j - 1], split);
           while (bot(cur) < Y + shift + units[j].b - EPS && guard++ < 2000) cur++;

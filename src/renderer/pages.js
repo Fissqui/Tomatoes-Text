@@ -1874,6 +1874,8 @@
         keep: () => cfg.keep,
         chapters: () => cfg.chapters,
         turned: () => Object.keys(cfg.turned).length > 0,
+        // Page de titre en tête du document : elle reste sur la première page.
+        cover: () => coverFirst(),
         // Zone de texte n° r et haut de la zone d'écriture, depuis le haut de #page (px, taille réelle).
         region: (r) => regionAt(r),
         offset: () => (editor.getBoundingClientRect().top - pageTop()) / zk(),
