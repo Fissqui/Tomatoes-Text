@@ -99,6 +99,42 @@
     api.saveSettings(settings);
   }
 
+  // ----- Largeur du menu de gauche (réglée à la souris, mémorisée) -----
+  const SB_MIN = 200;
+  const SB_MAX = 640;
+  function setSidebarWidth(w) {
+    const sb = $('sidebar');
+    if (!w) { sb.style.removeProperty('--sb-w'); return; }
+    const max = Math.min(SB_MAX, Math.max(SB_MIN, window.innerWidth - DOC_MIN));
+    sb.style.setProperty('--sb-w', Math.round(Math.min(max, Math.max(SB_MIN, w))) + 'px');
+  }
+  $('sidebar').querySelector('.sb-resize').addEventListener('mousedown', (e) => {
+    if (e.button !== 0) return;
+    e.preventDefault();
+    const sb = $('sidebar');
+    const x0 = e.clientX;
+    const w0 = sb.offsetWidth;
+    const dir = document.documentElement.dataset.uiCote === 'droite' ? -1 : 1;
+    sb.classList.add('resizing');
+    document.body.classList.add('resizing-col');
+    const move = (ev) => setSidebarWidth(w0 + dir * (ev.clientX - x0));
+    const up = () => {
+      sb.classList.remove('resizing');
+      document.body.classList.remove('resizing-col');
+      document.removeEventListener('mousemove', move);
+      document.removeEventListener('mouseup', up);
+      settings.sidebarWidth = sb.offsetWidth;
+      api.saveSettings(settings);
+    };
+    document.addEventListener('mousemove', move);
+    document.addEventListener('mouseup', up);
+  });
+  $('sidebar').querySelector('.sb-resize').addEventListener('dblclick', () => {
+    delete settings.sidebarWidth;
+    setSidebarWidth(0);
+    api.saveSettings(settings);
+  });
+
   // ----- Place du document -----
   // Volets trop nombreux pour la fenêtre : la zone du document garde une largeur utile. Les volets PDF et
   // Sources cèdent d'abord (styles.css) ; s'il le faut, les autres volets se referment, le dernier ouvert reste.
@@ -1791,6 +1827,7 @@
       api.saveSettings(settings);
     });
     $('app').classList.toggle('sidebar-hidden', !!settings.sidebarHidden);
+    setSidebarWidth(settings.sidebarWidth);
     window.FTNav.init(settings.navpane, (v) => { settings.navpane = v; api.saveSettings(settings); });
     showPage(false);
     await reloadLibrary();

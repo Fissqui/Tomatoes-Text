@@ -114,6 +114,11 @@ button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px s
   transition: margin-left 0.2s ease;
 }
 #app.sidebar-hidden #sidebar { margin-left: -260px; }
+#sidebar { position: relative; }
+#sidebar.resizing { transition: none; user-select: none; }
+.sb-resize { position: absolute; top: 0; right: -3px; width: 6px; height: 100%; cursor: col-resize; z-index: 3; }
+.sb-resize:hover, #sidebar.resizing .sb-resize { background: color-mix(in srgb, var(--accent) 40%, transparent); }
+#app.sidebar-hidden .sb-resize { display: none; }
 
 /* ---------- Volet de navigation (titres du document) ---------- */
 #navpane {
@@ -2525,6 +2530,7 @@ body.tb-moving, body.tb-moving * { cursor: grabbing !important; user-select: non
 :root[data-ui-cote="droite"] #sidebar { order: 3; border-right: 0; border-left: 1px solid var(--border); transition: margin-right 0.2s ease; }
 :root[data-ui-cote="droite"] #app.sidebar-hidden #sidebar { margin-left: 0; margin-right: calc(-1 * var(--sb-w, 260px)); }
 :root[data-ui-cote="droite"] #main { order: 2; }
+:root[data-ui-cote="droite"] .sb-resize { right: auto; left: -3px; }
 :root[data-ui-onglets="soulignes"] #view-tabs button { border: 0; border-radius: 0; margin-bottom: 0; padding-bottom: 7px; }
 :root[data-ui-onglets="soulignes"] #view-tabs button[aria-selected="true"] { background: transparent; box-shadow: inset 0 -2px 0 var(--accent); }
 :root[data-ui-onglets="pastilles"] #view-tabs { padding-bottom: 6px; }
