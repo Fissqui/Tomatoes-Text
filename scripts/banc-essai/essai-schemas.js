@@ -452,7 +452,8 @@ module.exports = async ({ page }) => {
   let tz = await lastNode();
   assert(tz.shape === 'texte' && tz.text === 'Point d’équilibre', JSON.stringify(tz));
   const tb = await page.locator(`#diagram-dialog .dg-content [data-node="${tz.id}"] rect`).boundingBox();
-  await page.mouse.click(tb.x + tb.width / 2, tb.y + tb.height / 2);
+  // (Clic à gauche, en haut de la zone : le connecteur de départ, au-dessus des formes, passe en son milieu.)
+  await page.mouse.click(tb.x + 12, tb.y + 6);
   assert.strictEqual(await dlg.locator('.dg-props .dg-title').first().textContent(), 'Zone de texte');
   assert.strictEqual(await dlg.locator('.dg-props .dg-title', { hasText: 'Contour' }).count(), 0);
   await dlg.locator('.dg-props .dg-colors').first().locator('button[title="#fcf3cf"]').click();

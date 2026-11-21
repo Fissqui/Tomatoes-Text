@@ -599,7 +599,10 @@
     const area = graph ? areaPath(n) : '';
     if (area) out += `<path class="dg-area" d="${area}" fill="${n.areaColor || n.stroke || '#2e86c1'}" fill-opacity="${n.areaOpacity ?? 0.25}" stroke="none"/>`;
     out += `<path d="${shapePath(n)}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}"${da ? ` stroke-dasharray="${da}"` : ''} stroke-linejoin="round"${graph ? ' stroke-linecap="round"' : ''}${n.shadow ? ' filter="url(#ft-dg-shadow)"' : ''}/>`;
-    if (n.shape === 'acteur' || n.shape === 'texte' || graph) out += `<rect x="${n.x}" y="${n.y}" width="${n.w}" height="${n.h}" fill="transparent"/>`;
+    // (Boîte d'un graphe : prise en main seulement si rien d'autre n'est sous la souris, voir pick.)
+    if (n.shape === 'acteur' || n.shape === 'texte' || graph) out += `<rect${graph ? ' class="dg-box"' : ''} x="${n.x}" y="${n.y}" width="${n.w}" height="${n.h}" fill="transparent"/>`;
+    // (Trait d'un graphe : facile à attraper, comme un connecteur.)
+    if (graph) out += `<path d="${shapePath(n)}" fill="none" stroke="transparent" stroke-width="${(Number(n.strokeWidth) || 2) + 10}"/>`;
     if (graph) out += axisLabels(n);
     if (n.text) {
       const box = textBox(n);
@@ -642,9 +645,16 @@
 
   const DEFS = '<defs><filter id="ft-dg-shadow" x="-20%" y="-20%" width="140%" height="150%"><feDropShadow dx="2" dy="3" stdDeviation="2.5" flood-color="#000" flood-opacity="0.22"/></filter></defs>';
 
+  // Ordre de superposition : chaque élément a un niveau (0 par défaut) ; à niveau égal,
+  // les connecteurs passent au-dessus des formes, puis l'ordre de création.
+  function stacked(d) {
+    const items = [...d.nodes.map((n, i) => ({ el: n, link: false, i })), ...d.links.map((l, i) => ({ el: l, link: true, i }))];
+    return items.sort((a, b) => (Number(a.el.z) || 0) - (Number(b.el.z) || 0) || (a.link - b.link) || (a.i - b.i));
+  }
+
   function contentSvg(d) {
     const bg = d.background || '#ffffff';
-    return DEFS + d.links.map((l) => linkSvg(l, d, bg)).join('') + d.nodes.map((n) => nodeSvg(n, d)).join('');
+    return DEFS + stacked(d).map((it) => (it.link ? linkSvg(it.el, d, bg) : nodeSvg(it.el, d))).join('');
   }
 
   // Boîte qui contient tout le schéma (formes, connecteurs, étiquettes, ombres).
@@ -1261,6 +1271,7 @@
       t.addEventListener('change', () => setLinks('label')(t.value));
       props.append(field('Texte', t));
     }
+    if (ns.length || ls.length) orderProps([...ns, ...ls]);
     if (!ns.length && !ls.length) {
       props.append(section('Schéma'));
       props.append(field('Fond', select([['#ffffff', 'Blanc'], ['#fbf9f5', 'Crème'], ['#f2f4f7', 'Gris clair'], ['transparent', 'Transparent']], data.transparent ? 'transparent' : (data.background || '#ffffff'), (v) => {
@@ -1274,6 +1285,33 @@
       p.innerHTML = 'Sélectionnez une forme ou un connecteur pour changer son apparence.<br><br>Maj+clic ou un cadre tracé à la souris : plusieurs éléments à la fois.<br>Flèches du clavier : déplacer finement.<br>Molette : se déplacer ; Ctrl+molette : zoom.';
       props.append(p);
     }
+  }
+
+  // Niveau de superposition des éléments sélectionnés.
+  function setLevel(items, f) {
+    record();
+    items.forEach((x) => { const z = f(Number(x.z) || 0); if (z) x.z = z; else delete x.z; });
+    render();
+  }
+  function orderProps(items) {
+    const all = [...data.nodes, ...data.links].filter((x) => !items.includes(x)).map((x) => Number(x.z) || 0);
+    const top = all.length ? Math.max(...all) : 0;
+    const bottom = all.length ? Math.min(...all) : 0;
+    props.append(section('Superposition'));
+    props.append(toggles([
+      ['Premier plan', 'Au-dessus de tous les autres éléments', false, () => setLevel(items, () => top + 1)],
+      ['Arrière-plan', 'Sous tous les autres éléments', false, () => setLevel(items, () => bottom - 1)]
+    ]));
+    props.append(toggles([
+      ['Avancer', 'Monter d\'un niveau', false, () => setLevel(items, (z) => z + 1)],
+      ['Reculer', 'Descendre d\'un niveau', false, () => setLevel(items, (z) => z - 1)]
+    ]));
+    const z = Number(items[0].z) || 0;
+    props.append(field('Niveau', number(items.every((x) => (Number(x.z) || 0) === z) ? z : '', -99, 99, 1, (v) => setLevel(items, () => v))));
+    const p = document.createElement('p');
+    p.className = 'dg-help';
+    p.textContent = 'Le niveau le plus élevé passe devant. À niveau égal, les connecteurs passent devant les formes.';
+    props.append(p);
   }
 
   // ----- Ajout, suppression, copie -----
@@ -1686,6 +1724,21 @@
 
   const hitNode = (el) => { const g = el && el.closest && el.closest('[data-node]'); return g && content.contains(g) ? g.dataset.node : null; };
   const hitLink = (el) => { const g = el && el.closest && el.closest('[data-link]'); return g ? g.dataset.link : null; };
+  // Élément sous la souris : la boîte vide d'un graphe laisse passer le clic vers ce qui est dessous
+  // (connecteur, forme) ; elle ne sert que si rien d'autre n'est là.
+  function pick(e) {
+    let box = null;
+    const els = document.elementsFromPoint ? document.elementsFromPoint(e.clientX, e.clientY) : [e.target];
+    for (const el of els) {
+      if (!content.contains(el)) continue;
+      const nid = hitNode(el);
+      const lid = nid ? null : hitLink(el);
+      if (!nid && !lid) continue;
+      if (el.classList && el.classList.contains('dg-box')) { box = box || { nid }; continue; }
+      return { nid, lid };
+    }
+    return box || { nid: null, lid: null };
+  }
   const nodeAtPoint = (p, skip) => [...data.nodes].reverse().find((n) => n.id !== skip && p[0] >= n.x && p[0] <= n.x + n.w && p[1] >= n.y && p[1] <= n.y + n.h);
 
   function startPaletteDrag(e, shape) {
@@ -1742,8 +1795,7 @@
       canvas.setPointerCapture(e.pointerId);
       return;
     }
-    const nid = hitNode(t);
-    const lid = nid ? null : hitLink(t);
+    const { nid, lid } = pick(e);
     const id = nid || lid;
     if (id) {
       const ids = withGroups([id]);
@@ -1777,7 +1829,7 @@
   canvas.addEventListener('pointermove', (e) => {
     const p = point(e);
     if (!dragState) {
-      const nid = hitNode(e.target) || (e.target.dataset && e.target.dataset.anchor ? e.target.dataset.node : null);
+      const nid = (e.target.dataset && e.target.dataset.anchor ? e.target.dataset.node : null) || pick(e).nid;
       const near = nid || (hoverNode && nodeById(hoverNode) && insideMargin(nodeById(hoverNode), p, 12 / view.k) ? hoverNode : null);
       if (near !== hoverNode) { hoverNode = near; drawOverlay(); }
       return;
@@ -1876,9 +1928,10 @@
 
   // Double-clic : écrire dans la forme, sur le connecteur, ou ajouter une forme dans le vide.
   canvas.addEventListener('dblclick', (e) => {
-    const at = nodeAtPoint(point(e));
-    const nid = hitNode(e.target) || (at && at.id);
-    const lid = nid ? null : hitLink(e.target);
+    const hit = pick(e);
+    const at = hit.lid ? null : nodeAtPoint(point(e));
+    const nid = hit.nid || (at && at.id);
+    const lid = nid ? null : hit.lid;
     if (nid) return editText(nodeById(nid));
     if (lid) return editText(linkById(lid));
     const p = point(e);
