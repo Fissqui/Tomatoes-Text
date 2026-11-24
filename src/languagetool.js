@@ -187,16 +187,19 @@ function toErrors(text, answer) {
 
 // ----- Installation (téléchargement unique) -----
 
-// ----- Allègement : seules les données des langues des documents (LT_LANG) sont gardées -----
+// ----- Allègement : seules les données des langues des documents (LT_LANG) et du mandarin sont gardées -----
 // L'archive de LanguageTool contient une trentaine de langues (environ 390 Mo une fois déballée).
 // Pour les autres langues, on retire leurs dictionnaires et leurs règles écrites (environ 190 Mo) ;
 // leur code (.class) et leurs mots courants (common_words.txt) restent : LanguageTool déclare toutes
 // ses langues au démarrage et s'en sert pour reconnaître la langue d'un texte.
-const KEPT_CODES = new Set(Object.values(LT_LANG).map((l) => l.split('-')[0]));
-const DROPPED_JARS = ['asturian-pos-dict.jar', 'catalan-pos-dict.jar', 'dutch-pos-dict.jar', 'hanlp.jar', 'languagetool-ga-dicts.jar',
+// Le mandarin (zh) est gardé aussi, pour qu'il puisse être relu plus tard.
+const KEPT_CODES = new Set([...Object.values(LT_LANG).map((l) => l.split('-')[0]), 'zh']);
+const DROPPED_JARS = ['asturian-pos-dict.jar', 'catalan-pos-dict.jar', 'dutch-pos-dict.jar', 'languagetool-ga-dicts.jar',
   'lucene-gosen-ipadic.jar', 'morfologik-crh-lt.jar', 'morfologik-ukrainian-lt.jar'];
 const KEPT_FILE = (name) => name.endsWith('.class') || name === 'common_words.txt';
-const TRIM_LEVEL = 1;
+// 1 : 2.5.3 (mandarin retiré) ; 2 : mandarin gardé. Une installation au niveau 1 n'a plus les
+// données du mandarin : à réinstaller (menu Édition) le jour où il est relu.
+const TRIM_LEVEL = 2;
 
 // ltDir : dossier LanguageTool-<version>. Renvoie le nombre d'octets libérés.
 async function trimLanguages(ltDir) {

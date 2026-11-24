@@ -1,6 +1,6 @@
 // Vérifie que l'allègement de LanguageTool (trimLanguages, src/languagetool.js) ne change aucune remarque :
 // une copie complète et une copie allégée tournent côte à côte et relisent les mêmes textes dans les six
-// langues des documents (niveaux « default » et « picky »).
+// langues des documents et en mandarin (niveaux « default » et « picky »).
 // Usage : node scripts/test-allegement-languagetool.js <dossier LanguageTool-6.6 complet> (Java doit être installé)
 const path = require('path');
 const fs = require('fs');
@@ -14,6 +14,7 @@ const TEXTS = {
   'de-DE': 'Ich habe gestern ein schöne Haus gesehen. Er gehen morgen in die Schule. Das ist dem Mann sein Auto. Wegen dem Wetter bleiben wir zu Hause. Ich denke das er kommt. Die Kinder spielt im Garten.',
   es: 'Los niños come manzanas cada días. Yo a ido al mercado ayer. Hubieron muchas personas en la fiesta. Es mas facil decir que hacer. La gente estaban contentos. Pienso de que vendrá mañana.',
   it: "I bambini mangia le mele ogni giorni. Io ho andato al mercato ieri. Qual'è il problema? Ce ne sono molte persone. Un'amico mi ha detto che e vero. Se avrei tempo verrei.",
+  'zh-CN': '我们今天去公园玩。他昨天在学校里学习了很多知识。这个问题很难解决，我们需要更多的时间。',
   'pt-PT': 'Os meninos come maçãs todos os dia. Eu fui no mercado ontem. Houveram muitas pessoas na festa. Fazem dois anos que não o vejo. A gente fomos ao cinema. Ele disse à mim que vinha.'
 };
 

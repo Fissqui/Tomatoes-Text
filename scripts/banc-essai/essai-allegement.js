@@ -24,7 +24,7 @@ module.exports = async () => {
   const props = 'languageClasses=org.languagetool.language.Arabic\nlanguageClasses=org.languagetool.language.French\n';
   put('languagetool-server.jar');
   put('META-INF/org/languagetool/language-module.properties', props);
-  for (const lang of ['fr', 'en', 'de', 'es', 'it', 'pt', 'nl', 'ar', 'de-DE-x-simple-language']) {
+  for (const lang of ['fr', 'en', 'de', 'es', 'it', 'pt', 'zh', 'nl', 'ar', 'de-DE-x-simple-language']) {
     put(`org/languagetool/resource/${lang}/common_words.txt`);
     put(`org/languagetool/resource/${lang}/hunspell/${lang}.dict`, 'y'.repeat(1000));
     put(`org/languagetool/rules/${lang}/grammar.xml`, 'z'.repeat(1000));
@@ -40,17 +40,17 @@ module.exports = async () => {
   try {
     const freed = await lt.trimAll();
     assert(freed > 4000, 'octets libérés : ' + freed);
-    for (const lang of ['fr', 'en', 'de', 'es', 'it', 'pt']) {
+    for (const lang of ['fr', 'en', 'de', 'es', 'it', 'pt', 'zh']) {
       assert(has(`org/languagetool/resource/${lang}/hunspell/${lang}.dict`) && has(`org/languagetool/rules/${lang}/grammar.xml`), lang);
     }
-    ok('langues des documents gardées (fr, en, de, es, it, pt)');
+    ok('langues des documents et mandarin gardés (fr, en, de, es, it, pt, zh)');
     for (const lang of ['nl', 'ar', 'de-DE-x-simple-language']) {
       assert(!has(`org/languagetool/resource/${lang}/hunspell/${lang}.dict`) && !has(`org/languagetool/rules/${lang}/grammar.xml`), lang);
       assert(has(`org/languagetool/resource/${lang}/common_words.txt`) && has(`org/languagetool/rules/${lang}/SpellerRule.class`), lang);
     }
     ok('autres langues : dictionnaires et règles retirés, code et mots courants gardés');
-    assert(!has('libs/dutch-pos-dict.jar') && !has('libs/hanlp.jar'));
-    assert(has('libs/french-pos-dict.jar') && has('libs/languagetool-core.jar') && has('libs/opennlp-tools.jar'));
+    assert(!has('libs/dutch-pos-dict.jar'));
+    assert(has('libs/hanlp.jar') && has('libs/french-pos-dict.jar') && has('libs/languagetool-core.jar') && has('libs/opennlp-tools.jar'));
     ok('bibliothèques des langues retirées supprimées, les autres gardées');
     assert.strictEqual(fs.readFileSync(path.join(ltDir, 'META-INF/org/languagetool/language-module.properties'), 'utf8'), props);
     ok('liste des langues de LanguageTool inchangée');

@@ -244,7 +244,9 @@ module.exports = async ({ page }) => {
   // 9. Très long document : rechercher, mot suivant, tout remplacer.
   await reset(corpus().repeat(21));
   await page.click('#editor');
-  await v(() => { document.getElementById('find-input').value = ''; document.getElementById('find-word').checked = false; window.FTApp.menu('find'); });
+  // Le clic peut tomber sur un lien vers un document : sélectionné, son texte remplit la case de recherche
+  // à l'ouverture (comme une sélection de texte). La case est vidée après l'ouverture.
+  await v(() => { document.getElementById('find-word').checked = false; window.FTApp.menu('find'); document.getElementById('find-input').value = ''; });
   const keys = [];
   for (const ch of 'tomate') {
     keys.push(await v(async (c) => {
