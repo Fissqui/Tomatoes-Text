@@ -112,10 +112,43 @@ module.exports = async ({ page }) => {
   assert.strictEqual(await eqs(), '(1) - (2)');
   ok(`numérotation : (1) - (2) puis (1) (2) (3) par le clic droit, rendue par Ctrl+Z ; équation à gauche (${Math.round(geo.left)} px), numéro à droite`);
 
+  // 3 bis. Numéros par chapitre : (1) avant le premier chapitre, (1.1) (1.2) puis (2.1) ; réglage du
+  // document (clic droit sur une équation, ou fenêtre), une annulation.
+  const chap = '<p>Intro.</p>' + await F({ latex: 'a', block: true, numbered: true }) + '<h1>Un</h1>'
+    + await F({ latex: 'b', block: true, numbered: true }) + await F({ latex: 'c', block: true }) + await F({ latex: 'd', block: true, numbered: true })
+    + '<h1>Deux</h1><p>Texte.</p>' + await F({ latex: 'e', block: true, numbered: true });
+  await reset(chap, 'avance');
+  assert.strictEqual(await eqs(), '(1) (2) - (3) (4)');
+  let cb = await page.locator('#editor div.ft-math').nth(1).boundingBox();
+  await page.mouse.click(cb.x + cb.width / 2, cb.y + cb.height / 2, { button: 'right' });
+  await v(() => [...document.querySelectorAll('#context-menu button')].find((b) => b.textContent.includes('chapitre')).click());
+  await page.waitForTimeout(150);
+  assert.strictEqual(await eqs(), '(1) (1.1) - (1.2) (2.1)');
+  // Nouvelle équation numérotée (fenêtre) : suit le réglage du document.
+  await v(() => {
+    const w = window.FTMoteur.view;
+    let at = 0;
+    w.state.doc.forEach((n, off) => { if (n.textContent === 'Texte.') at = off + 1; });
+    w.dispatch(w.state.tr.setSelection(PM.state.TextSelection.create(w.state.doc, at)));
+    w.focus();
+  });
+  await v(() => window.FTFormules.open(null, { block: true, numbered: true }));
+  await page.waitForTimeout(200);
+  assert.ok(await v(() => document.getElementById('math-chap').checked), 'case « chapitre » cochée');
+  await v(() => { document.getElementById('math-input').value = 'x'; document.getElementById('math-ok').click(); });
+  await page.waitForTimeout(150);
+  assert.strictEqual(await eqs(), '(1) (1.1) - (1.2) (2.1) (2.2)');
+  await undo();
+  await page.waitForTimeout(150);
+  await undo();
+  await page.waitForTimeout(150);
+  assert.strictEqual(await eqs(), '(1) (2) - (3) (4)');
+  ok('numéros par chapitre : (1) avant le chapitre 1, (1.1) (1.2) puis (2.1), suivis par une nouvelle équation ; annulés');
+
   // 4. Fenêtre : catégories, recherche, code LaTeX synchronisé, erreur signalée.
   await reset('<p>Texte.</p>');
   await caret(7);
-  await v(() => window.FTFormules.open(null));
+  await v(() => window.FTFormules.open(null, { block: false }));
   await page.waitForTimeout(300);
   const cats = await v(() => document.querySelectorAll('#math-cats button').length);
   assert.ok(cats >= 8, 'catégories : ' + cats);

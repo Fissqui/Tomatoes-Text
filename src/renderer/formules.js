@@ -47,6 +47,7 @@
       latex: el.dataset.latex || '',
       block: el.tagName === 'DIV',
       numbered: el.hasAttribute('data-numero'),
+      chap: el.hasAttribute('data-chap'),
       eq: el.dataset.eq || '',
       align: el.dataset.align || '',
       box: el.dataset.box || '',
@@ -63,6 +64,7 @@
     el.dataset.latex = o.latex;
     if (o.block && o.numbered) {
       el.setAttribute('data-numero', '');
+      if (o.chap) el.setAttribute('data-chap', '');
       if (o.eq) el.dataset.eq = o.eq;
     }
     if (o.block && o.align === 'gauche') el.dataset.align = 'gauche';
@@ -539,7 +541,7 @@
     codeBox.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); validate(); }
     });
-    for (const r of dialog.querySelectorAll('input[name="math-mode"], input[name="math-align"], input[name="math-box"], #math-numero')) {
+    for (const r of dialog.querySelectorAll('input[name="math-mode"], input[name="math-align"], input[name="math-box"], #math-numero, #math-chap')) {
       r.addEventListener('change', () => {
         if (r.name === 'math-align') alignTouched = true;
         // Équation numérotée : à gauche, numéro à droite (sauf alignement choisi).
@@ -572,6 +574,7 @@
     const block = radio('math-mode') === 'block';
     dialog.classList.toggle('math-inline-mode', !block);
     $('math-box-color').disabled = radio('math-box') !== 'colore';
+    $('math-chap').disabled = !block || !$('math-numero').checked;
     field.classList.toggle('math-field-block', block);
   }
   function options() {
@@ -579,6 +582,7 @@
     return {
       block,
       numbered: block && $('math-numero').checked,
+      chap: block && $('math-numero').checked && $('math-chap').checked,
       align: block ? radio('math-align') : '',
       box: radio('math-box'),
       color: radio('math-box') === 'colore' ? $('math-box-color').value : ''
@@ -596,6 +600,8 @@
     setRadio('math-mode', info.block ? 'block' : 'inline');
     setRadio('math-align', info.align === 'gauche' ? 'gauche' : '');
     $('math-numero').checked = !!(info.block && info.numbered);
+    // Numéros par chapitre : réglage du document (toutes ses équations numérotées).
+    $('math-chap').checked = !!(window.FTFormuleVue && window.FTFormuleVue.chapters());
     setRadio('math-box', info.box || '');
     $('math-box-color').value = info.color || '';
     alignTouched = !!editing;
@@ -628,6 +634,7 @@
     const el = element({ ...o, latex, eq: o.numbered ? info.eq : '', xid: info.xid });
     if (editing && editing.isConnected) EM.replace(editing, el);
     else EM.insert(el, savedRange);
+    if (o.numbered && window.FTFormuleVue && window.FTFormuleVue.chapters() !== o.chap) window.FTFormuleVue.setChapters(o.chap);
   }
 
   if (dialog) {
@@ -680,6 +687,7 @@
       const o = { ...info, ...changes };
       // Équation numérotée : à gauche, numéro à droite (usage des ouvrages de mathématiques).
       if (changes.numbered && !info.numbered && !('align' in changes)) o.align = 'gauche';
+      if (changes.numbered && window.FTFormuleVue) o.chap = window.FTFormuleVue.chapters();
       if (!o.block) { o.numbered = false; o.align = ''; }
       if (o.box !== 'colore') o.color = '';
       EM.replace(target, element({ ...o, eq: o.numbered ? info.eq : '' }));

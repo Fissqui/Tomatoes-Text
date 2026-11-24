@@ -383,6 +383,7 @@
     const items = [
       { text: 'Modifier l’équation', action: () => F().open(f) },
       ...(info.block ? [{ text: check(info.numbered, 'Numéroter l’équation'), action: () => apply({ numbered: !info.numbered }) }] : []),
+      ...(info.numbered ? [{ text: check(info.chap, 'Inclure le numéro de chapitre'), action: () => setChapters(!info.chap) }] : []),
       {
         text: 'Disposition',
         submenu: () => [
@@ -431,23 +432,67 @@
 
   const NUMBERED = /^<div\b[^>]*?\sdata-numero(?:=""|\s|>)/;
   const EQ = /^<div\b[^>]*?\sdata-eq="([^"]*)"/;
-  function setEq(html, eq) {
+  const CHAP = /^<div\b[^>]*?\sdata-chap(?:=""|\s|>)/;
+  function setEq(html, eq, chap) {
     const el = fromHtml(html);
     if (!el) return html;
     if (eq) el.dataset.eq = eq; else delete el.dataset.eq;
+    if (chap) el.setAttribute('data-chap', ''); else el.removeAttribute('data-chap');
     return el.outerHTML;
   }
-  // Numéros attendus, dans l'ordre du texte : [position, nœud, numéro].
+
+  // Numéro de chapitre écrit comme les titres de niveau 1 (I, A, a ou 1).
+  function chapterLabel(n) {
+    const style = window.FTStructure && window.FTStructure.getStyles ? (window.FTStructure.getStyles().headings[0] || {}).number : '';
+    if (style === 'I') {
+      let out = '';
+      for (const [v, r] of [[1000, 'M'], [900, 'CM'], [500, 'D'], [400, 'CD'], [100, 'C'], [90, 'XC'], [50, 'L'], [40, 'XL'], [10, 'X'], [9, 'IX'], [5, 'V'], [4, 'IV'], [1, 'I']]) while (n >= v) { out += r; n -= v; }
+      return out;
+    }
+    if (style === 'A' || style === 'a') {
+      let out = '';
+      for (; n > 0; n = Math.floor((n - 1) / 26)) out = String.fromCharCode(65 + ((n - 1) % 26)) + out;
+      return style === 'a' ? out.toLowerCase() : out;
+    }
+    return String(n);
+  }
+
+  const isChapter = (node) => node.type === N.heading && node.attrs.level === 1 && !/\bft-title\b/.test(node.attrs.a.class || '');
+
+  // Numéros par chapitre : réglage du document, porté par ses équations numérotées (data-chap).
+  function chaptersOn(doc) {
+    let on = false;
+    doc.descendants((node) => {
+      if (on || node.isTextblock) return false;
+      if (node.type === N.raw_block) { if (isMathHtml(node.attrs.html) && NUMBERED.test(node.attrs.html) && CHAP.test(node.attrs.html)) on = true; return false; }
+      return true;
+    });
+    return on;
+  }
+
+  // Numéros attendus, dans l'ordre du texte : [position, nœud, numéro, par chapitre].
+  // Par chapitre : le compte repart à chaque titre de niveau 1 ; « (2.1) » dans le chapitre 2, « (1) » avant
+  // le premier chapitre ou sous un titre sans numéro.
   function numbering(doc) {
+    const chap = chaptersOn(doc);
     let n = 0;
+    let chapters = 0;
+    let label = '';
     const fixes = [];
     doc.descendants((node, pos) => {
+      if (chap && isChapter(node)) {
+        n = 0;
+        if (node.attrs.a['data-nonum'] !== undefined) label = '';
+        else label = chapterLabel(++chapters);
+      }
       if (node.isTextblock) return false;
       if (node.type === N.raw_block) {
         if (isMathHtml(node.attrs.html)) {
-          const want = NUMBERED.test(node.attrs.html) ? `(${++n})` : '';
+          const numbered = NUMBERED.test(node.attrs.html);
+          const want = numbered ? `(${chap && label ? label + '.' : ''}${++n})` : '';
           const have = (EQ.exec(node.attrs.html) || [])[1] || '';
-          if (want !== have) fixes.push([pos, node, want]);
+          const wantChap = numbered && chap;
+          if (want !== have || wantChap !== CHAP.test(node.attrs.html)) fixes.push([pos, node, want, wantChap]);
         }
         return false;
       }
@@ -456,11 +501,28 @@
     return fixes;
   }
 
+  // Numéros par chapitre ou non, pour toutes les équations numérotées du document.
+  function setChapters(on) {
+    const v = M.view;
+    const tr = v.state.tr;
+    v.state.doc.descendants((node, pos) => {
+      if (node.isTextblock) return false;
+      if (node.type === N.raw_block) {
+        if (isMathHtml(node.attrs.html) && NUMBERED.test(node.attrs.html) && CHAP.test(node.attrs.html) !== on) {
+          tr.setNodeMarkup(pos, null, { html: setEq(node.attrs.html, (EQ.exec(node.attrs.html) || [])[1] || '', on) }, node.marks);
+        }
+        return false;
+      }
+      return true;
+    });
+    if (tr.docChanged) v.dispatch(tr);
+  }
+
   function renumber(state) {
     const fixes = numbering(state.doc);
     if (!fixes.length) return null;
     const tr = state.tr;
-    for (const [pos, node, eq] of fixes) tr.setNodeMarkup(pos, null, { html: setEq(node.attrs.html, eq) }, node.marks);
+    for (const [pos, node, eq, chap] of fixes) tr.setNodeMarkup(pos, null, { html: setEq(node.attrs.html, eq, chap) }, node.marks);
     return tr;
   }
 
@@ -490,6 +552,8 @@
     edit(el, at) { const ctl = views.get(el); return ctl ? ctl.begin(at || 'end') : false; },
     active: () => (active ? active.dom : null),
     finish() { if (active) active.finish(null); },
-    numbering
+    numbering,
+    chapters: () => chaptersOn(M.view.state.doc),
+    setChapters
   };
 })();
