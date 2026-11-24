@@ -29,6 +29,9 @@ nom. Le détail de chaque version publiée figure sur la
 - Menus Édition et Affichage allégés : « Rechercher et remplacer… » en une seule entrée ; modes jour /
   crépuscule / lune, Mindmap, Carte du temps, modèle de mise en page, lisibilité et cohérence retirés des
   menus, toujours accessibles par leurs boutons et leurs raccourcis.
+- Documents en plusieurs langues : un mot juste dans l'une des langues du document n'est plus signalé, même
+  au milieu d'une phrase dans une autre langue ; propositions de correction tirées de toutes ces langues.
+  Un paragraphe dont la langue est choisie à la main reste vérifié dans cette seule langue.
 
 ## 2.4 « Corbarino » — novembre 2026
 

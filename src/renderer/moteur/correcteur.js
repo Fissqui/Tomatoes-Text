@@ -58,6 +58,13 @@
 
   const principal = () => (window.FTLang ? window.FTLang.principal() : 'fr');
   const langIn = (segs, offset) => (segs.find((s) => offset >= s.start && offset < s.end) || segs[segs.length - 1] || { lang: principal() }).lang;
+  // Langues du document qui ont un dictionnaire (le mandarin n'en a pas).
+  const spellLangs = () => (window.FTLang ? window.FTLang.list() : [principal()]).filter((c) => c !== 'zh');
+  // Faute d'orthographe : mot inconnu dans la langue du passage et, si cette langue a été reconnue (et non
+  // choisie à la main pour le paragraphe), dans chacune des autres langues du document. Un mot anglais
+  // dans une phrase française (« un workshop ») n'est donc pas souligné quand l'anglais est activé.
+  const isWrong = (word, lang, fixed) => known.get(lang + '\u0000' + word) === false &&
+    (!!fixed || spellLangs().every((c) => c === lang || known.get(c + '\u0000' + word) === false));
   const langAttr = (node) => {
     const v = node.attrs && node.attrs.a && node.attrs.a.lang;
     const c = v ? String(v).slice(0, 2).toLowerCase() : '';
@@ -139,26 +146,44 @@
         }
       }
       const unknown = new Map();
+      const free = new Set(); // mots de passages dont la langue a été reconnue (pas choisie à la main)
       const checked = [];
       for (const b of list) {
         const segs = segsOf.get(b.node);
-        const stamp = gen + '|' + segs.map((s) => s.lang + s.end).join(',');
+        const stamp = gen + '|' + spellLangs().join(',') + '|' + segs.map((s) => s.lang + s.end).join(',');
         if (doneOf.get(b.node) === stamp) continue;
         checked.push([b.node, stamp]);
         for (const w of info(b.node).words) {
           if (APP_WORDS.has(w.word) || HAN.test(w.word)) continue;
           const lang = langIn(segs, w.start);
+          if (!b.fixed) free.add(lang + '\u0000' + w.word);
           if (known.has(lang + '\u0000' + w.word)) continue;
           if (!unknown.has(lang)) unknown.set(lang, new Set());
           unknown.get(lang).add(w.word);
         }
       }
       const g = gen;
-      for (const [lang, set] of unknown) {
-        const words = [...set];
-        const answers = await api.spellCheck(words, lang);
-        words.forEach((w, i) => known.set(lang + '\u0000' + w, answers[i]));
+      const ask = async (asked) => {
+        for (const [lang, set] of asked) {
+          const words = [...set];
+          const answers = await api.spellCheck(words, lang);
+          words.forEach((w, i) => known.set(lang + '\u0000' + w, answers[i]));
+        }
+      };
+      await ask(unknown);
+      // Mots inconnus dans la langue de leur passage : cherchés dans les autres langues du document.
+      const others = new Map();
+      const langsOk = spellLangs();
+      for (const key of free) {
+        if (known.get(key) !== false) continue;
+        const [lang, word] = key.split('\u0000');
+        for (const c of langsOk) {
+          if (c === lang || known.has(c + '\u0000' + word)) continue;
+          if (!others.has(c)) others.set(c, new Set());
+          others.get(c).add(word);
+        }
       }
+      await ask(others);
       if (g === gen) for (const [node, stamp] of checked) doneOf.set(node, stamp);
       paint();
       if (window.FTLang && window.FTLang.refreshStatus) window.FTLang.refreshStatus();
@@ -288,9 +313,9 @@
       }
       for (const w of list) {
         const lang = langIn(segs, w.start);
-        if (known.get(lang + '\u0000' + w.word) !== false) continue;
+        if (!isWrong(w.word, lang, b.fixed)) continue;
         if (caret === w.end && !idle) { waitForPause = true; continue; }
-        add(next.spell, w.start, w.end, { kind: 'spell', word: w.word, lang });
+        add(next.spell, w.start, w.end, { kind: 'spell', word: w.word, lang, fixed: !!b.fixed });
       }
       if (!grammarOn) continue;
       for (let segIndex = 0; segIndex < segs.length; segIndex++) {
@@ -572,8 +597,7 @@
       ]);
       return;
     }
-    let suggestions = [];
-    try { suggestions = await api.spellSuggest(spot.word, spot.lang); } catch { /* aucune proposition */ }
+    const suggestions = await suggestionsFor(spot);
     show([
       ...(suggestions.length
         ? suggestions.map((s) => ({ text: s, strong: true, action: () => replace(spot, s) }))
@@ -591,6 +615,36 @@
       '-',
       ...synonymItems(spot)
     ]);
+  }
+
+  // Écart entre deux mots (lettres ajoutées, retirées, changées ou inversées), sans tenir compte de la casse.
+  function distance(a, b) {
+    a = a.toLocaleLowerCase();
+    b = b.toLocaleLowerCase();
+    const d = Array.from({ length: a.length + 1 }, (_, i) => [i]);
+    for (let j = 1; j <= b.length; j++) d[0][j] = j;
+    for (let i = 1; i <= a.length; i++) {
+      for (let j = 1; j <= b.length; j++) {
+        const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+        d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + cost);
+        if (i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) d[i][j] = Math.min(d[i][j], d[i - 2][j - 2] + 1);
+      }
+    }
+    return d[a.length][b.length];
+  }
+
+  // Propositions de correction : celles de la langue du passage et, si la langue n'a pas été choisie à
+  // la main, celles des autres langues du document ; les plus proches du mot tapé viennent en tête.
+  async function suggestionsFor(spot) {
+    const langs = [spot.lang, ...(spot.fixed ? [] : spellLangs().filter((c) => c !== spot.lang))];
+    const lists = await Promise.all(langs.map((c) => (async () => api.spellSuggest(spot.word, c))().catch(() => [])));
+    if (lists.length === 1) return lists[0] || [];
+    const all = [];
+    lists.forEach((list, li) => (list || []).forEach((s, rank) => {
+      if (!all.some((x) => x.s === s)) all.push({ s, d: distance(spot.word, s), rank, li });
+    }));
+    all.sort((x, y) => x.d - y.d || x.rank - y.rank || x.li - y.li);
+    return all.slice(0, 6).map((x) => x.s);
   }
 
   function start() {

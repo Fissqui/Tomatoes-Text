@@ -210,6 +210,35 @@ module.exports = async ({ page, electron }) => {
   await v(async () => (await window.FTLang.menuItems()[0].submenu()).find((i) => i.text === 'Détection automatique').action());
   assert.ok(/<p>I will recieve/.test(await saved()));
   ok('« Détection automatique » : langue fixée retirée');
+  // Mots d'une autre langue du document dans une phrase française : acceptés s'ils sont justes dans
+  // l'une des langues du document ; propositions des deux langues, les plus proches en tête.
+  const mixed = '<p>Nous avons organisé un workshop sur le deployment avec un feedback awesome dans la maisson, je vais le recieve demain.</p>';
+  await reset(mixed, 'note', { languages: ['fr'] });
+  await checked();
+  assert.deepStrictEqual(await marks('ft-spell'), ['awesome', 'deployment', 'feedback', 'maisson', 'recieve', 'workshop']);
+  await reset(mixed, 'note', { languages: ['fr', 'en'] });
+  await checked();
+  assert.deepStrictEqual(await marks('ft-spell'), ['maisson', 'recieve']);
+  assert.strictEqual(await v(() => window.FTSpell.langAtPos(1)), 'fr');
+  const t0 = Date.now();
+  items = await menuAt(await pointIn('recieve', 3));
+  for (let i = 0; i < 40 && !items.includes('receive'); i++) {
+    await page.waitForTimeout(100);
+    items = await v(() => [...document.querySelectorAll('#context-menu button')].map((b) => b.textContent.trim()).filter(Boolean));
+  }
+  const tMenu = Date.now() - t0;
+  assert.strictEqual(items[0], 'receive', JSON.stringify(items));
+  await page.keyboard.press('Escape');
+  items = await menuAt(await pointIn('maisson', 3));
+  assert.strictEqual(items[0], 'maison', JSON.stringify(items));
+  await page.keyboard.press('Escape');
+  ok('français + anglais : workshop, deployment, feedback, awesome acceptés dans une phrase française ; « recieve » → « receive » en tête (menu en ' + tMenu + ' ms), « maisson » → « maison »');
+  // Langue choisie à la main pour le paragraphe : seule cette langue compte.
+  await reset(mixed.replace('<p>', '<p lang="fr-FR">'), 'note', { languages: ['fr', 'en'] });
+  await checked();
+  assert.deepStrictEqual(await marks('ft-spell'), ['awesome', 'deployment', 'feedback', 'maisson', 'recieve', 'workshop']);
+  ok('paragraphe mis en français à la main : les mots anglais restent soulignés');
+
   // Ligne de liste : la langue va sur la ligne (enregistrée), pas sur le paragraphe ajouté par le moteur.
   await reset('<ul><li>The weather was nice.</li><li>Second item.</li></ul>', 'note', { languages: ['fr', 'en'] });
   await select(await posOf('weather', 1));
