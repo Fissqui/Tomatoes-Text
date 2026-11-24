@@ -1165,6 +1165,43 @@ dialog p { margin: 0 0 12px; }
 #editor div.ft-math-edit > math-field { min-width: 3em; }
 .ft-math-bar { position: fixed; z-index: 60; display: flex; align-items: center; gap: 2px; padding: 3px; border: 1px solid var(--border); border-radius: calc(8px * var(--round)); background: var(--panel); box-shadow: 0 4px 16px rgba(0, 0, 0, 0.14); }
 .ft-math-bar[hidden] { display: none; }
+.ft-math-bar.ft-math-bar-wide { flex-wrap: wrap; max-width: min(560px, 96vw); }
+.ft-math-bar .txt { white-space: nowrap; }
+.ft-maths-texte .ML__latex { font-size: 1em; }
+
+/* Mode maths : volet à droite de la page (mode-maths.js) */
+.maths-panel { position: fixed; z-index: 40; width: 212px; display: flex; flex-direction: column; border: 1px solid var(--border); border-radius: calc(10px * var(--round)); background: var(--panel); box-shadow: 0 6px 22px rgba(0, 0, 0, 0.12); font-size: calc(12.5px * var(--ui-scale)); overflow: hidden; }
+.maths-panel[hidden] { display: none; }
+.maths-panel.mp-opening { animation: mp-open 0.28s cubic-bezier(0.3, 0.75, 0.25, 1); }
+@keyframes mp-open { from { opacity: 0; transform: translateX(14px); } }
+.maths-panel .mp-head { display: flex; align-items: center; gap: 6px; padding: 7px 8px 7px 12px; border-bottom: 1px solid var(--border); }
+.maths-panel .mp-title { flex: 1; font-weight: 600; font-size: calc(12px * var(--ui-scale)); color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.4px; }
+.maths-panel .mp-fold { width: 24px; height: 24px; padding: 0; border: none; background: transparent; color: var(--text-muted); font-size: calc(16px * var(--ui-scale)); border-radius: calc(5px * var(--round)); }
+.maths-panel .mp-fold:hover { background: var(--btn-hover); color: var(--text); }
+.maths-panel.folded { width: auto; }
+.maths-panel.folded .mp-section { display: none; }
+.maths-panel.folded .mp-head { border-bottom: 0; padding: 5px 6px 5px 10px; }
+.maths-panel .mp-section { padding: 8px 10px 10px; min-height: 0; display: flex; flex-direction: column; }
+.maths-panel .mp-section + .mp-section { border-top: 1px solid var(--border); }
+.maths-panel .mp-eq-section { flex: 1; }
+.maths-panel h3 { margin: 0 0 6px; font-size: calc(11.5px * var(--ui-scale)); font-weight: 600; color: var(--text-muted); }
+.maths-panel .mp-count { font-weight: 400; }
+.maths-panel .mp-empty { grid-column: 1 / -1; margin: 2px 0; color: var(--text-muted); line-height: 1.4; }
+.maths-panel .mp-pieces { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+.maths-panel .mp-piece { position: relative; min-height: 38px; padding: 3px 4px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--border); border-radius: calc(6px * var(--round)); background: var(--page); color: var(--text); overflow: hidden; font-size: calc(14px * var(--ui-scale)); }
+.maths-panel .mp-piece:hover { border-color: var(--accent); }
+.maths-panel .mp-piece.pin { box-shadow: inset 3px 0 0 var(--accent); }
+.maths-panel .mp-eqs { overflow-y: auto; min-height: 60px; display: flex; flex-direction: column; gap: 2px; margin: 0 -4px; }
+.maths-panel .mp-eq { display: flex; align-items: stretch; border-radius: calc(6px * var(--round)); }
+.maths-panel .mp-eq:hover { background: var(--btn-hover); }
+.maths-panel .mp-eq-go { flex: 1; min-width: 0; display: flex; align-items: center; gap: 6px; padding: 4px 6px; border: none; background: transparent; color: var(--text); text-align: left; overflow: hidden; }
+.maths-panel .mp-eq-math { flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; font-size: calc(13px * var(--ui-scale)); mask-image: linear-gradient(to right, #000 85%, transparent); }
+.maths-panel .mp-eq.block .mp-eq-math { padding-left: 0; }
+.maths-panel .mp-eq-num { flex: none; color: var(--text-muted); font-size: calc(11.5px * var(--ui-scale)); }
+.maths-panel .mp-eq-copy { flex: none; width: 26px; padding: 0; border: none; background: transparent; color: var(--text-muted); opacity: 0; display: flex; align-items: center; justify-content: center; }
+.maths-panel .mp-eq:hover .mp-eq-copy { opacity: 1; }
+.maths-panel .mp-eq-copy:hover { color: var(--accent); }
+.maths-panel .mp-eq-copy svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.3; }
 .ft-math-bar button { height: 30px; min-width: 32px; padding: 0 6px; display: flex; align-items: center; justify-content: center; border: 1px solid transparent; border-radius: calc(6px * var(--round)); background: transparent; color: var(--text); font-size: calc(13px * var(--ui-scale)); }
 .ft-math-bar button:hover { background: var(--btn-hover); border-color: var(--border); }
 .ft-math-bar button.on { background: color-mix(in srgb, var(--accent) 16%, transparent); }
@@ -1599,12 +1636,12 @@ body.tb-moving, body.tb-moving * { cursor: grabbing !important; user-select: non
 :is(#toolbar, #toolbar2, .tb-side).tb-vertical #quotes-switch button { padding: 0 5px; }
 #quotes-switch button { white-space: nowrap; }
 /* Mode raccourcis : interrupteur (même glissement que les guillemets) et barres latérales contre le document. */
-#sidemode-switch { display: inline-flex; align-self: center; gap: 2px; padding: 2px; margin: 0 0 4px 10px; border: 1px solid var(--border); border-radius: calc(17px * var(--round)); background: var(--panel); }
-#view-tabs #sidemode-switch button { margin: 0; padding: 3px 10px; border: none; border-radius: calc(15px * var(--round)); color: var(--text-muted); }
-#view-tabs #sidemode-switch button svg.ic { display: block; width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: calc(1.7 * var(--icon-weight)); stroke-linejoin: round; }
-#view-tabs #sidemode-switch button svg.ic .ic-f { fill: currentColor; stroke: none; }
-#view-tabs #sidemode-switch button[aria-pressed="true"] { color: var(--accent-text); }
-#main:is(.view-mindmap, .view-timeline) #sidemode-switch { display: none; }
+#mathmode-switch, #sidemode-switch { display: inline-flex; align-self: center; gap: 2px; padding: 2px; margin: 0 0 4px 10px; border: 1px solid var(--border); border-radius: calc(17px * var(--round)); background: var(--panel); }
+#view-tabs :is(#sidemode-switch, #mathmode-switch) button { margin: 0; padding: 3px 10px; border: none; border-radius: calc(15px * var(--round)); color: var(--text-muted); }
+#view-tabs :is(#sidemode-switch, #mathmode-switch) button svg.ic { display: block; width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: calc(1.7 * var(--icon-weight)); stroke-linejoin: round; }
+#view-tabs :is(#sidemode-switch, #mathmode-switch) button svg.ic .ic-f { fill: currentColor; stroke: none; }
+#view-tabs :is(#sidemode-switch, #mathmode-switch) button[aria-pressed="true"] { color: var(--accent-text); }
+#main:is(.view-mindmap, .view-timeline) :is(#sidemode-switch, #mathmode-switch) { display: none; }
 #main > #toolbar2.tb-merged { display: none !important; }
 #main > .tb-side[hidden] { display: none; }
 /* Barres latérales : collées aux bords de la page (position calculée par toolbar.js), une seule colonne.

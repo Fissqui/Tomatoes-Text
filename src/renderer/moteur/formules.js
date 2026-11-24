@@ -68,7 +68,8 @@
     }
 
     // at : 'start', 'end' ou {x, y} (clic) ; joined : suite de la création de l'équation (même annulation).
-    function begin(at, joined) {
+    // ins : structure posée dès l'ouverture (cases à remplir, la première sélectionnée).
+    function begin(at, joined, ins) {
       if (ed || closed() || !ML || !F()) return false;
       if (active && active !== ctl) active.finish(null);
       const field = new ML.MathfieldElement();
@@ -83,10 +84,23 @@
       field.addEventListener('input', sync);
       field.addEventListener('keydown', keys, true);
       field.addEventListener('paste', (e) => F().pasteInto(field, e), true);
+      // Mode maths : clic droit dans l'équation, la sélection s'ajoute aux morceaux.
+      field.addEventListener('contextmenu', (e) => {
+        const MM = window.FTModeMaths;
+        if (!MM || !MM.on()) return;
+        e.preventDefault();
+        e.stopPropagation();
+        const part = selectedLatex(field);
+        window.FTSidebar.showMenu(e.clientX, e.clientY, [
+          { text: 'Ajouter aux morceaux', action: () => MM.save(part) },
+          { text: 'Copier le code LaTeX', action: () => copyLatex(part) }
+        ]);
+      }, true);
       field.addEventListener('move-out', (e) => {
         e.preventDefault();
         const d = e.detail && e.detail.direction;
-        finish(d === 'backward' || d === 'upward' ? 'before' : 'after');
+        // (Après la fin du traitement de la touche par MathLive : la zone d'écriture disparaît.)
+        setTimeout(() => { if (ed && ed.field === field) finish(d === 'backward' || d === 'upward' ? 'before' : 'after'); }, 0);
       });
       field.addEventListener('focusout', () => {
         // (Clic dans la petite barre : le clavier revient dans l'équation.)
@@ -102,6 +116,10 @@
             field.position = off >= 0 ? off : field.lastOffset;
           } else field.position = field.lastOffset;
         } catch { /* position par défaut : à la fin */ }
+        if (ins) {
+          field.insert(ins, { insertionMode: 'replaceSelection', selectionMode: 'placeholder', format: 'latex' });
+          sync();
+        }
         showBar(ctl);
       });
       return true;
@@ -242,8 +260,18 @@
     bar.addEventListener('mousedown', (e) => { e.preventDefault(); barHolds = true; setTimeout(() => { barHolds = false; }, 0); });
     document.body.append(bar);
   }
+  // Partie sélectionnée d'une équation en cours d'écriture (toute l'équation sans sélection).
+  function selectedLatex(field) {
+    try {
+      if (!field.selectionIsCollapsed) return F().clean(field.getValue(field.selection, 'latex'));
+    } catch { /* sélection illisible : toute l'équation */ }
+    return F().clean(field.value);
+  }
+
   function fillBar(ctl) {
-    const items = F().quick().map(([d, ins, title]) => {
+    const MM = window.FTModeMaths && window.FTModeMaths.on() ? window.FTModeMaths : null;
+    bar.classList.toggle('ft-math-bar-wide', !!MM);
+    const items = (MM ? MM.items() : F().quick()).map(([d, ins, title]) => {
       const b = document.createElement('button');
       b.type = 'button';
       b.title = title;
@@ -268,6 +296,14 @@
       return b;
     };
     const extra = [];
+    if (MM) {
+      extra.push(text('☆ Morceau', 'Ajouter la sélection (ou l’équation) aux morceaux', () => {
+        const field = ctl.field();
+        if (!field) return;
+        MM.save(selectedLatex(field));
+        field.focus();
+      }));
+    }
     if (ctl.block()) {
       const numbered = ctl.dom.hasAttribute('data-numero');
       extra.push(text('(1)', numbered ? 'Retirer le numéro' : 'Numéroter l’équation', () => {
@@ -317,15 +353,22 @@
     return dom ? views.get(dom) : null;
   };
 
-  function insertNew(v) {
+  // opts.ins : structure à poser dans la nouvelle équation ; opts.block : sur sa propre ligne.
+  function insertNew(v, opts = {}) {
     const { $from, from, to, empty } = v.state.selection;
     if (!$from.parent.inlineContent || $from.parent.type.spec.code) return false;
-    const text = empty ? '' : v.state.doc.textBetween(from, to, ' ').trim();
+    const text = empty || opts.ins ? '' : v.state.doc.textBetween(from, to, ' ').trim();
     const lone = $from.parent.type === N.paragraph && $from.parent.content.size === 0 && $from.depth === 1;
-    const html = F().html({ latex: text, block: lone });
+    const html = F().html({ latex: text, block: lone || !!opts.block });
     let tr = v.state.tr;
     let pos;
-    if (lone) {
+    if (opts.block && !lone) {
+      // Ligne de texte non vide : l'équation se place sous le paragraphe (bloc du haut).
+      pos = $from.after(1);
+      tr.insert(pos, N.raw_block.create({ html }));
+      const after = pos + 1;
+      if (!(tr.doc.resolve(after).nodeAfter || {}).isTextblock) tr.insert(after, N.paragraph.create({ tag: 'p', a: {}, bare: false }));
+    } else if (lone) {
       // Ligne vide : équation sur sa propre ligne, suivie d'une ligne de texte.
       const before = $from.before();
       tr.replaceWith(before, $from.after(), N.raw_block.create({ html }));
@@ -339,7 +382,7 @@
     tr = PM.history.closeHistory(tr).scrollIntoView();
     v.dispatch(tr);
     const ctl = ctlAt(pos);
-    if (ctl) ctl.begin('end', tr.time);
+    if (ctl) ctl.begin('end', tr.time, opts.ins);
     return true;
   }
 
@@ -406,6 +449,7 @@
         }))
       },
       { text: 'Copier le code LaTeX', action: () => copyLatex(info.latex) },
+      ...(window.FTModeMaths && window.FTModeMaths.on() ? [{ text: 'Ajouter aux morceaux', action: () => window.FTModeMaths.save(info.latex) }] : []),
       ...(info.block ? [{ text: 'Sélectionner (pour la déplacer)', action: () => window.FTObjets.selectObject(f) }] : []),
       '-',
       { text: 'Supprimer l’équation', danger: true, action: () => F().remove(f) }
@@ -415,7 +459,7 @@
   }
 
   function copyLatex(latex) {
-    const done = () => window.FTGeneres && window.FTGeneres.flash && window.FTGeneres.flash('Code LaTeX copié.');
+    const done = () => {};
     try {
       if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(latex).then(done, () => {}); return; }
     } catch { /* presse-papiers indisponible */ }
@@ -552,6 +596,35 @@
     edit(el, at) { const ctl = views.get(el); return ctl ? ctl.begin(at || 'end') : false; },
     active: () => (active ? active.dom : null),
     finish() { if (active) active.finish(null); },
+    // Structure ou morceau inséré : dans l'équation en cours d'écriture, sinon dans une nouvelle équation au curseur.
+    insert(ins, opts = {}) {
+      if (closed()) return false;
+      const field = active && active.field();
+      if (field && !opts.fresh) {
+        field.focus();
+        field.insert(ins, { insertionMode: 'replaceSelection', selectionMode: 'placeholder', format: 'latex' });
+        field.dispatchEvent(new Event('input'));
+        return true;
+      }
+      if (active) active.finish(null);
+      view.focus();
+      return insertNew(view, { ins, block: opts.block });
+    },
+    // Équations du texte, dans l'ordre : { pos, latex, block, eq }.
+    list() {
+      const out = [];
+      view.state.doc.descendants((node, pos) => {
+        if (isMath(node)) {
+          const el = fromHtml(node.attrs.html);
+          out.push({ pos, latex: el.dataset.latex || '', block: el.tagName === 'DIV', eq: el.dataset.eq || '' });
+          return false;
+        }
+        return true;
+      });
+      return out;
+    },
+    copyLatex,
+    refreshBar() { if (barFor && bar && !bar.hidden) fillBar(barFor); },
     numbering,
     chapters: () => chaptersOn(M.view.state.doc),
     setChapters

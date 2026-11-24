@@ -17,6 +17,8 @@ nom. Le détail de chaque version publiée figure sur la
   remonte.
 - Images gardées dans les textes collés depuis Word ou une page web ; fichier déposé à l'endroit visé.
 - Anciens documents ouverts sans changement visible ; exports Word, PDF et EPUB fidèles aux nouveaux réglages.
+- Mode maths (interrupteur à côté du mode raccourcis ; l'un ou l'autre) : barre d'équation au clic dans
+  le texte, volet des derniers morceaux d'équations réutilisables et liste des équations du document.
 
 ## 2.4 « Corbarino » — novembre 2026
 

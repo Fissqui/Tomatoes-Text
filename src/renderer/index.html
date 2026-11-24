@@ -78,6 +78,15 @@
             <svg class="ic" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="1.5"/><rect class="ic-f" x="3" y="4" width="4.5" height="16" opacity=".3"/><rect class="ic-f" x="16.5" y="4" width="4.5" height="16" opacity=".3"/><path d="M7.5 4v16M16.5 4v16"/></svg>
           </button>
         </div>
+        <div id="mathmode-switch" class="ft-switch" role="group" aria-label="Mode maths" title="Mode maths : barre d'équation au clic, morceaux réutilisables et liste des équations">
+          <span class="ft-knob"></span>
+          <button type="button" data-maths="off" aria-pressed="true" title="Mode maths désactivé">
+            <svg class="ic" viewBox="0 0 24 24"><path d="M5 7h14M5 11.5h14M5 16h9"/></svg>
+          </button>
+          <button type="button" data-maths="on" aria-pressed="false" title="Mode maths : barre d'équation au clic, volet des morceaux et des équations">
+            <svg class="ic" viewBox="0 0 24 24"><path d="M2.5 13.5l2.6-1.4 3.2 7.4L12.4 4.5h9"/><path d="M14.2 10l5.6 6.6M19.8 10l-5.6 6.6"/></svg>
+          </button>
+        </div>
         <div id="mode-switch" class="ft-switch" role="group" aria-label="Interface">
           <span class="ft-knob"></span>
           <button type="button" data-mode="note" aria-pressed="true" title="Interface note : le texte défile sans fin, sans pages">
@@ -1659,6 +1668,7 @@
   <script src="formules.js"></script>
   <script src="formules-collage.js"></script>
   <script src="moteur/formules.js"></script>
+  <script src="mode-maths.js"></script>
   <script src="ordinals.js"></script>
   <script src="insert.js"></script>
   <script src="layout.js"></script>

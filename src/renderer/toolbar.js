@@ -161,6 +161,8 @@
   function setSide(on) {
     on = !!on;
     if (on === sideOn) return;
+    // Mode raccourcis ou mode maths : l'un ou l'autre.
+    if (on && window.FTModeMaths) window.FTModeMaths.set(false);
     if (on) enterSide();
     else leaveSide();
     tidy();

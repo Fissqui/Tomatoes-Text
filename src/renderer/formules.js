@@ -100,10 +100,10 @@
     field.addEventListener('keydown', (e) => {
       if (e.ctrlKey || e.altKey || e.metaKey || field.mode === 'latex') return;
       // Tab : case suivante ; sans case à remplir, sortie de la structure (fraction, racine…) où est le curseur.
-      if (e.key === 'Tab' && !e.shiftKey && !/\\placeholder/.test(field.value)) {
+      if (e.key === 'Tab' && !e.shiftKey) {
         e.preventDefault();
         e.stopPropagation();
-        field.executeCommand('moveAfterParent');
+        field.executeCommand(/\\placeholder/.test(field.value) ? 'moveToNextPlaceholder' : 'moveAfterParent');
         return;
       }
       // « / » crée une fraction quel que soit le clavier ; ce qui précède devient le numérateur.
@@ -693,6 +693,8 @@
       EM.replace(target, element({ ...o, eq: o.numbered ? info.eq : '' }));
     },
     remove(target) { if (EM && target && target.isConnected) EM.remove(target); },
+    // Copie d'une équation (mêmes réglages, sans son numéro) au curseur.
+    insertCopy(info) { if (EM) EM.insert(element({ ...info, eq: '', xid: '' }), EM.mark()); },
     useEngine(bridge) { EM = bridge; },
     isOpen: () => !!(dialog && dialog.open)
   };
