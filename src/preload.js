@@ -30,6 +30,7 @@ contextBridge.exposeInMainWorld('frameText', {
   exportEpub: (title, files) => ipcRenderer.invoke('doc:exportEpub', title, files),
   onBookStep: (cb) => ipcRenderer.on('livre:etape', (_e, text) => cb(text)),
   showFile: (filePath) => ipcRenderer.invoke('doc:showFile', filePath),
+  showDocInFolder: (fileName) => ipcRenderer.invoke('doc:showInFolder', fileName),
   listVersions: (docId) => ipcRenderer.invoke('versions:list', docId),
   readVersion: (docId, file) => ipcRenderer.invoke('versions:read', docId, file),
   saveVersion: (doc, kind, label) => ipcRenderer.invoke('versions:save', doc, kind, label),

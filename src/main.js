@@ -759,6 +759,16 @@ ipcMain.handle('doc:exportPdf', async (_e, title, job) => {
 
 ipcMain.handle('doc:showFile', (_e, filePath) => shell.showItemInFolder(filePath));
 
+// Clic droit sur un document > « Ouvrir le dossier du projet » : l'Explorateur s'ouvre là où se trouve
+// réellement le fichier (dossier du projet, ou autre dossier pour un document rangé ailleurs), fichier sélectionné.
+ipcMain.handle('doc:showInFolder', async (_e, fileName) => {
+  const file = inLibrary(fileName);
+  if (fsSync.existsSync(file)) { shell.showItemInFolder(file); return true; }
+  const dir = path.dirname(file);
+  await shell.openPath(fsSync.existsSync(dir) ? dir : libraryDir());
+  return false;
+});
+
 // Charge des documents depuis n'importe où : un .tmtx (ou .ftxt) est ajouté à la bibliothèque tel quel ; un
 // document Word (.docx) est renvoyé à la fenêtre, qui le convertit (word-import.js).
 ipcMain.handle('doc:import', async (_e, kind) => {

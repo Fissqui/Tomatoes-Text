@@ -378,6 +378,7 @@
       return [
         { text: 'Ouvrir', action: () => h.openDoc(doc.fileName) },
         ...(active && doc.fileName !== active ? [{ text: 'Insérer un lien dans le document ouvert', action: () => h.insertDocLink(doc.id) }] : []),
+        { text: 'Ouvrir le dossier du projet', action: () => h.showDocFolder(doc.fileName) },
         { text: 'Renommer', action: () => h.renameDoc(doc.fileName) },
         { text: 'Enregistrer une copie sous…', action: () => h.exportDoc(doc.fileName) },
         { text: 'Historique des versions…', action: () => h.versions(doc.fileName) },

@@ -588,6 +588,11 @@
     insertDocLink(docId) {
       if (!current || !window.FTEcriture || !window.FTEcriture.insertDocLink(docId)) flash('Placez le curseur dans le texte du document ouvert.');
     },
+    // Explorateur ouvert sur le dossier du fichier, fichier sélectionné.
+    async showDocFolder(fileName) {
+      const found = await api.showDocInFolder(fileName);
+      if (found === false) flash('Fichier introuvable : dossier ouvert à la place.');
+    },
     // « Changer de projet » : le document passe dans « Non classés » de l'autre projet.
     async changeDocProject(docId, project) {
       const entry = lib.docs.find((d) => d.id === docId);
