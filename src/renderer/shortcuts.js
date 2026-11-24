@@ -80,7 +80,7 @@
     ['Structure', 'callout', 'Encadré', '', 'action', structure('callout')],
     ['Insertion', 'table', 'Tableau 3 × 3', '', 'action', click('#table-quick')],
     ['Insertion', 'image', 'Image', '', 'action', click('#image-btn')],
-    ['Insertion', 'math', 'Formule', '', 'action', click('#math-btn')],
+    ['Insertion', 'math', 'Équation', '', 'action', click('#math-btn')],
     ['Insertion', 'note', 'Note de bas de page', '', 'action', click('#note-btn')],
     ['Insertion', 'chars', 'Caractères spéciaux', '', 'action', click('#chars-btn')],
     ['Insertion', 'diagram', 'Schéma', '', 'action', click('#diagram-btn')],

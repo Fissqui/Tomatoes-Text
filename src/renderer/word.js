@@ -172,7 +172,7 @@
       return;
     }
     if (el.classList.contains('ft-math')) {
-      out.push({ node: new D.Math({ children: mathOf(el.dataset.latex || '') }) });
+      out.push({ node: equation(el.dataset.latex || '', { block: false }) });
       return;
     }
     // Passage commenté : début et fin du commentaire Word autour du texte.
@@ -949,102 +949,65 @@
     return new D.ImageRun(options);
   }
 
-  // ----- Formules : MathML (MathLive) vers équations Word -----
+  // ----- Équations : équations Word natives (OMML écrit par formules-latex.js) -----
 
-  const NARY = /^[∑∏∐⋃⋂⨁⨂∫∬∭∮∯∰]$/;
-  const INTEGRAL = /^[∫∬∭∮∯∰]$/;
-
-  function mathOf(latex) {
+  // Équation Word (m:oMath dans la ligne, m:oMathPara sur sa ligne) ; code illisible : le code LaTeX en texte.
+  function equation(latex, opts) {
     try {
-      const mml = window.MathLive.convertLatexToMathMl(latex);
-      const doc = new DOMParser().parseFromString(`<math xmlns="http://www.w3.org/1998/Math/MathML">${mml}</math>`, 'application/xml');
-      if (doc.querySelector('parsererror')) throw new Error('MathML');
-      const out = convMath(doc.documentElement);
-      return out.length ? out : [new D.MathRun(latex)];
-    } catch {
-      return [new D.MathRun(latex)];
+      const xml = window.FTLatex.toOmml(latex, opts);
+      const root = D.ImportedXmlComponent.fromXmlString(xml);
+      const node = (root.root || []).find((c) => c instanceof D.ImportedXmlComponent);
+      if (node) return node;
+    } catch (err) {
+      console.warn('Équation non convertie pour Word', err);
     }
-  }
-
-  const baseChar = (el) => {
-    const base = el.localName === 'mo' ? el : el.firstElementChild;
-    return base && base.localName === 'mo' ? base.textContent.trim() : '';
-  };
-  const isNary = (el) => NARY.test(baseChar(el)) && ['mo', 'msub', 'msup', 'msubsup', 'munder', 'mover', 'munderover'].includes(el.localName);
-
-  function nary(el, body) {
-    const ch = baseChar(el);
-    const kids = el.localName === 'mo' ? [] : [...el.children];
-    let sub;
-    let sup;
-    if (['msub', 'munder'].includes(el.localName)) sub = convMath(kids[1]);
-    if (['msup', 'mover'].includes(el.localName)) sup = convMath(kids[1]);
-    if (['msubsup', 'munderover'].includes(el.localName)) { sub = convMath(kids[1]); sup = convMath(kids[2]); }
-    const options = { children: body.length ? body : [new D.MathRun(' ')], subScript: sub, superScript: sup };
-    if (INTEGRAL.test(ch) && ch === '∫') return [new D.MathIntegral(options)];
-    if (ch === '∑') return [new D.MathSum(options)];
-    // Autres opérateurs (∏, ∬…) : le symbole avec ses bornes, puis ce qu'il porte.
-    const sym = [new D.MathRun(ch)];
-    let head = sym;
-    if (sub && sup) head = [new D.MathSubSuperScript({ children: sym, subScript: sub, superScript: sup })];
-    else if (sub) head = [new D.MathSubScript({ children: sym, subScript: sub })];
-    else if (sup) head = [new D.MathSuperScript({ children: sym, superScript: sup })];
-    return [...head, ...body];
-  }
-
-  function seq(kids) {
-    const out = [];
-    for (let i = 0; i < kids.length; i++) {
-      const k = kids[i];
-      if (isNary(k)) {
-        const body = kids[i + 1] ? convMath(kids[i + 1]) : [];
-        if (kids[i + 1]) i++;
-        out.push(...nary(k, body));
-      } else {
-        out.push(...convMath(k));
-      }
-    }
-    return out;
-  }
-
-  function convMath(el) {
-    if (!el) return [];
-    const kids = [...el.children];
-    switch (el.localName) {
-      case 'annotation': case 'annotation-xml': case 'mphantom': return [];
-      case 'mi': case 'mn': case 'mo': case 'mtext': case 'ms': {
-        const t = el.textContent.replace(/[\u2061-\u2064]/g, '');
-        return t ? [new D.MathRun(t)] : [];
-      }
-      case 'mspace': return [new D.MathRun(' ')];
-      case 'mfrac': return [new D.MathFraction({ numerator: convMath(kids[0]), denominator: convMath(kids[1]) })];
-      case 'msqrt': return [new D.MathRadical({ children: seq(kids) })];
-      case 'mroot': return [new D.MathRadical({ children: convMath(kids[0]), degree: convMath(kids[1]) })];
-      case 'msup': return isNary(el) ? nary(el, []) : [new D.MathSuperScript({ children: convMath(kids[0]), superScript: convMath(kids[1]) })];
-      case 'msub': return isNary(el) ? nary(el, []) : [new D.MathSubScript({ children: convMath(kids[0]), subScript: convMath(kids[1]) })];
-      case 'msubsup': return isNary(el) ? nary(el, []) : [new D.MathSubSuperScript({ children: convMath(kids[0]), subScript: convMath(kids[1]), superScript: convMath(kids[2]) })];
-      case 'munder': return isNary(el) ? nary(el, []) : [new D.MathLimitLower({ children: convMath(kids[0]), limit: convMath(kids[1]) })];
-      case 'mover': return isNary(el) ? nary(el, []) : [new D.MathLimitUpper({ children: convMath(kids[0]), limit: convMath(kids[1]) })];
-      case 'munderover': return isNary(el) ? nary(el, [])
-        : [new D.MathLimitUpper({ children: [new D.MathLimitLower({ children: convMath(kids[0]), limit: convMath(kids[1]) })], limit: convMath(kids[2]) })];
-      case 'mtable': {
-        const out = [];
-        kids.forEach((row, i) => {
-          if (i) out.push(new D.MathRun(' ; '));
-          [...row.children].forEach((cell, j) => { if (j) out.push(new D.MathRun('  ')); out.push(...seq([...cell.children])); });
-        });
-        return out;
-      }
-      default: return seq(kids);
-    }
+    return new D.TextRun({ text: latex });
   }
 
   function mathBlock(el, ctx) {
     const cs = getComputedStyle(el);
+    const latex = el.dataset.latex || '';
+    const align = el.dataset.align === 'gauche' ? 'gauche' : '';
+    const spacing = { before: tw(cs.marginTop), after: tw(cs.marginBottom) };
+    // Équation numérotée : tableau sans bordure, l'équation (centrée ou à gauche) et son numéro au bord droit.
+    if (el.hasAttribute('data-numero')) {
+      const none = { style: D.BorderStyle.NONE, size: 0, color: 'auto' };
+      const total = Math.max(1, Math.round((ctx.x1 - ctx.x0) * (ctx.state && ctx.state.scale ? ctx.state.scale : 1) * PX));
+      const numW = Math.round(total * 0.12);
+      const sideW = align ? 0 : numW;
+      const mainW = total - numW - sideW;
+      const num = el.dataset.eq || '';
+      const cell = (children, width, opts = {}) => new D.TableCell({
+        children,
+        width: { size: width, type: D.WidthType.DXA },
+        verticalAlign: D.VerticalAlign.CENTER,
+        margins: { top: 0, bottom: 0, left: 0, right: 0 },
+        borders: { top: none, bottom: none, left: none, right: none },
+        ...opts
+      });
+      const props = runProps(el);
+      const cells = [];
+      if (sideW) cells.push(cell([new D.Paragraph({ children: [] })], sideW));
+      cells.push(cell([new D.Paragraph({ children: [equation(latex, { block: true, align })], alignment: align ? D.AlignmentType.LEFT : D.AlignmentType.CENTER })], mainW));
+      cells.push(cell([new D.Paragraph({ children: [new D.TextRun({ ...props, bold: false, italics: false, text: num })], alignment: D.AlignmentType.RIGHT })], numW));
+      const table = new D.Table({
+        rows: [new D.TableRow({ children: cells, cantSplit: true })],
+        columnWidths: sideW ? [sideW, mainW, numW] : [mainW, numW],
+        width: { size: total, type: D.WidthType.DXA },
+        layout: D.TableLayoutType.FIXED,
+        borders: { top: none, bottom: none, left: none, right: none, insideHorizontal: none, insideVertical: none }
+      });
+      return [
+        { node: new D.Paragraph({ children: [], spacing: { before: 0, after: spacing.before, line: 20, lineRule: D.LineRuleType.EXACT } }), el },
+        { node: table, el },
+        // (Paragraphe après le tableau : deux équations numérotées qui se suivent restent deux tableaux.)
+        { node: new D.Paragraph({ children: [], spacing: { before: 0, after: spacing.after, line: 20, lineRule: D.LineRuleType.EXACT } }), el }
+      ];
+    }
     const options = {
-      children: [new D.Math({ children: mathOf(el.dataset.latex || '') })],
-      alignment: D.AlignmentType[ALIGN[cs.textAlign] || 'CENTER'],
-      spacing: { before: tw(cs.marginTop), after: tw(cs.marginBottom) }
+      children: [equation(latex, { block: true, align })],
+      alignment: align ? D.AlignmentType.LEFT : D.AlignmentType.CENTER,
+      spacing
     };
     const b = { top: border(cs, 'Top'), bottom: border(cs, 'Bottom'), left: border(cs, 'Left'), right: border(cs, 'Right') };
     if (Object.values(b).some(Boolean)) {

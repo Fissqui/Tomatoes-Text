@@ -22,7 +22,7 @@ ligne nécessaire.
 **Écriture et mise en forme**
 - Mise en forme complète : polices (17 polices libres intégrées), tailles, couleurs, surlignage, petites
   capitales, lettrine, alignements, colonnes.
-- Titres, listes, encadrés, citations, tableaux, images, formules mathématiques, schémas, graphiques, code
+- Titres, listes, encadrés, citations, tableaux, images, équations (modifiables dans le texte, numérotées), schémas, graphiques, code
   avec coloration syntaxique.
 - Typographie française automatique : majuscule en début de phrase, guillemets, ordinaux (19ᵉ, 1ᵉʳ), espaces
   insécables, point médian.

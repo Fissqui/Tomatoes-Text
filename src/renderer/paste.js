@@ -64,13 +64,51 @@
 
   const escape = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
+  // ----- Équations (formules-collage.js) -----
+  // Chaque équation reconnue est mise de côté et remplacée par un jeton (\uE000n\uE001) que les
+  // nettoyages du texte ne touchent pas ; render() remet l'équation à sa place.
+  const FC = () => window.FTFormulesCollage;
+  const formulas = [];
+  const token = (html) => '\uE000' + (formulas.push(html) - 1) + '\uE001';
+  const TOKEN = /\uE000(\d+)\uE001/g;
+  const isBlockToken = (i) => /^<div\b/.test(formulas[i] || '');
+  const inlineToken = (i) => {
+    const f = window.FTFormules;
+    const info = f && f.infoOf(formulas[i]);
+    return info ? token(f.html({ ...info, block: false, numbered: false, align: '' })) : '';
+  };
+  // Texte : code LaTeX ($…$, \[…\]…) remplacé par des équations.
+  const latexIn = (text) => (FC() && window.FTFormules
+    ? FC().replaceLatex(text, (latex, block) => token(window.FTFormules.html({ latex: window.FTFormules.clean(latex), block })))
+    : text);
+  // Équation sur sa ligne au milieu d'un paragraphe : le paragraphe est coupé autour d'elle ; dans une
+  // liste, elle reste dans la ligne.
+  function splitBlocks(blocks) {
+    const out = [];
+    for (const b of blocks) {
+      if (b.type === 'table' || b.type === 'math' || !b.html || !b.html.includes('\uE000')) { out.push(b); continue; }
+      if (b.type === 'li') { out.push({ ...b, html: b.html.replace(TOKEN, (m, i) => (isBlockToken(i) ? inlineToken(i) : m)) }); continue; }
+      const parts = b.html.split(/(\uE000\d+\uE001)/);
+      let acc = '';
+      const flush = () => { if (acc.replace(/<[^>]+>|[\s\u00a0]/g, '')) out.push({ ...b, html: acc.trim(), text: acc }); acc = ''; };
+      for (const part of parts) {
+        const m = /^\uE000(\d+)\uE001$/.exec(part);
+        if (m && isBlockToken(m[1])) { flush(); out.push({ type: 'math', html: part, text: '∗' }); } else acc += part;
+      }
+      flush();
+    }
+    return out;
+  }
+
   function blocksFromText(text, opts) {
+    // (Équation sur plusieurs lignes, $$…$$ ou \begin{align}… : reconnue avant le découpage en lignes.)
+    if (/\$\$|\\\[|\\begin\{/.test(text)) text = text.replace(/\$\$[\s\S]+?\$\$|\\\[[\s\S]+?\\\]|\\begin\{(equation|align|gather|multline|eqnarray|displaymath)\*?\}[\s\S]+?\\end\{\1\*?\}/g, (m) => '\n' + latexIn(m) + '\n');
     const lines = text.replace(/\r\n?/g, '\n').replace(/\u000c/g, '\n').split('\n');
     const paras = opts.lines ? joinLines(lines) : lines.map((l) => l.trim()).filter(Boolean);
     return paras.map((p) => {
       const m = opts.structure && p.match(BULLET);
-      if (m) return { type: 'li', list: ORDERED.test(p) ? 'ol' : 'ul', level: 0, html: escape(p.slice(m[0].length)) };
-      return { type: 'p', html: escape(p) };
+      if (m) return { type: 'li', list: ORDERED.test(p) ? 'ol' : 'ul', level: 0, html: escape(latexIn(p.slice(m[0].length))) };
+      return { type: 'p', html: escape(latexIn(p)) };
     });
   }
 
@@ -99,6 +137,8 @@
 
   function blocksFromHtml(html, opts) {
     const doc = new DOMParser().parseFromString(html, 'text/html');
+    // Équations (Word, pages web) : avant le nettoyage, qui en retirerait les morceaux.
+    if (FC()) FC().markMath(doc);
     doc.querySelectorAll(DROP).forEach((n) => n.remove());
     // Pages web (Wikipédia…) : appels de note, liens « [archive] », « [modifier] », éléments cachés.
     doc.querySelectorAll(NOISE).forEach((n) => n.remove());
@@ -120,7 +160,7 @@
         if (!b.html || /[ \n]$/.test(b.text || '')) s = s.replace(/^ /, '');
         if (!s) return;
         const tags = opts.inline ? marks : [];
-        b.html += tags.map((m) => `<${m}>`).join('') + escape(s) + tags.slice().reverse().map((m) => `</${m.split(' ')[0]}>`).join('');
+        b.html += tags.map((m) => `<${m}>`).join('') + escape(latexIn(s)) + tags.slice().reverse().map((m) => `</${m.split(' ')[0]}>`).join('');
         b.text = (b.text || '') + s;
         return;
       }
@@ -131,6 +171,12 @@
         const b = ensure();
         b.html += '\n';
         b.text = (b.text || '') + '\n';
+        return;
+      }
+      if (el.classList.contains('ft-math')) {
+        const b = ensure();
+        b.html += token(el.outerHTML);
+        b.text = (b.text || '') + '∗';
         return;
       }
       if (t === 'TABLE') return table(el);
@@ -232,7 +278,8 @@
 
   function build(source, opts) {
     let blocks = source.html ? blocksFromHtml(source.html, opts) : blocksFromText(source.text, opts);
-    blocks = blocks.map((b) => {
+    blocks = splitBlocks(blocks).map((b) => {
+      if (b.type === 'math') return b;
       if (b.type === 'table') {
         if (opts.spaces) b.rows.forEach((r) => r.forEach((c) => { c.html = tidySpaces(c.html); }));
         return b;
@@ -245,7 +292,7 @@
     if (!opts.structure) {
       blocks = blocks.flatMap((b) => (b.type === 'table'
         ? b.rows.map((r) => ({ type: 'p', html: r.map((c) => c.html.replace(/\n/g, ' ')).join(' – ') }))
-        : [{ type: 'p', html: b.html }]));
+        : b.type === 'math' ? [{ type: 'p', html: b.html.replace(TOKEN, (m, i) => inlineToken(i)) }] : [{ type: 'p', html: b.html }]));
     }
     return blocks;
   }
@@ -345,12 +392,14 @@
           + '<tbody>'
           + b.rows.map((r) => '<tr>' + r.map((c) => `<td${spans(c)}>${br(c.html) || '<br>'}</td>`).join('') + '</tr>').join('')
           + '</tbody></table>';
+      } else if (b.type === 'math') {
+        out += b.html;
       } else {
         out += `<${b.type}>${br(b.html)}</${b.type}>`;
       }
     }
     closeLists(0);
-    return out;
+    return out.replace(TOKEN, (m, i) => formulas[i] || '');
   }
 
   // ----- Insertion dans le document -----

@@ -12,6 +12,8 @@
   const SCREEN = new Set(['data-pm-far', 'data-pm-sp', 'data-pm-spf', 'data-pm-sb', 'data-pm-sbf', 'data-pm-cs']);
   // HTML d'un objet fermé, sans les marques d'affichage.
   function outer(d) {
+    // Équation en cours de modification (moteur/formules.js) : son HTML d'après son code, sans la zone d'écriture.
+    if (d.classList && d.classList.contains('ft-math-edit') && window.FTFormules) return window.FTFormules.html(window.FTFormules.infoOf(d));
     if (![...SCREEN].some((n) => d.hasAttribute(n))) return d.outerHTML;
     const c = d.cloneNode(true);
     for (const n of SCREEN) c.removeAttribute(n);

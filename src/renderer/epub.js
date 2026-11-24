@@ -61,6 +61,8 @@
       'pre.ft-code[data-frame="trait"] { border-width: 0 0 0 3px; border-radius: 0; } pre.ft-code[data-frame="aucun"] { border: 0; background: none; padding-left: 0; }',
       '.tk-kw, .tk-pp { color: #cf222e; } .tk-ty, .tk-dec { color: #953800; } .tk-lit, .tk-num, .tk-at { color: #0550ae; } .tk-str { color: #0a3069; } .tk-com { color: #6e7781; font-style: italic; } .tk-fn { color: #8250df; } .tk-tag { color: #116329; }',
       '.ft-math[data-display="block"] { display: block; text-align: center; margin: 0.8em 0; }',
+      '.ft-math[data-align="gauche"] { text-align: left; } .ft-math[data-align="gauche"] math { margin-left: 0; }',
+      '.ft-eq-num { float: right; margin-left: 1em; line-height: 2.4; }',
       'sup { line-height: 0; font-size: 0.75em; }',
       'a { color: inherit; }',
       'a[epub|type~="noteref"] { text-decoration: none; }',
@@ -183,19 +185,23 @@ ${body}
       if (!im.hasAttribute('alt')) im.setAttribute('alt', '');
     }
 
-    // Formules : MathML.
+    // Équations : MathML (formules-latex.js) ; numéro d'une équation numérotée au bord droit.
     let math = false;
     for (const f of box.querySelectorAll('.ft-math[data-latex]')) {
       let node = null;
+      const block = f.dataset.display === 'block';
       try {
-        const ml = window.MathLive && window.MathLive.convertLatexToMathMl ? window.MathLive.convertLatexToMathMl(f.dataset.latex) : null;
-        if (ml) {
-          const d = new DOMParser().parseFromString(`<math xmlns="http://www.w3.org/1998/Math/MathML" display="${f.dataset.display === 'block' ? 'block' : 'inline'}">${ml}</math>`, 'application/xml');
-          if (!d.querySelector('parsererror')) node = doc.importNode(d.documentElement, true);
-        }
+        const d = new DOMParser().parseFromString(window.FTLatex.toMathML(f.dataset.latex, block), 'application/xml');
+        if (!d.querySelector('parsererror')) node = doc.importNode(d.documentElement, true);
       } catch { node = null; }
       f.textContent = '';
       if (node) { f.append(node); math = true; } else f.textContent = f.dataset.latex;
+      if (block && f.hasAttribute('data-numero') && f.dataset.eq) {
+        const n = doc.createElement('span');
+        n.className = 'ft-eq-num';
+        n.textContent = f.dataset.eq;
+        f.prepend(n);
+      }
     }
 
     // Notes : un fichier à part.

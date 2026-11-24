@@ -22,7 +22,7 @@ const { chromium } = require('playwright');
 async function boot({ scenario }) {
   await new Promise((r) => setTimeout(r, 300));
   const browser = await chromium.launch();
-  const page = await browser.newPage({ viewport: { width: 1300, height: 850 } });
+  const page = await browser.newPage({ viewport: { width: 1300, height: 850 }, deviceScaleFactor: Number(process.env.FT_ECHELLE) || 1 });
   const errors = [];
   page.on('pageerror', (e) => errors.push('pageerror: ' + (e.stack || e.message)));
   page.on('console', (m) => { if (m.type() === 'error' || m.type() === 'warning') errors.push('console.' + m.type() + ': ' + m.text()); });

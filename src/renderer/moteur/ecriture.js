@@ -270,7 +270,7 @@
     document.execCommand('insertText', false, up);
   });
 
-  // ----- Formules (insert.js) -----
+  // ----- Équations (formules.js) -----
 
   const O = () => window.FTObjets;
   const nodeOf = (el) => window.FTSchema.parse(el.tagName === 'DIV' ? el.outerHTML : '<p>' + el.outerHTML + '</p>').firstChild;
@@ -360,8 +360,9 @@
     start() {
       if (I()) {
         I().useText(insertText);
-        I().useEngine(view.dom, O(), math);
+        I().useEngine(view.dom, O());
       }
+      if (window.FTFormules) window.FTFormules.useEngine(math);
       if (window.FTCite) window.FTCite.useInline(insertInline);
     }
   };

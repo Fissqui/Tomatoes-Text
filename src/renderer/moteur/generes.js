@@ -233,7 +233,11 @@
   M.addPlugin(new Plugin({ props: { handleKeyDown: legendKey } }), true);
   M.addPlugin(new Plugin({
     props: {
-      nodeViews: { raw_block: rawView },
+      // (Équations : modifiées sur place, moteur/formules.js.)
+      nodeViews: {
+        raw_block: (n, v, getPos) => (window.FTFormuleVue && window.FTFormuleVue.isMath(n) ? window.FTFormuleVue.view(n, v, getPos) : rawView(n)),
+        raw_inline: (n, v, getPos) => (window.FTFormuleVue && window.FTFormuleVue.isMath(n) ? window.FTFormuleVue.view(n, v, getPos) : null)
+      },
       handleDOMEvents: {
         contextmenu(v, e) {
           const target = e.target.nodeType === 1 ? e.target : e.target.parentElement;

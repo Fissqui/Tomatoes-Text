@@ -9,6 +9,8 @@ nom. Le détail de chaque version publiée figure sur la
 - Thèmes du logiciel approfondis : seize thèmes et vingt-huit réglages d'aspect (icônes, boutons, fenêtres,
   barres d'outils, densité).
 - Mini-barre de mise en forme sur la sélection.
+- Équations refaites : écrites et modifiées directement dans le texte, numérotées, reconnues au collage
+  (Word, pages web, code LaTeX) et exportées en équations Word natives.
 - Bibliographie composée de paragraphes modifiables, paginés comme le reste du document.
 - Grammaire vérifiée localement par LanguageTool.
 - Programme d'installation Windows, association des fichiers `.tmtx` et commande « Nouveau > Document

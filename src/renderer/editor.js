@@ -887,6 +887,9 @@
     }
     let html = cd.getData('text/html') || '';
     if (/data-pm-slice/.test(html)) return false;
+    // Équation copiée seule en MathML (Word, logiciels de calcul) : collée comme une page qui la contient.
+    const FC = window.FTFormulesCollage;
+    if (FC && !FC.hasMath(html)) { const mml = FC.mathmlOf(cd); if (mml) html = mml; }
     if (!text.trim() && !html) return false;
     if ([...cd.files].length && !text.trim()) return false;
     const P = window.FTPaste;
@@ -894,7 +897,7 @@
     const plain = Date.now() < plainUntil;
     if (plain) html = '';
     // Fragment HTML sans balise utile (simple texte) : traité comme du texte.
-    if (html && !/<(p|div|br|li|h[1-6]|table|b|strong|i|em|u|a|span|font)\b/i.test(html)) html = '';
+    if (html && !/<(p|div|br|li|h[1-6]|table|b|strong|i|em|u|a|span|font)\b/i.test(html) && !(FC && FC.hasMath(html))) html = '';
     const source = { html, text };
     const range = { from: view.state.selection.from, to: view.state.selection.to };
     const lines = text.replace(/\r\n?/g, '\n').split('\n').filter((l) => l.trim()).length;

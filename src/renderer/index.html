@@ -331,8 +331,8 @@
             <button id="diagram-more" class="caret-btn" title="Styles des schémas">▾</button>
             <div id="diagram-pop" class="ft-pop ds-pop" hidden></div>
           </div>
-          <button data-tb="math" id="math-btn" title="Insérer une formule mathématique">
-            <svg class="ic" viewBox="0 0 24 24"><path d="M2 13.2l2.2-1 3.3 7.8L12 3.5h10"/><text x="17" y="18" font-size="13" text-anchor="middle" font-family="Georgia" font-style="italic" class="ic-t">x</text></svg><span class="tb-label">Formule</span>
+          <button data-tb="math" id="math-btn" title="Insérer une équation (Alt+= : directement dans le texte)">
+            <svg class="ic" viewBox="0 0 24 24"><path d="M2 13.2l2.2-1 3.3 7.8L12 3.5h10"/><text x="17" y="18" font-size="13" text-anchor="middle" font-family="Georgia" font-style="italic" class="ic-t">x</text></svg><span class="tb-label">Équation</span>
           </button>
           <button data-tb="bio" id="bio-btn" title="Repère biographique : courte notice sur une personne (portrait, dates, présentation), à côté du texte">
             <svg class="ic" viewBox="0 0 24 24"><rect x="3" y="3.5" width="18" height="17" rx="1.5"/><circle class="ic-f" cx="9" cy="9.3" r="2.6" opacity=".35"/><circle cx="9" cy="9.3" r="2.6"/><path d="M4.8 16.5c.7-2.2 2.2-3.3 4.2-3.3s3.5 1.1 4.2 3.3"/><path class="ic-a" d="M15 8h3.5M15 11.5h3.5M15 15h2.2"/></svg>
@@ -1578,31 +1578,52 @@
   </dialog>
 
   <dialog id="math-dialog">
-    <h2>Formule mathématique</h2>
-    <math-field id="math-input"></math-field>
-    <div class="math-modes">
-      <label><input type="radio" name="math-mode" value="inline" checked> Dans la ligne</label>
-      <label><input type="radio" name="math-mode" value="block"> Centrée, sur sa propre ligne</label>
+    <h2 id="math-title">Nouvelle équation</h2>
+    <div class="math-layout">
+      <div class="math-main">
+        <math-field id="math-input"></math-field>
+        <p class="math-help"><kbd>^</kbd> exposant · <kbd>_</kbd> indice · <kbd>/</kbd> fraction · <kbd>Tab</kbd> case suivante · <kbd>Entrée</kbd> valider</p>
+        <div id="math-code-row">
+          <button type="button" id="math-code-toggle" class="math-code-toggle" aria-expanded="false">Code LaTeX</button>
+          <textarea id="math-code" spellcheck="false" rows="2" aria-label="Code LaTeX"></textarea>
+        </div>
+        <p id="math-errors" class="math-errors" hidden></p>
+        <div class="math-picker">
+          <div class="math-side">
+            <input type="search" id="math-search" placeholder="Rechercher" aria-label="Rechercher un symbole ou une structure">
+            <div id="math-cats"></div>
+          </div>
+          <div id="math-palette"></div>
+        </div>
+      </div>
+      <div class="math-options">
+        <h3>Disposition</h3>
+        <label><input type="radio" name="math-mode" value="inline" checked> Dans le texte</label>
+        <label><input type="radio" name="math-mode" value="block"> Sur sa propre ligne</label>
+        <div class="math-block-only">
+          <h3>Alignement</h3>
+          <label><input type="radio" name="math-align" value="" checked> Centrée</label>
+          <label><input type="radio" name="math-align" value="gauche"> À gauche</label>
+          <h3>Numérotation</h3>
+          <label><input type="checkbox" id="math-numero"> Numéroter l’équation</label>
+          <p class="math-note">Numéro entre parenthèses au bord droit du texte.</p>
+        </div>
+        <h3>Encadrement</h3>
+        <label><input type="radio" name="math-box" value="" checked> Aucun</label>
+        <label><input type="radio" name="math-box" value="cadre"> Cadre</label>
+        <label><input type="radio" name="math-box" value="colore"> Encadré coloré</label>
+        <select id="math-box-color" title="Couleur de l’encadré">
+          <option value="">Couleur principale</option>
+          <option value="bleu">Bleu</option>
+          <option value="vert">Vert</option>
+          <option value="ambre">Ambre</option>
+          <option value="rouge">Rouge</option>
+          <option value="violet">Violet</option>
+        </select>
+      </div>
     </div>
-    <div class="math-modes math-box">
-      <span>Encadrement :</span>
-      <label><input type="radio" name="math-box" value="" checked> Aucun</label>
-      <label><input type="radio" name="math-box" value="cadre"> Cadre</label>
-      <label><input type="radio" name="math-box" value="colore"> Encadré coloré</label>
-      <select id="math-box-color" title="Couleur de l'encadré">
-        <option value="">Couleur principale</option>
-        <option value="bleu">Bleu</option>
-        <option value="vert">Vert</option>
-        <option value="ambre">Ambre</option>
-        <option value="rouge">Rouge</option>
-        <option value="violet">Violet</option>
-      </select>
-    </div>
-    <div id="math-tabs" class="styles-tabs"></div>
-    <div id="math-palette"></div>
-    <p class="math-help">Écrivez directement au clavier : <kbd>^</kbd> exposant, <kbd>_</kbd> indice, <kbd>/</kbd> fraction, <kbd>Tab</kbd> case suivante. Les noms comme <i>sqrt</i>, <i>pi</i>, <i>alpha</i>, <i>sum</i> ou <i>int</i> se transforment tout seuls.</p>
     <div class="modal-actions">
-      <button type="button" id="math-delete" class="danger" hidden>Supprimer la formule</button>
+      <button type="button" id="math-delete" class="danger" hidden>Supprimer l’équation</button>
       <span class="spacer"></span>
       <button type="button" id="math-cancel">Annuler</button>
       <button type="button" id="math-ok" class="primary">Insérer</button>
@@ -1633,6 +1654,10 @@
   <script src="moteur/visibles.js"></script>
   <script src="moteur/generes.js"></script>
   <script src="vendor/mathlive/mathlive.min.js"></script>
+  <script src="formules-latex.js"></script>
+  <script src="formules.js"></script>
+  <script src="formules-collage.js"></script>
+  <script src="moteur/formules.js"></script>
   <script src="ordinals.js"></script>
   <script src="insert.js"></script>
   <script src="layout.js"></script>

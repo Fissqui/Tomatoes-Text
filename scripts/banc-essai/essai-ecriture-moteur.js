@@ -90,7 +90,8 @@ module.exports = async ({ page }) => {
   assert.ok((await text()).endsWith(' le ' + today));
   ok('caractère spécial et date (texte, ou mise à jour à l’ouverture) au curseur ; une annulation chacun');
 
-  // 4. Formules : dans la ligne, modifiée en bloc centré, menu du clic droit, suppression.
+  // 4. Équations : dans la ligne, modifiée dans le texte (clic), rouverte par le clic droit et passée sur sa
+  // propre ligne, menu du clic droit, suppression.
   await reset('<p>Avant et après.</p><p>Deux.</p>');
   await page.click('#editor');
   await select(7);
@@ -100,25 +101,38 @@ module.exports = async ({ page }) => {
   assert.match(await saved(), /^<p>Avant <span class="ft-math" contenteditable="false" data-latex="x\^2">/);
   assert.strictEqual((await selection())[0], 8);
   await page.keyboard.type('Z');
-  await v(() => document.querySelector('#editor span.ft-math').click());
+  await page.click('#editor span.ft-math');
   await page.waitForTimeout(200);
+  assert.ok(await v(() => !!document.querySelector('#editor span.ft-math math-field')), 'modification dans le texte');
+  await page.keyboard.press('End');
+  await page.keyboard.type('+1');
+  await page.keyboard.press('Escape');
+  await page.waitForTimeout(100);
+  assert.match(await saved(), /data-latex="x\^2\+1"/);
+  const span = await page.locator('#editor span.ft-math').boundingBox();
+  await page.mouse.click(span.x + span.width / 2, span.y + span.height / 2, { button: 'right' });
+  let menu = await v(() => [...document.querySelectorAll('#context-menu button')].map((b) => b.textContent.trim()));
+  assert.deepStrictEqual(menu.slice(0, 2), ['Modifier l’équation', 'Disposition']);
+  await v(() => [...document.querySelectorAll('#context-menu button')].find((b) => b.textContent.includes('Modifier')).click());
+  await page.waitForTimeout(200);
+  assert.ok(await v(() => document.getElementById('math-dialog').open));
   await v(() => { document.querySelector('input[name="math-mode"][value="block"]').checked = true; document.getElementById('math-input').value = 'y=1'; document.getElementById('math-ok').click(); });
   const tags = await v(() => [...window.FTMoteur.view.dom.children].map((e) => e.tagName + (e.classList.contains('ft-math') ? '.ft-math' : '')).join(' '));
   assert.strictEqual(tags, 'P DIV.ft-math P');
   const box = await page.locator('#editor > div.ft-math').boundingBox();
   await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2, { button: 'right' });
-  const menu = await v(() => [...document.querySelectorAll('#context-menu button')].map((b) => b.textContent.trim()));
-  assert.deepStrictEqual(menu.slice(0, 2), ['Modifier la formule', 'Encadrement']);
+  menu = await v(() => [...document.querySelectorAll('#context-menu button')].map((b) => b.textContent.trim()));
+  assert.deepStrictEqual(menu.slice(0, 3), ['Modifier l’équation', 'Numéroter l’équation', 'Disposition']);
   await v(() => [...document.querySelectorAll('#context-menu button')].find((b) => b.textContent.includes('Supprimer')).click());
   assert.ok(!/ft-math/.test(await saved()));
   await undo();
   assert.match(await saved(), /<div class="ft-math"/);
-  ok('formule : au curseur, rouverte par un clic et passée en bloc centré, menu du clic droit, supprimée (Ctrl+Z la rend)');
+  ok('équation : au curseur, modifiée dans le texte, rouverte par le clic droit et mise sur sa ligne, supprimée (Ctrl+Z la rend)');
   // Majuscules tapées : lettres normales (CC ne devient plus ℂ) ; symboles et fonctions gardés ; caractères
-  // spéciaux dans leur onglet de la palette.
+  // spéciaux dans leur catégorie de la palette.
   await reset('<p>Texte.</p>');
   await page.click('#editor');
-  await v(() => document.getElementById('math-btn').click());
+  await v(() => window.FTFormules.open(null));
   await page.waitForTimeout(300);
   await page.keyboard.type('CC+AA+NN+alpha', { delay: 30 });
   let typed = await v(() => document.getElementById('math-input').value);
@@ -127,14 +141,14 @@ module.exports = async ({ page }) => {
   await page.keyboard.type('x>=sin', { delay: 30 });
   typed = await v(() => document.getElementById('math-input').value);
   assert.ok(/\\ge/.test(typed) && /\\sin/.test(typed), typed);
-  await v(() => { document.getElementById('math-input').value = ''; [...document.querySelectorAll('#math-tabs button')].find((b) => b.textContent === 'Caractères spéciaux').click(); });
-  const special = await v(() => ({ n: document.querySelectorAll('#math-palette button').length, err: document.querySelectorAll('#math-palette .ML__error').length }));
+  await v(() => { document.getElementById('math-input').value = ''; document.querySelector('#math-cats button[data-cat="speciaux"]').click(); });
+  const special = await v(() => ({ n: document.querySelectorAll('#math-palette .math-grid button').length, err: document.querySelectorAll('#math-palette .ML__error').length }));
   assert.ok(special.n >= 25 && !special.err, JSON.stringify(special));
   await v(() => [...document.querySelectorAll('#math-palette button')].find((b) => b.title === 'C double barre').click());
   assert.strictEqual(await v(() => document.getElementById('math-input').value), '\\mathbb{C}');
   await v(() => document.getElementById('math-ok').click());
   assert.match(await saved(), /data-latex="\\mathbb\{C\}"/);
-  ok(`formule : CC, AA, NN, alpha tapés restent des lettres ; >= et sin gardés ; onglet « Caractères spéciaux » (${special.n} boutons), ℂ inséré`);
+  ok(`équation : CC, AA, NN, alpha tapés restent des lettres ; >= et sin gardés ; catégorie « Caractères spéciaux » (${special.n} boutons), ℂ inséré`);
 
   // 5. Lettrine : posée, style choisi, frappe à part, retirée par l'annulation.
   await reset('<p>Il était une fois un long paragraphe qui continue sur plusieurs lignes.</p><p>Deux.</p>');
