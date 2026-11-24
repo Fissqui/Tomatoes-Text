@@ -53,6 +53,7 @@ async function main() {
     fs.cpSync(mod, path.join(appDir, rel), { recursive: true });
   }
   await addWindowsLlamaBinaries(appDir);
+  trimModules(path.join(appDir, 'node_modules'));
 
   await setExeDetails(exe);
 
@@ -61,8 +62,9 @@ async function main() {
   // (elle l'installe depuis le menu Édition).
   const ltDir = await addLanguageTool(out);
   const setup = path.join(dist, `Tomatoes-Text-Installation-${pkg.version}.exe`);
+  // Paramètres régionaux UTF-8 : sans eux, makensis s'arrête sur les noms de fichiers accentués (tutoriel).
   execFileSync('makensis', ['-V2', '-INPUTCHARSET', 'UTF8', `-DVERSION=${pkg.version}`, `-DSOURCE=${out}`, `-DSORTIE=${setup}`,
-    `-DICONE=${path.join(root, 'build', 'icon.ico')}`, path.join(root, 'installer', 'tomatoes-text.nsi')], { stdio: 'inherit' });
+    `-DICONE=${path.join(root, 'build', 'icon.ico')}`, path.join(root, 'installer', 'tomatoes-text.nsi')], { stdio: 'inherit', env: { ...process.env, LC_ALL: 'C.UTF-8' } });
   console.log(`Programme d'installation : ${setup}`);
 
   fs.rmSync(ltDir, { recursive: true, force: true });
@@ -108,10 +110,29 @@ function checkNothingPrivate(appDir) {
   if (found.length) throw new Error('Informations privées dans la version distribuée :\n' + found.join('\n'));
 }
 
+// Bibliothèques livrées : on retire ce qui ne sert qu'aux développeurs (sources de llama.cpp pour le
+// recompiler, jamais fait sur l'ordinateur de l'utilisateur ; définitions TypeScript, cartes de sources,
+// documentation). Les licences restent.
+function trimModules(dir) {
+  let freed = 0;
+  const drop = (f) => { freed += fs.statSync(f).size; fs.rmSync(f, { force: true }); };
+  const bundle = path.join(dir, 'node-llama-cpp', 'llama', 'gitRelease.bundle');
+  if (fs.existsSync(bundle)) drop(bundle);
+  const walk = (d) => {
+    for (const e of fs.readdirSync(d, { withFileTypes: true })) {
+      const f = path.join(d, e.name);
+      if (e.isDirectory()) walk(f);
+      else if (/\.(map|d\.ts|d\.mts|d\.cts|md|markdown)$/i.test(e.name) && !/licen[cs]e|copying|notice/i.test(e.name)) drop(f);
+    }
+  };
+  walk(dir);
+  console.log(`Bibliothèques : ${Math.round(freed / 1048576)} Mo de fichiers de développement retirés`);
+}
+
 // LanguageTool et Java pour Windows (empreintes vérifiées) dans resources/languagetool. Les archives
 // sont gardées en cache entre deux fabrications.
 async function addLanguageTool(out) {
-  const { DOWNLOADS, LT_VERSION } = require(path.join(root, 'src', 'languagetool.js'));
+  const { DOWNLOADS, LT_VERSION, TRIM_LEVEL, trimLanguages } = require(path.join(root, 'src', 'languagetool.js'));
   const cache = path.join(require('os').homedir(), '.cache', 'tomatoes-languagetool');
   fs.mkdirSync(cache, { recursive: true });
   const dest = path.join(out, 'resources', 'languagetool');
@@ -131,7 +152,10 @@ async function addLanguageTool(out) {
   fs.mkdirSync(dest, { recursive: true });
   fs.renameSync(path.join(tmp, DOWNLOADS.jre.folder), path.join(dest, 'jre'));
   fs.renameSync(path.join(tmp, DOWNLOADS.languagetool.folder), path.join(dest, DOWNLOADS.languagetool.folder));
-  fs.writeFileSync(path.join(dest, 'installe.json'), JSON.stringify({ version: LT_VERSION, languagetool: DOWNLOADS.languagetool.folder }, null, 2));
+  // Seules les langues des documents sont gardées (voir trimLanguages dans src/languagetool.js).
+  const freed = await trimLanguages(path.join(dest, DOWNLOADS.languagetool.folder));
+  console.log(`LanguageTool : ${Math.round(freed / 1048576)} Mo de langues inutilisées retirés`);
+  fs.writeFileSync(path.join(dest, 'installe.json'), JSON.stringify({ version: LT_VERSION, languagetool: DOWNLOADS.languagetool.folder, allege: TRIM_LEVEL }, null, 2));
   fs.rmSync(tmp, { recursive: true, force: true });
   return dest;
 }

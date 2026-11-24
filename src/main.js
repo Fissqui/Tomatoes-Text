@@ -1731,6 +1731,16 @@ function createWindow() {
   mainWindow.loadFile(path.join(__dirname, 'renderer', 'index.html'));
 }
 
+// Allègement des installations antérieures à 2.5.3 (les nouvelles sont livrées allégées) : données des
+// langues que LanguageTool ne relit jamais ici, et sources de llama.cpp, qui ne servent qu'à le recompiler
+// (le logiciel utilise toujours les moteurs précompilés : build 'never' dans llm-moteur.js).
+async function lightenInstall() {
+  await languagetool.trimAll();
+  if (!app.isPackaged) return;
+  const bundle = path.join(process.resourcesPath, 'app', 'node_modules', 'node-llama-cpp', 'llama', 'gitRelease.bundle');
+  await fs.rm(bundle, { force: true }).catch(() => {});
+}
+
 app.whenReady().then(async () => {
   if (!firstInstance) return;
   await loadStorage();
@@ -1753,6 +1763,8 @@ app.whenReady().then(async () => {
   buildMenu(await readJson(settingsPath(), {}));
   createWindow();
   registerFileType().catch(() => {});
+  // Après l'ouverture, pour ne pas ralentir le démarrage.
+  setTimeout(() => lightenInstall().catch((err) => journal.write('allègement', err)), 20000).unref();
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });

@@ -187,6 +187,64 @@ function toErrors(text, answer) {
 
 // ----- Installation (téléchargement unique) -----
 
+// ----- Allègement : seules les données des langues des documents (LT_LANG) sont gardées -----
+// L'archive de LanguageTool contient une trentaine de langues (environ 390 Mo une fois déballée).
+// Pour les autres langues, on retire leurs dictionnaires et leurs règles écrites (environ 190 Mo) ;
+// leur code (.class) et leurs mots courants (common_words.txt) restent : LanguageTool déclare toutes
+// ses langues au démarrage et s'en sert pour reconnaître la langue d'un texte.
+const KEPT_CODES = new Set(Object.values(LT_LANG).map((l) => l.split('-')[0]));
+const DROPPED_JARS = ['asturian-pos-dict.jar', 'catalan-pos-dict.jar', 'dutch-pos-dict.jar', 'hanlp.jar', 'languagetool-ga-dicts.jar',
+  'lucene-gosen-ipadic.jar', 'morfologik-crh-lt.jar', 'morfologik-ukrainian-lt.jar'];
+const KEPT_FILE = (name) => name.endsWith('.class') || name === 'common_words.txt';
+const TRIM_LEVEL = 1;
+
+// ltDir : dossier LanguageTool-<version>. Renvoie le nombre d'octets libérés.
+async function trimLanguages(ltDir) {
+  if (!fs.existsSync(path.join(ltDir, 'languagetool-server.jar'))) throw new Error('Dossier de LanguageTool introuvable.');
+  let freed = 0;
+  const removeFile = async (f) => {
+    try { freed += (await fsp.lstat(f)).size; } catch { return; }
+    await fsp.rm(f, { force: true });
+  };
+  const walk = async (dir) => {
+    for (const e of await fsp.readdir(dir, { withFileTypes: true })) {
+      const f = path.join(dir, e.name);
+      if (e.isDirectory()) await walk(f);
+      else if (!KEPT_FILE(e.name)) await removeFile(f);
+    }
+  };
+  for (const sub of ['resource', 'rules']) {
+    const base = path.join(ltDir, 'org', 'languagetool', sub);
+    let names = [];
+    try { names = await fsp.readdir(base, { withFileTypes: true }); } catch { continue; }
+    // « de-DE-x-simple-language » (allemand simplifié) n'est pas une langue des documents.
+    for (const e of names) if (e.isDirectory() && !KEPT_CODES.has(e.name)) await walk(path.join(base, e.name));
+  }
+  for (const jar of DROPPED_JARS) await removeFile(path.join(ltDir, 'libs', jar));
+  return freed;
+}
+
+// Allège une installation existante (dossier contenant installe.json) si ce n'est pas déjà fait.
+async function trimInstalled(dir) {
+  const file = path.join(dir, 'installe.json');
+  let info;
+  try { info = JSON.parse(await fsp.readFile(file, 'utf8')); } catch { return 0; }
+  if ((info.allege || 0) >= TRIM_LEVEL) return 0;
+  if (server) return 0; // serveur en marche : ce sera pour le prochain démarrage
+  const freed = await trimLanguages(path.join(dir, info.languagetool || DOWNLOADS.languagetool.folder));
+  await fsp.writeFile(file, JSON.stringify({ ...info, allege: TRIM_LEVEL }, null, 2));
+  return freed;
+}
+
+// Au démarrage du logiciel : installations livrées avec le programme d'installation et téléchargées.
+async function trimAll() {
+  let freed = 0;
+  for (const dir of [...new Set(candidates())]) {
+    try { freed += await trimInstalled(dir); } catch { /* droits insuffisants ou fichiers en cours d'usage : on réessaiera */ }
+  }
+  return freed;
+}
+
 let installing = null;
 
 function httpGet(url, signal) {
@@ -285,7 +343,8 @@ function install(onProgress = () => {}) {
     await fsp.rm(path.join(dir, DOWNLOADS.languagetool.folder), { recursive: true, force: true });
     await fsp.rename(path.join(unpacked, DOWNLOADS.jre.folder), path.join(dir, 'jre'));
     await fsp.rename(path.join(unpacked, DOWNLOADS.languagetool.folder), path.join(dir, DOWNLOADS.languagetool.folder));
-    await fsp.writeFile(path.join(dir, 'installe.json'), JSON.stringify({ version: LT_VERSION, languagetool: DOWNLOADS.languagetool.folder }, null, 2));
+    await trimLanguages(path.join(dir, DOWNLOADS.languagetool.folder));
+    await fsp.writeFile(path.join(dir, 'installe.json'), JSON.stringify({ version: LT_VERSION, languagetool: DOWNLOADS.languagetool.folder, allege: TRIM_LEVEL }, null, 2));
     await fsp.rm(work, { recursive: true, force: true });
     report('done', 100, '');
     return find();
@@ -295,4 +354,4 @@ function install(onProgress = () => {}) {
 
 const isInstalling = () => !!installing;
 
-module.exports = { LT_VERSION, DOWNLOADS, find, installed, supports, check, toErrors, stop, install, isInstalling, userDir };
+module.exports = { LT_VERSION, DOWNLOADS, TRIM_LEVEL, trimLanguages, trimAll, find, installed, supports, check, toErrors, stop, install, isInstalling, userDir };
