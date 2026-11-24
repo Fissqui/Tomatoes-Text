@@ -1162,7 +1162,16 @@
       if (!knob || !on || !on.offsetWidth) return;
       sw.classList.toggle('still', !animate || !knob.style.width);
       knob.style.width = on.offsetWidth + 'px';
-      knob.style.transform = `translateX(${on.offsetLeft}px)`;
+      // Interrupteur en colonne (barre d'outils verticale) : le fond glisse de haut en bas.
+      if (getComputedStyle(sw).flexDirection === 'column') {
+        knob.style.top = '0px';
+        knob.style.height = on.offsetHeight + 'px';
+        knob.style.transform = `translate(${on.offsetLeft}px, ${on.offsetTop}px)`;
+      } else {
+        knob.style.top = '';
+        knob.style.height = '';
+        knob.style.transform = `translateX(${on.offsetLeft}px)`;
+      }
     }
   };
   const switchObserver = new ResizeObserver((entries) => entries.forEach((e) => window.FTSwitch.place(e.target, false)));

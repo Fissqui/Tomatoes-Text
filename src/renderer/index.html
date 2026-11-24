@@ -69,6 +69,15 @@
         <button id="reading-btn" class="view-action" type="button" hidden title="Mode lecture : le document en plein écran, page par page, comme un livre (Ctrl+Maj+F)">
           <svg viewBox="0 0 16 16"><path d="M8 4.2C6.5 3 4.4 2.6 1.8 2.8v9.6c2.6-.2 4.7.2 6.2 1.4 1.5-1.2 3.6-1.6 6.2-1.4V2.8C11.6 2.6 9.5 3 8 4.2zM8 4.2v9.6"/></svg><span class="va-label">Lecture</span>
         </button>
+        <div id="sidemode-switch" class="ft-switch" role="group" aria-label="Mode raccourcis" title="Mode raccourcis : outils courants sur deux barres verticales">
+          <span class="ft-knob"></span>
+          <button type="button" data-side="off" aria-pressed="true" title="Barres d'outils horizontales">
+            <svg class="ic" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="1.5"/><rect class="ic-f" x="3" y="4" width="18" height="4.5" opacity=".3"/><path d="M3 8.5h18"/></svg>
+          </button>
+          <button type="button" data-side="on" aria-pressed="false" title="Mode raccourcis : insertion à gauche, mise en forme à droite">
+            <svg class="ic" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="1.5"/><rect class="ic-f" x="3" y="4" width="4.5" height="16" opacity=".3"/><rect class="ic-f" x="16.5" y="4" width="4.5" height="16" opacity=".3"/><path d="M7.5 4v16M16.5 4v16"/></svg>
+          </button>
+        </div>
         <div id="mode-switch" class="ft-switch" role="group" aria-label="Interface">
           <span class="ft-knob"></span>
           <button type="button" data-mode="note" aria-pressed="true" title="Interface note : le texte défile sans fin, sans pages">

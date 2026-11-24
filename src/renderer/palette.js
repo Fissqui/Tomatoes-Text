@@ -13,7 +13,7 @@
   const SHOWN_MAX = 60;
 
   const fold = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
-  const bars = () => [$('toolbar'), $('toolbar2')].filter(Boolean);
+  const bars = () => [$('toolbar'), $('toolbar2'), $('tb-side-l'), $('tb-side-r')].filter(Boolean);
   const welcomeOpen = () => !!(window.FTWelcome && window.FTWelcome.isOpen());
 
   // Libellé court d'une infobulle : « Insérer une image (vous pouvez…) » → « Insérer une image ».

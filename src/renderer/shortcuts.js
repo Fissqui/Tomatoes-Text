@@ -44,6 +44,7 @@
     ['Affichage', 'sidebar', 'Liste des documents', 'Ctrl+Shift+B', 'menu', '#sidebar-toggle'],
     ['Affichage', 'navpane', 'Volet de navigation', 'Ctrl+Shift+P', 'menu', '#navpane-toggle'],
     ['Affichage', 'assist', "Aide au Texte (AAT)", 'Ctrl+Shift+A', 'menu', '#assist-toggle'],
+    ['Affichage', 'sidemode', 'Mode raccourcis (barres latérales)', '', 'action', () => window.FTToolbar.toggleSide()],
     ['Affichage', 'mindmap', 'Mindmap', 'Ctrl+M', 'menu'],
     ['Affichage', 'timeline', 'Carte du temps', 'Ctrl+Shift+T', 'menu'],
     ['Affichage', 'focus', 'Mode lecture', 'Ctrl+Shift+F', 'menu', '#reading-btn'],
