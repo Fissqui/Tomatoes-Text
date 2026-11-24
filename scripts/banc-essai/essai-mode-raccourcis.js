@@ -52,12 +52,25 @@ module.exports = async ({ page }) => {
   assert(s1.layout.side.on === true, 'side.on');
   ok(`Mode raccourcis : ${s1.left.length} outils à gauche, ${s1.right.length} à droite, une seule barre horizontale`);
 
-  // Les deux barres encadrent le document.
+  // Les deux barres collent aux bords de la page, une seule colonne, icônes alignées.
   const geo = await page.evaluate(() => {
     const r = (id) => document.getElementById(id).getBoundingClientRect();
-    return { l: r('tb-side-l'), r: r('tb-side-r'), w: r('workspace') };
+    const icons = (id) => [...document.querySelectorAll(`#${id} .tb-group > [data-tb]`)].filter((el) => el.offsetWidth && !el.matches('select, .ft-num'))
+      .map((el) => Math.round((el.matches('button') ? el : el.querySelector('button')).getBoundingClientRect().left));
+    return { l: r('tb-side-l'), r: r('tb-side-r'), p: r('page'), li: icons('tb-side-l'), ri: icons('tb-side-r') };
   });
-  assert(geo.l.right <= geo.w.left + 1 && geo.r.left >= geo.w.right - 1, 'de part et d\'autre : ' + JSON.stringify(geo));
+  assert(geo.l.right <= geo.p.left && geo.p.left - geo.l.right <= 10, 'gauche collée : ' + JSON.stringify(geo));
+  assert(geo.r.left >= geo.p.right && geo.r.left - geo.p.right <= 10, 'droite collée : ' + JSON.stringify(geo));
+  assert(geo.l.width <= 50 && geo.r.width <= 50, 'barres fines : ' + geo.l.width + ' / ' + geo.r.width);
+  assert(new Set(geo.li).size === 1 && new Set(geo.ri).size === 1, 'icônes alignées : ' + geo.li + ' | ' + geo.ri);
+  // Au défilement, les barres restent visibles en haut de la zone de texte.
+  await page.evaluate(() => { document.getElementById('editor').innerHTML += '<p>Suite.</p>'.repeat(120); });
+  await page.evaluate(() => { document.getElementById('workspace').scrollTop = 1500; });
+  await page.waitForTimeout(200);
+  const top = await page.evaluate(() => [document.getElementById('tb-side-l').getBoundingClientRect().top, document.getElementById('workspace').getBoundingClientRect().top]);
+  assert(top[0] >= top[1] && top[0] - top[1] < 20, 'fixes au défilement : ' + top);
+  await page.evaluate(() => { document.getElementById('workspace').scrollTop = 0; document.getElementById('editor').innerHTML = '<p>Le marché des tomates anciennes en Italie.</p>'; });
+  await page.waitForTimeout(200);
   // Noms des groupes de la barre horizontale : aucun chevauchement.
   const overlap = await page.evaluate(() => {
     const gs = [...document.querySelectorAll('#toolbar > .tb-group:not([hidden])')].filter((g) => g.offsetWidth);
@@ -124,6 +137,7 @@ module.exports = async ({ page }) => {
   await page.waitForTimeout(1800);
   if (await page.evaluate(() => !document.getElementById('welcome').hidden)) await page.keyboard.press('Escape');
   await page.waitForTimeout(300);
+  await page.evaluate(() => { document.getElementById('editor').innerHTML = '<p>Texte.</p>'; });
   s = await state();
   assert(s.leftShown && s.rightShown && s.left.includes('find') && !s.right.includes('lettrine') && s.groupOf.lettrine === 'relecture', 'après redémarrage : ' + JSON.stringify(s));
   ok('Après redémarrage : mode raccourcis et outils déplacés retrouvés');
@@ -150,14 +164,14 @@ module.exports = async ({ page }) => {
   assert(!s.layout.side.on && s.layout.side.groups.liens.join() === 'weblink,xref', 'contenu d\'origine : ' + JSON.stringify(s.layout.side));
   ok('Ancien rangement (sans mode raccourcis) accepté, contenu d\'origine');
 
-  // Barre principale verticale à droite + mode raccourcis : la barre de droite reste contre le document.
+  // Barre principale verticale à droite + mode raccourcis : la barre de droite reste contre la page.
   await page.evaluate(() => window.FTToolbar.apply({ v: 7, pos: 'droite', pos2: 'droite', linked: true, side: { on: true } }));
   await page.waitForTimeout(300);
   const g2 = await page.evaluate(() => {
     const r = (id) => document.getElementById(id).getBoundingClientRect();
-    return { side: r('tb-side-r'), bar: r('toolbar'), w: r('workspace') };
+    return { side: r('tb-side-r'), bar: r('toolbar'), p: r('page') };
   });
-  assert(g2.side.left >= g2.w.right - 1 && g2.bar.left >= g2.side.right - 1, 'ordre document | latérale | principale : ' + JSON.stringify(g2));
+  assert(g2.side.left >= g2.p.right && g2.bar.left >= g2.side.right - 1, 'ordre page | latérale | principale : ' + JSON.stringify(g2));
   await page.evaluate(() => window.FTToolbar.apply({ v: 7, pos: 'haut', pos2: 'haut', linked: true }));
   ok('Barre principale verticale : la barre latérale reste contre le document');
 

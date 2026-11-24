@@ -207,6 +207,43 @@
   bars[1].addEventListener('animationend', () => bars[1].classList.remove('tb-opening'));
   fold.addEventListener('click', () => setFolded(!folded));
 
+  // Barres latérales collées aux bords de la feuille (la page en interface note, les feuilles en
+  // interface avancée, les deux feuilles en double page), en haut de la page puis fixes au défilement.
+  const workspace = document.getElementById('workspace');
+  const pageEl = document.getElementById('page');
+  const GAP = 8;
+  function paperRect() {
+    const sheets = pageEl.classList.contains('paged') ? [...pageEl.querySelectorAll('#pg-sheets > .pg-sheet')].slice(0, 2) : [];
+    const rects = (sheets.length ? sheets : [pageEl]).map((el) => el.getBoundingClientRect()).filter((r) => r.width);
+    if (!rects.length) return null;
+    return { left: Math.min(...rects.map((r) => r.left)), right: Math.max(...rects.map((r) => r.right)), top: Math.min(...rects.map((r) => r.top)) };
+  }
+  function placeSides() {
+    if (!sideOn) return;
+    const paper = pageEl.hidden ? null : paperRect();
+    const ws = workspace.getBoundingClientRect();
+    sides.forEach((s) => s.classList.toggle('tb-side-away', !paper || !ws.width));
+    if (!paper || !ws.width) return;
+    const inner = ws.left + workspace.clientWidth;   // (sans la barre de défilement)
+    const top = Math.max(ws.top + 10, Math.min(paper.top, ws.bottom - 60));
+    const [l, r] = sides;
+    l.style.left = Math.max(ws.left + 4, paper.left - GAP - l.offsetWidth) + 'px';
+    r.style.left = Math.min(inner - r.offsetWidth - 4, paper.right + GAP) + 'px';
+    for (const s of sides) {
+      s.style.top = top + 'px';
+      s.style.maxHeight = Math.max(80, ws.bottom - top - 10) + 'px';
+    }
+  }
+  let placing = 0;
+  const replace = () => { if (!sideOn) return; cancelAnimationFrame(placing); placing = requestAnimationFrame(placeSides); };
+  workspace.addEventListener('scroll', replace, { passive: true });
+  window.addEventListener('resize', replace);
+  const watchSize = new ResizeObserver(replace);
+  [workspace, pageEl, document.getElementById('editor')].forEach((el) => el && watchSize.observe(el));
+  // Zoom (style de la page), interface avancée (classe), feuilles ajoutées ou retirées.
+  new MutationObserver(replace).observe(pageEl, { attributes: true, attributeFilter: ['style', 'class', 'hidden'] });
+  new MutationObserver(replace).observe(document.getElementById('app'), { attributes: true, attributeFilter: ['class'] });
+
   const sideSwitch = document.getElementById('sidemode-switch');
   if (sideSwitch) {
     sideSwitch.querySelectorAll('button').forEach((b) => {
@@ -217,8 +254,8 @@
 
   // Rangée et colonne de chaque barre dans la grille de #main (voir styles.css) :
   // en haut rangées 2 et 3, en bas 5 et 6, à gauche colonnes 1 et 2, à droite 4 et 5.
-  // Mode raccourcis : barres latérales en colonnes 2 et 4, contre le document ; la barre d'insertion
-  // (vidée dans la barre principale) est cachée.
+  // Mode raccourcis : la barre d'insertion (vidée dans la barre principale) est cachée ; les barres
+  // latérales sont placées par placeSides().
   function place(animate = false) {
     bars.forEach((bar, i) => {
       const p = pos[i];
@@ -230,17 +267,16 @@
       bar.style.gridRow = String(row);
       bar.style.gridColumn = col;
     });
-    if (sideOn && pos[0] === 'droite') bars[0].style.gridColumn = '5';
-    sides.forEach((s, i) => {
+    sides.forEach((s) => {
       if (s.hidden === sideOn && sideOn && animate && document.documentElement.dataset.uiAnim !== 'aucune') {
         s.classList.remove('tb-opening');
         void s.offsetWidth;
         s.classList.add('tb-opening');
       }
       s.hidden = !sideOn;
-      s.style.gridRow = '4';
-      s.style.gridColumn = i ? '4' : '2';
     });
+    workspace.classList.toggle('side-mode', sideOn);
+    placeSides();
     bars[1].classList.toggle('tb-merged', sideOn);
     fold.hidden = sideOn;
     if (sideSwitch) {
