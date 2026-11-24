@@ -17,7 +17,7 @@ module.exports = async ({ page }) => {
   const menuClick = async (title) => {
     await page.locator('.doc-item', { hasText: title }).click({ button: 'right' });
     await page.waitForTimeout(150);
-    if (!shown.length) await page.screenshot({ path: path.join(process.env.FT_SHOTS || os.tmpdir(), 'ouvrir-le-dossier.png'), clip: { x: 0, y: 60, width: 640, height: 520 } });
+    if (!shown.length) await page.screenshot({ path: path.join(process.env.FT_SHOTS || os.tmpdir(), 'ouvrir-le-dossier.png'), clip: { x: 0, y: 60, width: 640, height: 760 } });
     await page.locator('#context-menu').getByText('Ouvrir le dossier du projet', { exact: true }).click();
     await page.waitForTimeout(300);
   };

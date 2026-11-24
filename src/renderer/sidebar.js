@@ -362,8 +362,8 @@
         .filter((t) => t.id !== current && (t.id === null ? current !== null : true))
         .map((t) => ({ text: '\u00a0\u00a0\u00a0'.repeat(t.depth) + '→ ' + t.name, action: () => h.moveDoc(doc.id, t.id) }));
       const others = (state.projects || []).filter((p) => p !== state.project);
-      const projectMoves = others.length
-        ? ['-', { text: 'Changer de projet', submenu: () => others.map((p) => ({ text: p, action: () => h.changeDocProject(doc.id, p) })) }]
+      const projectMove = others.length
+        ? [{ text: 'Changer de projet', submenu: () => others.map((p) => ({ text: p, action: () => h.changeDocProject(doc.id, p) })) }]
         : [];
       if (doc.missing) {
         return [
@@ -375,21 +375,22 @@
           ...moves
         ];
       }
+      // Groupes : ouvrir, fichier, contenu, rangement, suppression.
       return [
         { text: 'Ouvrir', action: () => h.openDoc(doc.fileName) },
-        ...(active && doc.fileName !== active ? [{ text: 'Insérer un lien dans le document ouvert', action: () => h.insertDocLink(doc.id) }] : []),
         { text: 'Ouvrir le dossier du projet', action: () => h.showDocFolder(doc.fileName) },
+        '-',
         { text: 'Renommer', action: () => h.renameDoc(doc.fileName) },
         { text: 'Enregistrer une copie sous…', action: () => h.exportDoc(doc.fileName) },
         { text: 'Historique des versions…', action: () => h.versions(doc.fileName) },
+        '-',
+        ...(active && doc.fileName !== active ? [{ text: 'Insérer un lien dans le document ouvert', action: () => h.insertDocLink(doc.id) }] : []),
         { text: 'Résumer (AAT)…', action: () => h.summarize(doc.fileName) },
         { text: 'Vérifier la cohérence…', action: () => window.FTCoherence.open(doc.id) },
         '-',
         { label: 'Déplacer vers' },
-        ...targets
-          .filter((t) => t.id !== current && (t.id === null ? current !== null : true))
-          .map((t) => ({ text: '\u00a0\u00a0\u00a0'.repeat(t.depth) + '→ ' + t.name, action: () => h.moveDoc(doc.id, t.id) })),
-        ...projectMoves,
+        ...moves,
+        ...projectMove,
         '-',
         { text: 'Supprimer (corbeille)', danger: true, action: () => h.deleteDoc(doc.fileName) }
       ];
