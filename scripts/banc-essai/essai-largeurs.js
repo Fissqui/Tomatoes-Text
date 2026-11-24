@@ -61,7 +61,7 @@ module.exports = async ({ page }) => {
   t = await rect('#editor table');
   assert(Math.abs(t.l - text.l) < 2, 'à gauche');
   // Poignée droite : seul le côté droit bouge.
-  const g = await page.locator('.ft-rz-e').boundingBox();
+  const g = await page.locator('.ft-rz-e:not(.ft-img-rz)').boundingBox();
   await drag(g.x + 3, g.y + 11, 50);
   t2 = await rect('#editor table');
   assert(Math.abs(t2.l - text.l) < 2 && Math.abs(t2.w - (t.w + 50)) < 6, 'élargi à droite ' + t2.w);

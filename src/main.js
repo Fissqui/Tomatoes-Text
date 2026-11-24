@@ -587,6 +587,38 @@ ipcMain.handle('doc:read', async (_e, fileName) => {
 // Images reçues avec un enregistrement (app.js packDoc) : gardées en arrière-plan pour les
 // enregistrements suivants, dont le texte ne porte que leurs références (fichiers-calcul.js).
 ipcMain.handle('doc:image', (_e, id, head, data) => fichiers.call('image', [id, head, data]));
+// Image d'un texte collé (Word, page web) : son fichier (file:) ou son adresse (http, https) lue en données
+// (data:), pour que l'image reste dans le document. 20 Mo au plus ; null si illisible.
+const IMAGE_TYPES = { png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', gif: 'image/gif', webp: 'image/webp', bmp: 'image/bmp', svg: 'image/svg+xml' };
+ipcMain.handle('paste:image', async (_e, url) => {
+  const MAX = 20 * 1024 * 1024;
+  try {
+    const u = new URL(String(url));
+    if (u.protocol === 'file:') {
+      const file = require('url').fileURLToPath(u);
+      const type = IMAGE_TYPES[path.extname(file).slice(1).toLowerCase()];
+      if (!type) return null;
+      const st = await fs.stat(file);
+      if (st.size > MAX) return null;
+      return `data:${type};base64,` + (await fs.readFile(file)).toString('base64');
+    }
+    if (u.protocol !== 'http:' && u.protocol !== 'https:') return null;
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 6000);
+    try {
+      const res = await fetch(u, { signal: ctrl.signal });
+      const type = (res.headers.get('content-type') || '').split(';')[0].trim().toLowerCase();
+      if (!res.ok || !/^image\//.test(type)) return null;
+      const buf = Buffer.from(await res.arrayBuffer());
+      if (buf.length > MAX) return null;
+      return `data:${type};base64,` + buf.toString('base64');
+    } finally {
+      clearTimeout(timer);
+    }
+  } catch {
+    return null;
+  }
+});
 
 ipcMain.handle('doc:save', async (_e, fileName, doc) => {
   doc.modified = new Date().toISOString();

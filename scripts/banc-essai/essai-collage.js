@@ -88,7 +88,8 @@ module.exports = async ({ page }) => {
     <script>alert(1)</script><img src="https://exemple.org/x.png"></body></html>`;
   await load('<p id="here"><br></p>');
   await paste({ 'text/html': web, 'text/plain': 'Un titre\nDu texte en gras, en italique et un lien.\nun\ndeux\ndeux bis\nNom Âge\nAna 31' });
-  assert(await open());
+  // (Version 2.5 : les images du texte collé sont lues d'abord ; celle-ci, introuvable, est retirée.)
+  await page.waitForFunction(() => document.getElementById('paste-dialog').open, null, { timeout: 15000 });
   await page.screenshot({ path: path.join(SHOTS, 'collage-web.png') });
   await page.click('#ps-ok');
   html = await body();

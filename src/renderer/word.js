@@ -265,7 +265,9 @@
     if (HEADINGS[el.tagName] && state.headingNums && state.headingNums.has(el)) children.unshift(new D.TextRun({ ...runProps(el), text: state.headingNums.get(el) + ' ' }));
     // Légende numérotée (captions.js) : « Figure 2 : » devant le texte.
     if (el.dataset && el.dataset.cap && el.matches('.ft-caption, .ft-legend')) {
-      children.unshift(new D.TextRun({ ...runProps(el), bold: true, italics: false, text: el.dataset.cap + (el.textContent.trim() ? '\u00a0: ' : '') }));
+      // (Numérotation « 1. » : sans deux-points.)
+      const sep = el.parentElement && el.parentElement.dataset.capStyle === 'num' ? '\u00a0' : '\u00a0: ';
+      children.unshift(new D.TextRun({ ...runProps(el), bold: true, italics: false, text: el.dataset.cap + (el.textContent.trim() ? sep : '') }));
     }
     // Source d'une citation : le tiret « — » posé par la feuille de style (::before) passe aussi dans Word.
     if (el.classList && el.classList.contains('ft-quote-src')) {
@@ -938,8 +940,15 @@
           wrap: { type: D.TextWrappingType.NONE }
         };
       } else {
+        // (Version 2.5 : à la même distance du bord que dans le logiciel — écart choisi, centrage.)
+        const right = cs.float === 'right';
+        const edge = right ? (state.x1 || r.right) - r.right : r.left - state.x0;
+        const flush = Math.abs(edge) < 2;
+        if (right) margins.right = 0; else margins.left = 0;
         options.floating = {
-          horizontalPosition: { relative: D.HorizontalPositionRelativeFrom.COLUMN, align: cs.float === 'right' ? D.HorizontalPositionAlign.RIGHT : D.HorizontalPositionAlign.LEFT },
+          horizontalPosition: flush
+            ? { relative: D.HorizontalPositionRelativeFrom.COLUMN, align: right ? D.HorizontalPositionAlign.RIGHT : D.HorizontalPositionAlign.LEFT }
+            : { relative: D.HorizontalPositionRelativeFrom.COLUMN, offset: Math.round((r.left - state.x0) * EMU) },
           verticalPosition: { relative: D.VerticalPositionRelativeFrom.PARAGRAPH, offset: Math.max(0, top) },
           wrap: { type: D.TextWrappingType.SQUARE, side: D.TextWrappingSide.BOTH_SIDES },
           margins
@@ -1139,6 +1148,7 @@
       const ecs = getComputedStyle(editor);
       const baseCtx = columnsCtx(editor, { state, x0: er.left + parseFloat(ecs.paddingLeft), x1: er.right - parseFloat(ecs.paddingRight), border: null, shading: null });
       state.x0 = baseCtx.x0;
+      state.x1 = baseCtx.x1;
       // Mode note : la largeur du texte à l'écran n'est pas celle de la page Word ;
       // les tableaux et les images trop larges sont ramenés à la largeur de la page.
       if (info.mode !== 'avance') {

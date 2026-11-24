@@ -178,7 +178,7 @@
   const isImageFile = (f) => f && /^image\//.test(f.type);
 
   // Insère des images à l'endroit indiqué (ou à celui du curseur), chacune sur sa propre ligne.
-  async function insertImages(files, range) {
+  async function insertImages(files, range, point) {
     const list = [...files].filter(isImageFile);
     if (!list.length) return;
     if (range) {
@@ -197,6 +197,17 @@
       }
     }
     if (!ready.length) return;
+    // Moteur 2.0 (version 2.5) : images en déplacement libre, au curseur ou à l'endroit du dépôt (moteur/images.js).
+    if (engine && window.FTImages && window.FTImages.active()) {
+      let at = point || null;
+      for (const { data, width } of ready) {
+        const el = makeImage(blobUrlFor(data), width);
+        el.style.width = Math.min(50, parseFloat(el.style.width) || 50) + '%';
+        window.FTImages.insert(el, at);
+        at = null;
+      }
+      return;
+    }
     S().checkpoint();
     let last = null;
     for (const { data, width } of ready) {
@@ -241,7 +252,7 @@
       range.collapse(false);
     }
     editor.focus({ preventScroll: true });
-    insertImages(e.dataTransfer.files, range);
+    insertImages(e.dataTransfer.files, range, { x: e.clientX, y: e.clientY });
   });
 
   // Coller une image (copiée depuis un navigateur, une capture d'écran…).
@@ -1337,6 +1348,8 @@
   }
 
   function showTools(obj, r) {
+    // Images (version 2.5) : leur barre et leurs poignées sont dans moteur/images.js.
+    if (isImage(obj) && window.FTImages && window.FTImages.active()) { hideTools(); window.FTImages.placeTools(); return; }
     current = obj;
     if (document.getElementById('app').classList.contains('reading-mode')) return hideTools();
     tools.hidden = false;

@@ -208,8 +208,10 @@
         // recalcule la sélection sur tout le texte quand l'élément est remplacé (près d'une minute sur
         // 300 pages).
         const sel = view.state.selection;
+        // (Image sélectionnée, numéro de sa légende refait : elle reste sélectionnée, moteur/images.js.)
         if (sel instanceof NodeSelection && updates.some((u) => u.pos === sel.from)) {
-          tr.setSelection(Selection.near(tr.doc.resolve(sel.from + sel.node.nodeSize)));
+          if (/^image/.test(sel.node.type.name)) tr.setSelection(NodeSelection.create(tr.doc, sel.from));
+          else tr.setSelection(Selection.near(tr.doc.resolve(sel.from + sel.node.nodeSize)));
         }
         view.dispatch(tr.setMeta('addToHistory', false).setMeta(QUIET, true).setMeta(OWN, true));
       }
@@ -1033,7 +1035,8 @@
   // (objet supprimé, déplacé, remis entre les paragraphes).
   const bagOf = (n) => (n && n.attrs && n.attrs.a) || {};
   const has = (n, name) => n && bagOf(n)[name] !== undefined;
-  const besideNode = (n) => !!n && /^(gauche|droite)$/.test(bagOf(n)['data-wrap'] || '');
+  // (Image en déplacement par ligne posée entre deux lignes du paragraphe : moteur/images.js.)
+  const besideNode = (n) => !!n && (/^(gauche|droite)$/.test(bagOf(n)['data-wrap'] || '') || (n.type.name === 'image' && !bagOf(n)['data-wrap']));
   const without = (a, name) => {
     const out = { ...a };
     delete out[name];

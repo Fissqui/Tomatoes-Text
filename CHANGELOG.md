@@ -4,6 +4,20 @@ Chaque version majeure porte le nom d'une variété de tomate ; ses versions cor
 nom. Le détail de chaque version publiée figure sur la
 [page des versions](https://github.com/Fissqui/Tomatoes-Text/releases).
 
+## 2.5 « Canestrino » — novembre 2026
+
+- Images entièrement refaites. Chaque image a cinq réglages, dans sa barre et son menu du clic droit :
+  - déplacement par ligne (entre deux paragraphes ou deux lignes) ou libre (le texte passe à côté) ;
+  - ancrage mouvant ou fixe (l'image reste à sa place sur la page) ;
+  - centrage ;
+  - superposition (devant, derrière ou au niveau du texte) ;
+  - encadrage (légende placée dessus, dessous ou sur un côté, numérotation « Figure 1 », « Fig. 1 », « 1. »
+    ou par chapitre, police et couleur ; cadre, épaisseur, couleur, légende comprise ou non).
+- Déplacement à la souris fluide, d'une page à l'autre ; lignes créées sous le texte et retirées si l'image
+  remonte.
+- Images gardées dans les textes collés depuis Word ou une page web ; fichier déposé à l'endroit visé.
+- Anciens documents ouverts sans changement visible ; exports Word, PDF et EPUB fidèles aux nouveaux réglages.
+
 ## 2.4 « Corbarino » — novembre 2026
 
 - Thèmes du logiciel approfondis : seize thèmes et vingt-huit réglages d'aspect (icônes, boutons, fenêtres,

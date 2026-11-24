@@ -138,6 +138,24 @@
   }
   const spreading = () => spreadAt !== null && paged;
 
+  // Zone de texte de la page p (mode avancé) ; hauteur du texte d'une page (pages fictives de l'interface note).
+  function regionOfPage(p) {
+    if (!(paged && lay && lay.region)) return null;
+    let r = Math.max(0, Math.min(p, 20000));
+    let g = lay.region(r);
+    while (r > 0 && g.page > p) g = lay.region(--r);
+    while (g.page < p && r < 20000) g = lay.region(++r);
+    return g.page === p ? g : null;
+  }
+  function noteHeight() {
+    try {
+      const g = pagesApi && pagesApi.region ? pagesApi.region(0) : null;
+      if (g && g.cb > g.ct) return g.cb - g.ct;
+    } catch { /* réglages des pages pas encore posés */ }
+    return 1000;
+  }
+  const settledFns = [];
+
   // ----- Intercalaires des coupures de page (décorations du moteur) -----
 
   const pagesKey = new PluginKey('ft-pages');
@@ -887,6 +905,7 @@
     sendCount();
     placeNotes();
     if (flowCheck) noteFlowing();
+    for (const fn of settledFns) fn();
   }
   function sendCount() {
     if (!pageCount) return;
@@ -1011,6 +1030,15 @@
         if (!wasFar) el.removeAttribute(FAR);
       }
     });
+    // Image accrochée au début de la ligne (moteur/images.js) : elle passe à la page suivante avec la ligne.
+    if (pos !== null) {
+      const doc = view.state.doc;
+      for (let guard = 0; guard < 16 && pos > starts[i]; guard++) {
+        const before = doc.resolve(pos).nodeBefore;
+        if (!before || before.type.name !== 'image_inline' || !/^(gauche|droite|devant|derriere)$/.test((before.attrs.a || {})['data-wrap'] || '')) break;
+        pos -= before.nodeSize;
+      }
+    }
     const rel2 = pos === null ? null : pos - starts[i];
     cache.map.set(ck, rel2);
     return rel2;
@@ -1913,6 +1941,86 @@
       update();
     },
     tops: () => lay && [...lay.R],
+    // ----- Images à ancrage fixe (moteur/images.js) -----
+    // Zone de texte de la page p (à partir de 0) : { ct, cb } en px depuis le haut de la zone d'écriture,
+    // sans zoom. Interface note : pages fictives de la hauteur du texte d'une page, les unes sous les autres.
+    pageFrame(p) {
+      const g = regionOfPage(p);
+      if (g) return { ct: g.ct, cb: g.cb };
+      const H = noteHeight();
+      return { ct: head + p * H, cb: head + (p + 1) * H };
+    },
+    // Page (à partir de 0) de la hauteur y (px depuis le haut de la zone d'écriture, sans zoom).
+    pageOfY(y) {
+      if (paged && lay && lay.region) {
+        let r = 0;
+        while (r < 20000 && lay.region(r + 1).ct <= y) r++;
+        return lay.region(r).page;
+      }
+      return Math.max(0, Math.floor((y - head) / noteHeight()));
+    },
+    // Endroit du texte à la hauteur y d'après le découpage, sans affichage : { pos, top, text } — pos : début
+    // de la ligne (text : dans un paragraphe) ou du bloc qui s'y trouve ; top : son haut. null si inconnu.
+    spotAt(y) {
+      if (!lay || layDoc !== view.state.doc || nodes.length !== view.state.doc.childCount || !nodes.length) return null;
+      const R = lay.R;
+      const n = nodes.length;
+      if (y >= R[n]) return { pos: view.state.doc.content.size, top: R[n], text: false, end: true };
+      let lo = 0;
+      let hi = n - 1;
+      while (lo < hi) { const mid = (lo + hi + 1) >> 1; if (R[mid] <= y) lo = mid; else hi = mid - 1; }
+      let i = lo;
+      while (i > 0 && looseNode(nodes[i])) i--;
+      const units = measOf(i).units;
+      const brs = (lay.breaks && lay.breaks.get(i)) || [];
+      const shift = (j) => { let s = 0; for (const b of brs) if (b.j <= j) s += b.add; return s; };
+      let best = 0;
+      let top = R[i];
+      for (let j = 1; j < units.length; j++) {
+        const t = R[i] + units[j].y + shift(j);
+        if (t > y + 0.5) break;
+        best = j;
+        top = t;
+      }
+      const u = units[best];
+      const node = nodes[i];
+      let pos = starts[i] + (node.isTextblock ? 1 : 0);
+      let text = node.isTextblock;
+      if (best > 0 && u.rel !== undefined) {
+        if (u.kind === 'line') {
+          const r = lineStartPos(i, u.rel, u.line);
+          pos = starts[i] + (r === null ? u.rel + 1 : r);
+          text = true;
+        } else if (u.kind === 'block') {
+          pos = starts[i] + u.rel;
+          const c = view.state.doc.nodeAt(pos);
+          text = !!(c && c.isTextblock);
+          if (text) pos++;
+        } else text = false;
+      }
+      return { pos, top, text, i };
+    },
+    // Haut (px depuis le haut de la zone d'écriture, sans zoom) de la ligne d'une position, d'après le découpage.
+    yOfPos(pos) {
+      if (!lay || layDoc !== view.state.doc || nodes.length !== view.state.doc.childCount || !nodes.length) return null;
+      const doc = view.state.doc;
+      const i = Math.min(doc.resolve(Math.min(pos, doc.content.size)).index(0), nodes.length - 1);
+      const units = measOf(i).units;
+      const brs = (lay.breaks && lay.breaks.get(i)) || [];
+      let top = lay.R[i];
+      for (let j = 1; j < units.length; j++) {
+        const u = units[j];
+        if (u.rel === undefined) break;
+        const r = u.kind === 'line' ? lineStartPos(i, u.rel, u.line) : u.rel;
+        if (starts[i] + (r === null ? u.rel : r) > pos) break;
+        let s = 0;
+        for (const b of brs) if (b.j <= j) s += b.add;
+        top = lay.R[i] + u.y + s;
+      }
+      return top;
+    },
+    // Appelé à la fin de chaque passage (blocs affichés, coupures posées).
+    onSettled(fn) { settledFns.push(fn); },
     // Pour les essais : découpages faits jusqu'ici.
     relayouts: () => ({ relayouts, reused }),
     // Pour les essais : index des blocs affichés.

@@ -52,19 +52,19 @@ module.exports = async ({ page }) => {
   await page.waitForTimeout(150);
   const openPop = async () => {
     await page.click('#editor .ft-image');
-    await page.click('#object-tools button[title="Légende"]');
+    await page.click('#image-tools button[data-act="encadrage"]');
     await page.waitForTimeout(80);
   };
   await openPop();
-  const titles = await v(() => [...document.querySelectorAll('#image-pop .pop-title')].map((t) => t.textContent));
+  const titles = await v(() => [...document.querySelectorAll('#image-frame-pop .pop-title')].map((t) => t.textContent));
   assert(titles.includes('Couleur du texte') && !titles.includes('Couleur du contour'), titles.join(' | '));
-  const swatch = (n, title) => page.locator('#image-pop .frame-colors').nth(n).locator(`button[title="${title}"]`);
+  const swatch = (n, title) => page.locator('#image-frame-pop .frame-colors').nth(n).locator(`button[title="${title}"]`);
   await swatch(0, 'Rouge').click();
   await page.waitForTimeout(80);
   assert.strictEqual(await v(() => getComputedStyle(document.querySelector('#editor .ft-caption')).color), 'rgb(192, 57, 43)');
-  await page.click('#image-pop label:has-text("Contour autour de la légende")');
+  await page.click('#image-frame-pop label:has-text("Fond et contour de la légende")');
   await page.waitForTimeout(80);
-  const titles2 = await v(() => [...document.querySelectorAll('#image-pop .pop-title')].map((t) => t.textContent));
+  const titles2 = await v(() => [...document.querySelectorAll('#image-frame-pop .pop-title')].map((t) => t.textContent));
   assert(titles2.includes('Couleur du contour') && titles2.includes('Fond de la légende'), titles2.join(' | '));
   await swatch(1, 'Bleu').click();
   await page.waitForTimeout(60);
@@ -77,23 +77,23 @@ module.exports = async ({ page }) => {
   // Coins de la légende : légèrement arrondis d'office, réglables (droits… très arrondis).
   const radius = () => v(() => getComputedStyle(document.querySelector('#editor .ft-caption')).borderTopLeftRadius);
   assert.strictEqual(await radius(), '3px');
-  await page.click('#image-pop .seg button:has-text("Droits")');
+  await page.click('#image-frame-pop .seg button:has-text("Droits")');
   await page.waitForTimeout(80);
   assert.strictEqual(await radius(), '0px');
   assert(/--cap-r: 0px/.test(await v(() => window.FTEditor.getHtml())), 'coins enregistrés');
-  assert(await v(() => [...document.querySelectorAll('#image-pop .seg button.on')].some((b) => b.textContent === 'Droits')), 'choix affiché');
-  await page.click('#image-pop .seg button:has-text("Très arrondis")');
+  assert(await v(() => [...document.querySelectorAll('#image-frame-pop .seg button.on')].some((b) => b.textContent === 'Droits')), 'choix affiché');
+  await page.click('#image-frame-pop .seg button:has-text("Très arrondis")');
   await page.waitForTimeout(80);
   assert.notStrictEqual(await radius(), '0px');
-  await page.click('#image-pop .seg button:has-text("Légers")');
+  await page.click('#image-frame-pop .seg button:has-text("Légers")');
   await page.waitForTimeout(80);
   assert.strictEqual(await radius(), '3px');
   // La couleur choisie est proposée parmi les récentes de la fenêtre.
   await page.screenshot({ path: path.join(SHOTS, 'legende-couleurs.png') });
-  const rec = await v(() => [...document.querySelectorAll('#image-pop .ft-recents')[0].querySelectorAll('.ft-recent')].map((b) => b.dataset.color));
+  const rec = await v(() => [...document.querySelectorAll('#image-frame-pop .ft-recents')[0].querySelectorAll('.ft-recent')].map((b) => b.dataset.color));
   assert.deepStrictEqual(rec, ['#27ae60', '#2e86c1', '#c0392b']);
   await page.keyboard.press('Escape');
-  await page.click('#editor p');
+  await page.click('#editor p >> nth=1');
   // (Trois réglages des coins, puis le fond.)
   for (let i = 0; i < 4; i++) {
     await page.keyboard.press('Control+z');

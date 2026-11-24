@@ -34,6 +34,8 @@
   window.FTPages.useEngine(mount, window.FTVisibles);
   // Images, schémas, tableaux et encadrés : position, habillage et taille (layout.js) sur la zone du moteur.
   window.FTObjets.start();
+  // Images (version 2.5) : déplacement, ancrage, centrage, superposition et encadrage (moteur/images.js).
+  window.FTImages.start();
   // Outils des versions 1.x repris tels quels : ils travaillent sur le texte affiché par le moteur, et
   // chacune de leurs modifications est relue d'un coup (moteur/objets.js).
   for (const api of [window.FTCase, window.FTFind, window.FTLettrine, window.FTStyles, window.FTStructure, window.FTOrdinals,

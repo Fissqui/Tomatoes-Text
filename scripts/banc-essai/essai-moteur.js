@@ -44,7 +44,7 @@ module.exports = async ({ page, electron }) => {
     label: document.querySelector('.brand-codename').textContent.trim()
   }));
   assert(setup.editor && setup.old, JSON.stringify(setup));
-  assert(/^Corbarino 2\.4/.test(setup.label), setup.label);
+  assert(/^Canestrino 2\.5/.test(setup.label), setup.label);
   ok('zone d’écriture du moteur en place (' + setup.label + ')');
 
   // 2. Documents du mode présentation : ouverts puis réenregistrés à l'identique.

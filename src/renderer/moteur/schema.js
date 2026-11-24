@@ -163,7 +163,7 @@
       attrs: { a: { default: {} }, inner: { default: '' } },
       parseDOM: [
         { tag: 'span.ft-image', priority: 75, getAttrs: (d) => (d.getAttribute('data-wrap') === 'ligne' ? { a: bag(d), inner: d.innerHTML } : false) },
-        { tag: 'span.ft-image', priority: 74, context: 'paragraph/|heading/', getAttrs: (d) => (/^(gauche|droite)$/.test(d.getAttribute('data-wrap') || '') ? { a: bag(d), inner: d.innerHTML } : false) }
+        { tag: 'span.ft-image', priority: 74, context: 'paragraph/|heading/', getAttrs: (d) => (/^(gauche|droite|devant|derriere)$/.test(d.getAttribute('data-wrap') || '') ? { a: bag(d), inner: d.innerHTML } : false) }
       ],
       toDOM: leaf('span')
     },
@@ -328,8 +328,11 @@
       }
       if (isTrailingBreak(br)) br.remove();
     }
+    // Mises à jour du texte des anciens documents (images des versions d'avant la 2.5…), aussi pour un collage.
+    for (const fn of prepareHooks) fn(box);
     return box;
   }
+  const prepareHooks = [];
 
   function parse(html) {
     return parser.parse(prepare(html), { preserveWhitespace: true });
@@ -452,5 +455,5 @@
     return { same: false, size: a.length, at: i, before: a.slice(Math.max(0, i - 120), i + 160), after: b.slice(Math.max(0, i - 120), i + 160) };
   }
 
-  window.FTSchema = { schema, parser, parse, prepare, serialize, serializeFragment, warm, canonical, roundTrip, bag, outer, RAW_BLOCK, RAW_INLINE };
+  window.FTSchema = { schema, parser, parse, prepare, serialize, serializeFragment, warm, canonical, roundTrip, bag, outer, RAW_BLOCK, RAW_INLINE, onPrepare: (fn) => prepareHooks.push(fn) };
 })();

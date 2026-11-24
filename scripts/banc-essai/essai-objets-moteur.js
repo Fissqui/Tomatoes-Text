@@ -41,6 +41,7 @@ module.exports = async ({ page }) => {
     return { l: r.left, r: r.right, t: r.top, b: r.bottom, w: r.width, h: r.height };
   }, sel);
   const attr = (sel, name) => page.evaluate(([s, n]) => document.querySelector(s).getAttribute(n), [sel, name]);
+  const imgTools = () => page.evaluate(() => [...document.querySelectorAll('#image-tools button.on')].map((b) => b.dataset.act));
   const tools = () => page.evaluate(() => [...document.querySelectorAll('#object-tools button')].filter((b) => b.classList.contains('on')).map((b) => b.title));
   const drag = async (x, y, dx, dy) => {
     await page.mouse.move(x, y);
@@ -51,7 +52,7 @@ module.exports = async ({ page }) => {
     await page.waitForTimeout(120);
   };
   const grip = async (dir) => {
-    const b = await page.locator('.ft-rz-' + dir).boundingBox();
+    const b = await page.locator('.ft-rz-' + dir + ':not([hidden])').boundingBox();
     return { x: b.x + b.width / 2, y: b.y + b.height / 2 };
   };
   const caretAt = (sel, word, after = true) => page.evaluate(([s, w, a]) => {
@@ -113,125 +114,16 @@ module.exports = async ({ page }) => {
   assert.deepStrictEqual(order.slice(0, 5), ['P', 'SPAN', 'P', 'TABLE', 'P.2'], order.join());
   ok('tableau au début d’une ligne : posé juste avant elle');
 
-  // 2. Barre de l'objet : position rigide et au niveau du texte par défaut.
+  // 2. Image (version 2.5) : sa propre barre et ses huit poignées. Déplacements, ancrage, centrage,
+  // superposition, encadrage et taille : essai-images-2-5.js.
   await page.click('#editor .ft-image');
   await page.waitForTimeout(100);
-  assert(await page.isVisible('#object-tools'));
-  assert.deepStrictEqual(await tools(), ['Position rigide', 'Au niveau du texte', 'Centrer']);
-  assert.strictEqual(await page.locator('.ft-rz:not([hidden])').count(), 8, 'huit poignées');
-  await page.screenshot({ path: path.join(SHOTS, 'objet-barre.png') });
-  ok('clic sur l’image : barre (position rigide, au niveau du texte, centré) et huit poignées');
-
-  // 3. Position rigide : seulement vers le haut ou le bas, entre les blocs.
-  let im = await rect('#editor .ft-image');
-  await drag(im.l + 40, im.t + 40, 200, 0);
-  let im2 = await rect('#editor .ft-image');
-  assert(Math.abs(im2.l - im.l) < 1 && Math.abs(im2.t - im.t) < 1, 'pas de déplacement de côté');
-  const p3 = await rect('#editor > p:nth-of-type(3)');
-  await drag(im.l + 40, im.t + 40, 0, p3.b - im.t + 10);
-  order = await page.evaluate(() => [...document.getElementById('editor').children].map((e) => e.tagName + (e.classList.contains('ft-image') ? '.img' : '')));
-  assert(order.indexOf('SPAN.img') > 3, 'descendue après le tableau : ' + order.join());
-  im2 = await rect('#editor .ft-image');
-  assert(Math.abs(im2.l - im.l) < 1, 'toujours centrée');
-  ok('position rigide : le geste de côté ne la bouge pas ; vers le bas, elle passe sous les blocs suivants');
-  await page.keyboard.press('Control+z');
-  await page.waitForTimeout(100);
-  order = await page.evaluate(() => [...document.getElementById('editor').children].map((e) => e.tagName + (e.classList.contains('ft-image') ? '.img' : '')));
-  assert.strictEqual(order[1], 'SPAN.img', 'Ctrl+Z ' + order.join());
-  ok('Ctrl+Z (une seule fois) : l’image revient à sa place');
-
-  // 4. Taille : côté droit seul (la hauteur ne change pas, le bord gauche reste), puis un coin (proportions).
-  await page.click('#editor .ft-image');
-  im = await rect('#editor .ft-image img');
-  let g = await grip('e');
-  await drag(g.x, g.y, 60, 0);
-  im2 = await rect('#editor .ft-image img');
-  assert(Math.abs(im2.l - im.l) < 2 && Math.abs(im2.w - (im.w + 60)) < 4 && Math.abs(im2.h - im.h) < 2, `côté droit ${JSON.stringify([im, im2])}`);
-  assert.strictEqual(await attr('#editor .ft-image', 'data-align'), 'libre');
-  ok(`côté droit : ${Math.round(im.w)} → ${Math.round(im2.w)} px de large, même hauteur, bord gauche immobile`);
-  im = im2;
-  g = await grip('s');
-  await drag(g.x, g.y, 0, 40);
-  im2 = await rect('#editor .ft-image img');
-  assert(Math.abs(im2.h - (im.h + 40)) < 3 && Math.abs(im2.w - im.w) < 2, 'côté bas ' + JSON.stringify([im, im2]));
-  ok('côté bas : seule la hauteur change');
-  im = im2;
-  g = await grip('se');
-  await drag(g.x, g.y, -80, -10);
-  im2 = await rect('#editor .ft-image img');
-  assert(Math.abs(im2.w / im2.h - im.w / im.h) < 0.03 && Math.abs(im2.w - (im.w - 80)) < 4 && Math.abs(im2.l - im.l) < 2, 'coin ' + JSON.stringify([im, im2]));
-  ok('coin : largeur et hauteur ensemble, proportions gardées');
-  // Proportions d'origine (menu du clic droit).
-  await page.click('#editor .ft-image', { button: 'right' });
-  await page.click('.context-menu button:has-text("Proportions d\'origine")');
-  im2 = await rect('#editor .ft-image img');
-  assert(Math.abs(im2.w / im2.h - 2) < 0.03, 'proportions ' + im2.w / im2.h);
-  ok('« Proportions d’origine » : l’image n’est plus étirée');
-
-  // 5. Texte mouvant : déplacement libre, le texte se met à côté.
-  await page.click('#editor .ft-image');
-  await pickTool('Texte mouvant');
-  assert(/^(gauche|droite)$/.test(await attr('#editor .ft-image', 'data-wrap')));
-  assert.deepStrictEqual((await tools()).slice(0, 2), ['Texte mouvant', 'Au niveau du texte']);
-  im = await rect('#editor .ft-image');
-  const ed = await rect('#editor');
-  await drag(im.l + 30, im.t + 30, ed.r - im.r - 5, 70);
-  assert.strictEqual(await attr('#editor .ft-image', 'data-wrap'), 'droite');
-  im2 = await rect('#editor .ft-image');
-  assert(im2.t > im.t + 20, 'descendue');
-  const beside = await page.evaluate(() => {
-    const img = document.querySelector('#editor .ft-image').getBoundingClientRect();
-    const host = document.querySelector('#editor .ft-image').parentElement;
-    const r = document.createRange();
-    r.selectNodeContents(host);
-    return [...r.getClientRects()].some((c) => c.bottom > img.top + 4 && c.top < img.bottom && c.right <= img.left + 2 && c.width > 50);
-  });
-  assert(beside, 'texte à côté de l’image ' + await page.evaluate(() => document.querySelector('#editor .ft-image').parentElement.outerHTML.replace(/src="[^"]*"/g, '').slice(0, 300)));
-  await page.screenshot({ path: path.join(SHOTS, 'objet-texte-mouvant.png') });
-  ok('texte mouvant : l’image suit la souris (à droite, plus bas) et le texte passe à côté');
-
-  // 6. Mouvement fixe : la souris ne la déplace plus ; la taille change toujours.
-  await pickTool('Mouvement fixe');
-  assert.strictEqual(await attr('#editor .ft-image', 'data-pos'), 'fixe');
-  im = await rect('#editor .ft-image');
-  await drag(im.l + 30, im.t + 30, -200, 80);
-  im2 = await rect('#editor .ft-image');
-  assert(Math.abs(im2.l - im.l) < 1 && Math.abs(im2.t - im.t) < 1, 'immobile');
-  g = await grip('w');
-  await drag(g.x, g.y, -40, 0);
-  im2 = await rect('#editor .ft-image');
-  assert(Math.abs(im2.w - (im.w + 40)) < 4 && Math.abs(im2.r - im.r) < 2, 'côté gauche ' + JSON.stringify([im, im2]));
-  ok('mouvement fixe : immobile à la souris, largeur réglable par le côté gauche (le bord droit reste)');
-
-  // 7. Habillage : devant, derrière, au niveau du texte.
-  await page.click('#editor .ft-image');
-  im = await rect('#editor .ft-image');
-  await pickTool('Devant le texte');
-  assert.strictEqual(await attr('#editor .ft-image', 'data-wrap'), 'devant');
-  assert.strictEqual(await attr('#editor .ft-image', 'data-anchor'), 'page');
-  assert.deepStrictEqual((await tools()).slice(0, 2), ['Mouvement fixe', 'Devant le texte']);
-  im2 = await rect('#editor .ft-image');
-  assert(Math.abs(im2.l - im.l) < 2 && Math.abs(im2.t - im.t) < 2, 'même place ' + JSON.stringify([im, im2]));
-  ok('devant le texte (mouvement fixe gardé) : même place, fixé sur la page');
-  await pickTool('Texte mouvant');
-  assert.strictEqual(await attr('#editor .ft-image', 'data-anchor'), null);
-  im = await rect('#editor .ft-image');
-  await drag(im.l + 20, im.t + 20, -150, -30);
-  im2 = await rect('#editor .ft-image');
-  assert(Math.abs(im2.l - (im.l - 150)) < 3 && Math.abs(im2.t - (im.t - 30)) < 3, 'libre ' + JSON.stringify([im, im2]));
-  ok('devant + texte mouvant : déplacement libre au pixel près');
-  await page.click('#editor .ft-image');
-  await pickTool('Derrière le texte');
-  assert.strictEqual(await attr('#editor .ft-image', 'data-wrap'), 'derriere');
-  await pickTool('Position rigide');
-  assert.strictEqual(await attr('#editor .ft-image', 'data-pos'), 'rigide');
-  assert.deepStrictEqual((await tools()).slice(0, 2), ['Position rigide', 'Derrière le texte']);
-  ok('derrière le texte, puis position rigide (attachée à son paragraphe)');
-  await pickTool('Au niveau du texte');
-  assert.strictEqual(await attr('#editor .ft-image', 'data-wrap'), null);
-  assert.strictEqual(await attr('#editor .ft-image', 'data-pos'), null);
-  assert(await page.evaluate(() => document.querySelector('#editor .ft-image').parentElement.id === 'editor'));
-  ok('au niveau du texte + rigide : redevient un bloc entre les paragraphes');
+  assert(await page.isVisible('#image-tools'), 'barre de l’image');
+  assert(!(await page.isVisible('#object-tools')), 'pas la barre des objets');
+  assert.strictEqual(await page.locator('.ft-img-rz:not([hidden])').count(), 8, 'huit poignées');
+  assert.deepStrictEqual(await imgTools(), ['ligne', 'mouvant', 'centre'], 'image posée entre deux blocs : par ligne, mouvante, centrée');
+  ok('clic sur l’image : barre de l’image (par ligne, ancrage mouvant, centrée) et huit poignées');
+  let im, im2, g;
 
   // 8. Tableau : la barre apparaît quand le curseur est dedans ; hauteur des lignes par le côté bas.
   await page.click('#editor table td');
@@ -400,12 +292,13 @@ module.exports = async ({ page }) => {
   // 10. Anciens documents : data-wrap / data-anchor lus comme avant.
   await reset(`<p>${LOREM}</p><span class="ft-image" contenteditable="false" data-wrap="devant" data-anchor="page" style="width: 30%; --x: 40px; --y: 20px;"><img src="${png}"></span>`
     + `<p><span class="ft-image" contenteditable="false" data-wrap="gauche" style="width: 30%;"><img src="${png}"></span>${LOREM}</p>`);
-  await page.click('#editor > .ft-image');
-  assert.deepStrictEqual((await tools()).slice(0, 2), ['Mouvement fixe', 'Devant le texte']);
-  await page.evaluate(() => window.FTObjets.selectObject(document.querySelector('#editor p .ft-image')));
-  await page.waitForTimeout(50);
-  assert.deepStrictEqual((await tools()).slice(0, 2), ['Texte mouvant', 'Au niveau du texte']);
-  ok('anciens documents : « devant, fixé sur la page » = mouvement fixe ; « carré » = texte mouvant');
+  await page.click('#editor .ft-image[data-wrap="devant"]');
+  await page.waitForTimeout(100);
+  assert.deepStrictEqual(await imgTools(), ['libre', 'fixe', 'devant'], 'devant, fixé sur la page : ' + (await imgTools()).join());
+  await page.evaluate(() => window.FTObjets.selectObject(document.querySelector('#editor .ft-image[data-wrap="gauche"]')));
+  await page.waitForTimeout(100);
+  assert.deepStrictEqual(await imgTools(), ['libre', 'mouvant', 'gauche', 'niveau'], 'carré : ' + (await imgTools()).join());
+  ok('anciens documents : « devant, fixé sur la page » = libre, ancrage fixe, devant ; « carré » = libre au niveau du texte');
 
   // 11. Mode avancé : changer la position d'un objet en bas du document ne ramène pas la vue au début.
   let h12 = '';
@@ -453,8 +346,9 @@ module.exports = async ({ page }) => {
 
   // 13. Légende : écrite dans l'image, enregistrée, une seule étape d'annulation.
   await page.click('#editor .ft-image');
-  await page.click('#object-tools button[title="Légende"]');
-  await page.click('#image-pop button:has-text("En bas")');
+  await page.click('#image-tools button[data-act="encadrage"]');
+  await page.click('#image-frame-pop button:has-text("Dessous")');
+  await page.click('#image-frame-pop .pop-done');
   await page.waitForTimeout(150);
   assert(await page.evaluate(() => !!document.activeElement.closest('.ft-caption')), 'curseur dans la légende');
   await page.keyboard.type('Une légende');
@@ -477,9 +371,9 @@ module.exports = async ({ page }) => {
     window.FTLayout.insertImages([new File([blob], 'rouge.png', { type: 'image/png' })]);
   }, png);
   await page.waitForTimeout(400);
-  assert(/^<p>Avant MILIEU<\/p><span class="ft-image"[^>]*><img[^>]*><\/span><p> après<\/p>/.test(await saved()), 'insertion ' + await saved());
+  assert(/^<p><span class="ft-image"[^>]*data-wrap="gauche"[^>]*><img[^>]*><\/span>Avant MILIEU après<\/p>/.test(await saved()), 'insertion ' + await saved());
   assert(await page.evaluate(() => window.FTMoteur.view.state.selection.toJSON().type === 'node'), 'sélectionnée');
-  ok('image choisie dans un fichier : posée au curseur (la ligne coupée en deux) et sélectionnée');
+  ok('image choisie dans un fichier : déplacement libre, au début de la ligne du curseur, sélectionnée');
 
   // 15. Schéma : inséré par la fenêtre des schémas, modifié par double-clic.
   await reset(`<p>Avant</p><p>Fin</p>`);
@@ -545,7 +439,7 @@ module.exports = async ({ page }) => {
   await page.waitForTimeout(100);
   const tMove = await page.evaluate(() => new Promise((resolve) => {
     const t = performance.now();
-    document.querySelector('#object-tools button[title="Texte mouvant"]').click();
+    document.querySelector('#image-tools button[data-act="libre"]').click();
     requestAnimationFrame(() => setTimeout(() => resolve(performance.now() - t), 0));
   }));
   await page.waitForTimeout(300);
@@ -566,5 +460,5 @@ module.exports = async ({ page }) => {
     });
   }), [g.x, g.y]);
   await page.waitForTimeout(200);
-  ok(`très long document (${sheets} pages, ${shown} blocs affichés sur ${total}) : sélection ${Math.round(tSel)} ms, texte mouvant ${Math.round(tMove)} ms, taille à la souris ${Math.round(tResize)} ms`);
+  ok(`très long document (${sheets} pages, ${shown} blocs affichés sur ${total}) : sélection ${Math.round(tSel)} ms, déplacement libre ${Math.round(tMove)} ms, taille à la souris ${Math.round(tResize)} ms`);
 };

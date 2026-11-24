@@ -3,6 +3,7 @@ const { contextBridge, ipcRenderer, webUtils } = require('electron');
 
 contextBridge.exposeInMainWorld('frameText', {
   loadLibrary: (project) => ipcRenderer.invoke('library:load', project),
+  pasteImage: (url) => ipcRenderer.invoke('paste:image', url),
   saveLibraryIndex: (index) => ipcRenderer.invoke('library:saveIndex', index),
   openLibraryFolder: () => ipcRenderer.invoke('library:openFolder'),
   forgetDoc: (id) => ipcRenderer.invoke('library:forget', id),

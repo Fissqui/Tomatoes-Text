@@ -406,5 +406,5 @@
     tree.classList.toggle('idle', !item);
   }, true);
 
-  window.FTSidebar = { render, showMenu, UNSORTED, MAX_DEPTH };
+  window.FTSidebar = { render, showMenu, hideMenu, UNSORTED, MAX_DEPTH };
 })();

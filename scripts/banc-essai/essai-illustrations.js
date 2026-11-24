@@ -29,22 +29,17 @@ module.exports = async ({ page }) => {
     const box = await page.evaluate((i) => { const r = document.getElementById(i).getBoundingClientRect(); document.getElementById(i).scrollIntoView({ block: 'center' }); const q = document.getElementById(i).getBoundingClientRect(); return { x: q.left + q.width / 2, y: q.top + q.height / 2 }; }, id);
     await page.mouse.click(box.x, box.y, { button: 'right' });
     await page.waitForTimeout(150);
-    await page.evaluate(() => [...document.querySelectorAll('#context-menu button')].find((b) => /légende/i.test(b.textContent)).click());
+    // (2.5 : mini-menu « Encadrage » ; le curseur passe dans la légende quand il se ferme.)
+    await page.evaluate(() => [...document.querySelectorAll('#context-menu button')].find((b) => b.textContent === 'Encadrage…').click());
     await page.waitForTimeout(150);
-    await page.evaluate(() => [...document.querySelectorAll('#image-pop .seg button')].find((b) => b.textContent === 'En bas').click());
+    await page.click('#image-frame-pop .seg button:text-is("Dessous")');
     await page.waitForTimeout(150);
     if (kind) {
-      await page.mouse.click(box.x, box.y, { button: 'right' });
+      await page.click(`#image-frame-pop .seg button:text-is("${kind}")`);
       await page.waitForTimeout(150);
-      await page.evaluate(() => [...document.querySelectorAll('#context-menu button')].find((b) => /Légende…/.test(b.textContent)).click());
-      await page.waitForTimeout(150);
-      await page.evaluate((k) => [...document.querySelectorAll('#image-pop .seg button')].find((b) => b.textContent === k).click(), kind);
-      await page.waitForTimeout(150);
-      const cb = await page.evaluate((i) => { const r = document.querySelector(`#${i} > .ft-caption`).getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; }, id);
-      await page.evaluate(() => { document.getElementById('image-pop').hidden = true; });
-      await page.mouse.click(cb.x, cb.y);
-      await page.waitForTimeout(100);
     }
+    await page.click('#image-frame-pop .pop-done');
+    await page.waitForTimeout(150);
   };
 
   // 1. Légende d'image : numérotée « Figure 1 » d'office.
@@ -59,7 +54,7 @@ module.exports = async ({ page }) => {
   ok('légende d’image : « Figure 1 : Carte des sols »');
 
   // 2. Deuxième image en schéma : « Schéma 1 ».
-  await caption('img-b', 'Schéma n');
+  await caption('img-b', 'Schéma 1');
   await page.keyboard.type('Coupe du terrain');
   await page.waitForTimeout(400); // (moteur 2.0 : numéros remis à jour après une pause de la frappe)
   st = await page.evaluate(() => { const c = document.querySelector('#img-b > .ft-caption'); return { num: c.parentElement.dataset.num, cap: c.dataset.cap, text: c.textContent }; });
@@ -229,10 +224,10 @@ module.exports = async ({ page }) => {
   const box0 = await page.evaluate(() => { const o = document.querySelector('#img-0 > img'); o.scrollIntoView({ block: 'center' }); const r = o.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; });
   await page.mouse.click(box0.x, box0.y, { button: 'right' });
   await page.waitForTimeout(150);
-  await page.evaluate(() => [...document.querySelectorAll('#context-menu button')].find((b) => /Légende…/.test(b.textContent)).click());
+  await page.evaluate(() => [...document.querySelectorAll('#context-menu button')].find((b) => b.textContent === 'Encadrage…').click());
   await page.waitForTimeout(150);
-  await page.evaluate(() => [...document.querySelectorAll('#image-pop .seg')].pop().querySelector('button').click());
-  await page.keyboard.press('Escape');
+  await page.click('#image-frame-pop .seg button:text-is("Sans numéro")');
+  await page.click('#image-frame-pop .pop-done');
   await page.waitForTimeout(400);
   st = await page.evaluate(() => ({ caps: [...document.querySelectorAll('#editor [data-cap]')].map((e) => e.dataset.cap), rows: document.querySelectorAll('#editor .ft-lof-item').length }));
   assert(st.caps[0] === 'Figure 1' && st.rows === 3, JSON.stringify(st));

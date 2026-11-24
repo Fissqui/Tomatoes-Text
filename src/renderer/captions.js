@@ -18,13 +18,16 @@
   const SEP = ' : ';
 
   // Les légendes numérotées, dans l'ordre du texte : { el, kind, box } (box : l'objet légendé).
+  // (Version 2.5 : chapitre = nombre de titres de niveau 1 qui précèdent, pour « Figure 2.1 ».)
   function captions() {
     const out = [];
-    for (const el of editor.querySelectorAll('.ft-image[data-num] > .ft-caption, p.ft-legend[data-kind]')) {
+    let chapter = 0;
+    for (const el of editor.querySelectorAll('h1, .ft-image[data-num] > .ft-caption, p.ft-legend[data-kind]')) {
+      if (el.tagName === 'H1') { if (!el.closest('.ft-lof, .ft-toc, .ft-cover, .ft-footnotes, .ft-endnotes')) chapter++; continue; }
       const legend = el.classList.contains('ft-legend');
       const kind = legend ? el.dataset.kind : el.parentElement.dataset.num;
       if (!LABEL[kind] || el.closest('.ft-lof, .ft-footnotes, .ft-endnotes')) continue;
-      out.push({ el, kind, box: legend ? el : el.parentElement });
+      out.push({ el, kind, box: legend ? el : el.parentElement, chapter });
     }
     return out;
   }
@@ -33,9 +36,16 @@
   function renumber() {
     return regen(() => {
       const count = {};
+      const inChapter = {};
       const list = captions().map((c) => {
         const n = (count[c.kind] = (count[c.kind] || 0) + 1);
-        const tag = `${LABEL[c.kind]} ${n}`;
+        // Style choisi dans l'encadrage de l'image : « Figure 1 », « Fig. 1 », « 1. », mot choisi ; par chapitre.
+        const b = c.box.dataset;
+        const ck = c.kind + ':' + c.chapter;
+        const m = (inChapter[ck] = (inChapter[ck] || 0) + 1);
+        const num = b.capChap !== undefined && !c.box.classList.contains('ft-legend') ? `${c.chapter}.${m}` : String(n);
+        const style = c.box.classList.contains('ft-legend') ? '' : b.capStyle || '';
+        const tag = style === 'fig' ? `Fig. ${num}` : style === 'num' ? `${num}.` : style === 'perso' ? `${b.capLabel || 'Illustration'} ${num}` : `${LABEL[c.kind]} ${num}`;
         if (c.el.dataset.cap !== tag) c.el.dataset.cap = tag;
         return { ...c, n, tag };
       });

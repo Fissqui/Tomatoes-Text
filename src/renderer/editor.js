@@ -805,6 +805,8 @@
   // Insère un HTML (déjà nettoyé) à la place de la sélection.
   function insertHtml(html, range) {
     const box = window.FTSchema.prepare(html);
+    // (Images collées : affichées depuis la mémoire, comme à l'ouverture.)
+    if (box.querySelector('img')) adoptImages(box);
     // Tableaux collés : style des prochains tableaux.
     const S = window.FTStructure;
     for (const t of box.querySelectorAll('table.ft-table[data-paste]')) {
@@ -897,15 +899,26 @@
     const plain = Date.now() < plainUntil;
     if (plain) html = '';
     // Fragment HTML sans balise utile (simple texte) : traité comme du texte.
-    if (html && !/<(p|div|br|li|h[1-6]|table|b|strong|i|em|u|a|span|font)\b/i.test(html) && !(FC && FC.hasMath(html))) html = '';
-    const source = { html, text };
+    if (html && !/<(p|div|br|li|h[1-6]|table|b|strong|i|em|u|a|span|font|img)\b/i.test(html) && !(FC && FC.hasMath(html))) html = '';
     const range = { from: view.state.selection.from, to: view.state.selection.to };
+    // Images dans le texte collé (version 2.5) : lues d'abord (fichiers de Word, adresses d'une page web).
+    if (html && /<img\b/i.test(html) && P.resolveImages) {
+      const status = document.getElementById('status-save');
+      if (status) status.textContent = 'Lecture des images collées…';
+      P.resolveImages(html).then((h) => pasteSource(P, { html: h, text }, range, plain), () => pasteSource(P, { html, text }, range, plain));
+      return true;
+    }
+    pasteSource(P, { html, text }, range, plain);
+    return true;
+  }
+  function pasteSource(P, source, range, plain) {
+    const { text } = source;
     const lines = text.replace(/\r\n?/g, '\n').split('\n').filter((l) => l.trim()).length;
     if (plain || (lines <= 1 && text.length < SHORT)) {
       const prefs = P.prefs();
       const opts = { lines: true, spaces: prefs.spaces !== false, inline: !plain && prefs.inline !== false, structure: !plain && prefs.structure !== false };
       insertHtml(P.render(P.build(source, opts)), range);
-      return true;
+      return;
     }
     P.open(source, range, (out, raw) => {
       if (raw && !source.html) {
@@ -917,7 +930,6 @@
       }
       insertHtml(out, range);
     });
-    return true;
   }
 
   // ----- Statistiques du texte -----

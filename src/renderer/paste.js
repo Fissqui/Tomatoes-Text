@@ -114,7 +114,8 @@
 
   // ----- HTML (page web, Word) -----
 
-  const DROP = 'script, style, meta, link, title, head, noscript, iframe, object, embed, svg, canvas, video, audio, button, input, select, textarea, form, template, img, picture, figure > img';
+  // (Images gardées depuis la version 2.5 : voir image() et resolveImages().)
+  const DROP = 'script, style, meta, link, title, head, noscript, iframe, object, embed, svg, canvas, video, audio, button, input, select, textarea, form, template, source';
   const NOISE = 'sup.reference, .mw-editsection, .noprint, .sortkey, .mw-cite-backlink, [hidden], [aria-hidden="true"], [style*="display:none"], [style*="display: none"]';
   const BLOCKS = new Set(['P', 'DIV', 'SECTION', 'ARTICLE', 'MAIN', 'HEADER', 'FOOTER', 'ASIDE', 'NAV', 'BLOCKQUOTE', 'PRE', 'ADDRESS', 'FIGURE', 'FIGCAPTION', 'DL', 'DT', 'DD', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'LI', 'UL', 'OL', 'TABLE', 'HR', 'CENTER']);
 
@@ -180,6 +181,7 @@
         return;
       }
       if (t === 'TABLE') return table(el);
+      if (t === 'IMG') return image(el);
       if (t === 'HR') { close(); return; }
       if (t === 'UL' || t === 'OL') {
         close();
@@ -217,6 +219,52 @@
       for (const c of el.childNodes) inline(c, [...marks, ...own.filter((m) => !marks.includes(m))]);
     }
 
+    // Image (version 2.5) : flottante dans l'original (Word, page web) → déplacement libre, du même côté ;
+    // petite (icône, symbole) → dans la ligne du texte ; sinon → par ligne, entre deux paragraphes, avec
+    // l'alignement de son paragraphe. Sources déjà lues en données (resolveImages) ; les autres sont laissées.
+    function image(el) {
+      const src = el.getAttribute('src') || '';
+      if (!/^(data:image\/|blob:)/.test(src)) return;
+      const px = (v) => { const m = /^([\d.]+)(px)?$/.exec(String(v || '').trim()); return m ? Number(m[1]) : 0; };
+      const w = px(el.getAttribute('width')) || px(el.style.width) || Number(el.getAttribute('data-nw')) || 0;
+      const h = px(el.getAttribute('height')) || px(el.style.height) || Number(el.getAttribute('data-nh')) || 0;
+      const host = document.getElementById('editor');
+      const col = Math.max(300, (host && host.clientWidth) || 620);
+      const pct = w ? Math.max(5, Math.min(100, Math.round((w / col) * 100))) : 50;
+      // Flottante : float ou align (page web), position absolue (Word).
+      let side = '';
+      const fl = (el.style.float || el.getAttribute('align') || '').toLowerCase();
+      if (fl === 'left' || fl === 'right') side = fl === 'left' ? 'gauche' : 'droite';
+      for (let a = el.parentElement, k = 0; !side && a && k < 3; a = a.parentElement, k++) {
+        const af = ((a.style && a.style.float) || '').toLowerCase();
+        if (af === 'left' || af === 'right') side = af === 'left' ? 'gauche' : 'droite';
+        else if (a.style && a.style.position === 'absolute') side = px(a.style.marginLeft) + w / 2 > col / 2 ? 'droite' : 'gauche';
+      }
+      const box = (attrs, width) => `<span class="ft-image" contenteditable="false" style="width: ${width || pct + '%'};"${attrs}><img src="${src.replace(/"/g, '&quot;')}" alt=""></span>`;
+      if (side) {
+        // (Accrochée au début du paragraphe où elle se trouve.)
+        const b = ensure();
+        b.html = box(` data-wrap="${side}"`) + b.html;
+        b.img = true;
+        return;
+      }
+      if ((h && h <= 32) || (w && w <= 40)) {
+        const b = ensure();
+        b.html += box(' data-wrap="ligne"', Math.max(1, Math.round((w || h) * 0.75)) + 'pt');
+        b.img = true;
+        return;
+      }
+      const at = el.closest('[align], [style*="text-align"]');
+      const ta = at ? (at.getAttribute('align') || at.style.textAlign || '').toLowerCase() : '';
+      const align = ta === 'center' ? '' : ta === 'right' ? ' data-align="droite"' : ' data-align="gauche"';
+      const resume = cur && cur.type !== 'li' ? cur.type : 'p';
+      const had = !!cur;
+      close();
+      blocks.push({ type: 'img', html: box(align), img: true });
+      // (Le texte qui suit l'image continue dans un nouveau paragraphe du même genre.)
+      if (had) open(resume);
+    }
+
     // Cases fusionnées gardées (rowspan, colspan) ; lignes vides retirées (barres de couleur d'un en-tête).
     function table(el) {
       close();
@@ -250,8 +298,8 @@
 
     for (const c of doc.body.childNodes) inline(c, []);
     // Paragraphes vides, espaces au début et à la fin.
-    return blocks.filter((b) => b.type === 'table' || (b.text || '').replace(/[\s ]/g, '')).map((b) => {
-      if (b.type === 'table') return b;
+    return blocks.filter((b) => b.type === 'table' || b.img || (b.text || '').replace(/[\s ]/g, '')).map((b) => {
+      if (b.type === 'table' || b.type === 'img') return b;
       b.html = b.html.replace(/^(\s|<[^>]+>\s*)*?\s+/, (m) => m.replace(/\s+/g, '')).replace(/\s+$/, '').replace(/ *\n */g, '\n');
       return b;
     });
@@ -279,7 +327,7 @@
   function build(source, opts) {
     let blocks = source.html ? blocksFromHtml(source.html, opts) : blocksFromText(source.text, opts);
     blocks = splitBlocks(blocks).map((b) => {
-      if (b.type === 'math') return b;
+      if (b.type === 'math' || b.type === 'img') return b;
       if (b.type === 'table') {
         if (opts.spaces) b.rows.forEach((r) => r.forEach((c) => { c.html = tidySpaces(c.html); }));
         return b;
@@ -290,7 +338,7 @@
       return { ...b, html };
     });
     if (!opts.structure) {
-      blocks = blocks.flatMap((b) => (b.type === 'table'
+      blocks = blocks.flatMap((b) => (b.type === 'img' ? [b] : b.type === 'table'
         ? b.rows.map((r) => ({ type: 'p', html: r.map((c) => c.html.replace(/\n/g, ' ')).join(' – ') }))
         : b.type === 'math' ? [{ type: 'p', html: b.html.replace(TOKEN, (m, i) => inlineToken(i)) }] : [{ type: 'p', html: b.html }]));
     }
@@ -383,7 +431,9 @@
         continue;
       }
       closeLists(0);
-      if (b.type === 'table') {
+      if (b.type === 'img') {
+        out += b.html;
+      } else if (b.type === 'table') {
         const head = b.rows[0].length && b.rows[0].every((c) => c.head);
         const spans = (c) => (c.rs > 1 ? ` rowspan="${c.rs}"` : '') + (c.cs > 1 ? ` colspan="${c.cs}"` : '');
         const fit = columnWidths(b.rows);
@@ -673,5 +723,38 @@
     ask(source, range);
   });
 
-  window.FTPaste = { build, render, looksWrapped, joinLines, open: ask, prefs: loadPrefs };
+  // Images d'un texte collé (version 2.5) : chaque source (fichier temporaire de Word, adresse d'une page web)
+  // est lue en données, pour que l'image reste dans le document ; taille d'origine notée (data-nw, data-nh),
+  // très grandes images réduites. Les images illisibles sont retirées.
+  async function resolveImages(html) {
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    const imgs = [...doc.querySelectorAll('img')];
+    imgs.slice(60).forEach((img) => img.remove());
+    const api = window.frameText;
+    const load = (src) => new Promise((r) => { const im = new Image(); im.onload = () => r(im); im.onerror = () => r(null); im.src = src; });
+    await Promise.all(imgs.slice(0, 60).map(async (img) => {
+      let src = img.getAttribute('src') || '';
+      if (!/^data:image\//.test(src)) src = /^(https?|file):/i.test(src) && api && api.pasteImage ? await api.pasteImage(src).catch(() => null) : null;
+      const im = src && await load(src);
+      if (!im || !im.naturalWidth) { img.remove(); return; }
+      let w = im.naturalWidth;
+      let h = im.naturalHeight;
+      if (w > 1800) {
+        const k = 1800 / w;
+        const c = document.createElement('canvas');
+        c.width = Math.round(w * k);
+        c.height = Math.round(h * k);
+        c.getContext('2d').drawImage(im, 0, 0, c.width, c.height);
+        src = /^data:image\/(png|gif|webp)/.test(src) ? c.toDataURL('image/png') : c.toDataURL('image/jpeg', 0.88);
+        w = c.width;
+        h = c.height;
+      }
+      img.setAttribute('src', src);
+      img.setAttribute('data-nw', String(w));
+      img.setAttribute('data-nh', String(h));
+    }));
+    return '<html><body>' + doc.body.innerHTML + '</body></html>';
+  }
+
+  window.FTPaste = { build, render, looksWrapped, joinLines, open: ask, prefs: loadPrefs, resolveImages };
 })();

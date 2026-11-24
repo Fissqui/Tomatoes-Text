@@ -201,12 +201,25 @@
     if (units.length > 1 && units[0].b === height) {
       if (units[1].y < 8) { units[0].b = units[1].b; units.splice(1, 1); } else units[0].b = units[1].y;
     }
+    // Image habillée par le texte (moteur/images.js) : la ligne où elle est accrochée ne passe pas à la page
+    // suivante sans elle ; le bas de son morceau est celui de l'image, qui peut dépasser du bloc. Une image
+    // ne chevauche donc jamais deux pages.
+    for (const f of el.querySelectorAll('.ft-image[data-wrap="gauche"], .ft-image[data-wrap="droite"]')) {
+      const r = f.getBoundingClientRect();
+      if (!r.height) continue;
+      const fcs = getComputedStyle(f);
+      const top = rel(r.top - (parseFloat(fcs.marginTop) || 0));
+      const bottom = rel(r.bottom + (parseFloat(fcs.marginBottom) || 0));
+      let x = 0;
+      while (x + 1 < units.length && units[x + 1].y <= top + EPS) x++;
+      if (bottom > units[x].b) { units[x].b = bottom; units[x].fb = true; }
+    }
     attachNotes(el, units, rel);
     return {
       height,
       mt: parseFloat(cs.marginTop) || 0,
       mb: parseFloat(cs.marginBottom) || 0,
-      units: units.map((u) => ({ y: u.y, b: Math.min(height, Math.max(u.b, u.y)), kind: u.kind, at: u.at, line: u.line, fn: u.fn }))
+      units: units.map((u) => ({ y: u.y, b: u.fb ? Math.max(u.b, u.y) : Math.min(height, Math.max(u.b, u.y)), kind: u.kind, at: u.at, line: u.line, fn: u.fn }))
     };
   }
 

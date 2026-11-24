@@ -1229,11 +1229,77 @@ dialog p { margin: 0 0 12px; }
 #editor pre.ft-code[data-wrap="droite"] { margin: 0.3em var(--mx, 0px) 0.7em 1.3em; }
 #editor [data-wrap="devant"], #editor [data-wrap="derriere"] { position: absolute; z-index: 2; margin: var(--y, 0px) 0 0 var(--x, 0px); }
 #editor [data-wrap="derriere"] { z-index: -1; cursor: default; }
-#editor [data-wrap][data-anchor="page"] { margin: 0; left: var(--x, 0px); top: var(--y, 0px); }
+#editor [data-wrap][data-anchor="page"]:not([data-page]) { margin: 0; left: var(--x, 0px); top: var(--y, 0px); }
 #editor .ft-table[data-wrap="devant"] { background: var(--page); box-shadow: 0 2px 10px rgba(0, 0, 0, 0.12); }
 #editor .ft-callout[data-wrap="devant"] { background: color-mix(in srgb, var(--callout) 8%, var(--page)); box-shadow: 0 2px 10px rgba(0, 0, 0, 0.12); }
 #editor .ft-footnotes, #editor .ft-cols, #editor hr.ft-rule { clear: both; }
-#object-tools[hidden], .ft-rz[hidden], #zone-outline[hidden] { display: none; }
+/* ---------- Images (version 2.5) : déplacement, ancrage, centrage, superposition, encadrage ---------- */
+/* Libre au niveau du texte : accrochée au début d'une ligne, écart --dy avec le haut de cette ligne. */
+#editor .ft-image[data-wrap="gauche"], #editor .ft-image[data-wrap="droite"] { margin-top: var(--dy, 0.3em); }
+#editor .ft-image[data-wrap="gauche"]:not([data-caption]), #editor .ft-image[data-wrap="droite"]:not([data-caption]) { margin-bottom: 0.5em; }
+/* Légende à gauche ou à droite de l'image. */
+#editor .ft-image:is([data-caption="gauche"], [data-caption="droite"]) { display: flex; align-items: center; gap: 0.8em; line-height: normal; }
+#editor .ft-image[data-wrap="ligne"]:is([data-caption="gauche"], [data-caption="droite"]) { display: inline-flex; }
+#editor .ft-image:is([data-caption="gauche"], [data-caption="droite"]) > img { flex: 1 1 0; min-width: 0; width: auto; }
+#editor .ft-image:is([data-caption="gauche"], [data-caption="droite"]) > .ft-caption { flex: 0 0 var(--cap-w, 35%); padding: 0; text-align: left; }
+#editor .ft-image[data-caption="gauche"] > .ft-caption { text-align: right; }
+#editor .ft-image .ft-caption { font-family: var(--cap-f, inherit); font-size: var(--cap-s, 0.88em); }
+#editor .ft-image[data-cap-b] .ft-caption { font-weight: 700; }
+#editor .ft-image[data-cap-i="0"] .ft-caption { font-style: normal; }
+#editor .ft-image[data-cap-style="num"] > .ft-caption[data-cap]::before { content: attr(data-cap) "\00a0"; }
+#editor .ft-image[data-cap-style="num"] > .ft-caption[data-cap]:empty::before { content: attr(data-cap) "\00a0Écrivez la légende…"; }
+/* Cadre autour de l'image et de sa légende. */
+#editor .ft-image[data-frame][data-frame-all] { box-sizing: border-box; padding: var(--fp, 6px); border: var(--fw, 1px) solid var(--fc, var(--text-muted)); border-radius: var(--fr, 0px); }
+#editor .ft-image[data-frame][data-frame-all] img { padding: 0; border: none; border-radius: 0; }
+#editor .ft-image[data-frame="pointille"][data-frame-all] { border-style: dotted; }
+#editor .ft-image[data-frame="tirets"][data-frame-all] { border-style: dashed; }
+#editor .ft-image[data-frame="double"][data-frame-all] { border-style: double; border-width: calc(var(--fw, 1px) + 2px); }
+/* Déplacement à la souris : l'image est cachée à sa place, un double est posé à l'endroit visé. */
+#editor .ft-image.ft-img-src { display: none !important; }
+.ft-img-ghost { opacity: 0.6; outline: 2px dashed var(--accent); outline-offset: 2px; pointer-events: none !important; }
+.ft-img-ghost-out { position: absolute; z-index: 5; display: block; line-height: 0; }
+.ft-img-ghost-out img { display: block; width: 100%; height: auto; }
+.ft-img-ghost-out .ft-caption { display: none; }
+body.ft-img-gesture #object-frame { display: none; }
+/* Aperçu d'un collage : images à leur place, comme dans le texte. */
+#ps-preview .ft-image { display: block; max-width: 100%; margin: 0.4em auto 0.9em; line-height: 0; }
+#ps-preview .ft-image img { display: block; width: 100%; height: auto; }
+#ps-preview .ft-image[data-align="gauche"] { margin-left: 0; }
+#ps-preview .ft-image[data-align="droite"] { margin-right: 0; }
+#ps-preview .ft-image[data-wrap="gauche"] { float: left; margin: 0.3em 1.3em 0.5em 0; }
+#ps-preview .ft-image[data-wrap="droite"] { float: right; margin: 0.3em 0 0.5em 1.3em; }
+#ps-preview .ft-image[data-wrap="ligne"] { display: inline-block; vertical-align: bottom; margin: 0 0.15em; }
+#ps-preview p { clear: none; }
+#ps-preview::after { content: ""; display: block; clear: both; }
+#object-tools[hidden], #image-tools[hidden], .ft-rz[hidden], #zone-outline[hidden] { display: none; }
+#image-tools { position: absolute; z-index: 6; display: flex; align-items: center; gap: 1px; height: 32px; padding: 0 3px; background: var(--panel); border: 1px solid var(--border); border-radius: calc(7px * var(--round)); box-shadow: 0 2px 8px rgba(0, 0, 0, 0.14); white-space: nowrap; }
+#image-tools button { width: 28px; height: 26px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border: none; border-radius: calc(5px * var(--round)); }
+#image-tools button.on { background: color-mix(in srgb, var(--accent) 18%, transparent); color: var(--accent); }
+#image-tools button:disabled { opacity: 0.32; }
+#image-tools .sep { width: 1px; height: 18px; margin: 0 3px; background: var(--border); }
+#image-tools svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: calc(1.1 * var(--icon-weight)); }
+#image-tools svg .fill { fill: currentColor; fill-opacity: 0.28; }
+#image-tools svg .solid { fill: var(--panel); }
+/* Mini-menu « Encadrage » : légende à gauche, cadre à droite. */
+#image-frame-pop { padding: 12px 14px 10px; font-size: calc(13px * var(--ui-scale)); max-height: calc(100vh - 16px); overflow-y: auto; }
+#image-frame-pop[hidden] { display: none; }
+#image-frame-pop .pop-cols { display: grid; grid-template-columns: 310px 270px; gap: 18px; }
+#image-frame-pop .pop-col + .pop-col { border-left: 1px solid var(--border); padding-left: 18px; }
+#image-frame-pop .pop-title { margin-top: 10px; }
+#image-frame-pop .pop-col > .pop-title:first-child { margin-top: 0; font-size: calc(12.5px * var(--ui-scale)); color: var(--text); text-transform: none; letter-spacing: 0; }
+#image-frame-pop .seg { display: flex; gap: 4px; }
+#image-frame-pop .seg.wrap { flex-wrap: wrap; }
+#image-frame-pop .seg button { flex: 1 1 auto; min-width: 0; height: 28px; padding: 0 5px; font-size: calc(12.5px * var(--ui-scale)); color: var(--text); border: 1px solid var(--border); border-radius: calc(5px * var(--round)); background: var(--page); }
+#image-frame-pop .seg button.on { background: var(--btn-active); border-color: var(--accent); font-weight: 600; }
+#image-frame-pop .seg.compact button, #image-frame-pop .seg.icons button { flex: 0 0 30px; padding: 0; }
+#image-frame-pop .seg.icons button svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: calc(1.2 * var(--icon-weight)); }
+#image-frame-pop .pop-row { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+#image-frame-pop .pop-row select { flex: 1; min-width: 0; height: 28px; border: 1px solid var(--border); border-radius: calc(5px * var(--round)); background: var(--page); color: var(--text); }
+#image-frame-pop .pop-check { margin-top: 10px; }
+#image-frame-pop .pop-field { display: flex; align-items: center; gap: 6px; margin-top: 6px; }
+#image-frame-pop .pop-input { flex: 1; min-width: 0; height: 26px; padding: 0 6px; border: 1px solid var(--border); border-radius: calc(5px * var(--round)); background: var(--page); color: var(--text); }
+#image-frame-pop .pop-foot { display: flex; justify-content: flex-end; margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border); }
+#image-frame-pop .pop-done { min-width: 96px; height: 30px; }
 #object-tools { position: absolute; z-index: 6; display: flex; align-items: center; gap: 1px; height: 32px; padding: 0 3px; background: var(--panel); border: 1px solid var(--border); border-radius: calc(7px * var(--round)); box-shadow: 0 2px 8px rgba(0, 0, 0, 0.14); white-space: nowrap; }
 #object-tools button { width: 28px; height: 26px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border: none; border-radius: calc(5px * var(--round)); }
 #object-tools button.on, .context-menu .menu-icons button.on { background: color-mix(in srgb, var(--accent) 18%, transparent); color: var(--accent); }
