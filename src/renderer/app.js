@@ -170,6 +170,9 @@
   async function reloadLibrary(project) {
     const before = lib && lib.project;
     lib = await api.loadLibrary(project);
+    // Document ouvert qui était la copie d'un autre (même identifiant) : il a reçu son propre identifiant.
+    const fresh = current && lib.renamed && lib.renamed[current.fileName];
+    if (fresh) current.doc.id = fresh;
     if (before !== undefined && before !== lib.project && window.FTSourcePdf) window.FTSourcePdf.reset();
     renderSidebar();
     if (window.FTMindmap) window.FTMindmap.refresh();

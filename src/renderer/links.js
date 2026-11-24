@@ -58,9 +58,13 @@
 
   const otherDocs = () => App().docs().filter((d) => d.id !== App().currentId());
 
+  // Le document au titre écrit exactement, sinon au même titre à la casse et aux accents près
+  // (« fichier 1 » et « Fichier 1 » restent deux documents distincts).
   function findDoc(title) {
+    const docs = otherDocs();
+    const exact = String(title || '').replace(/\s+/g, ' ').trim();
     const f = fold(title);
-    return otherDocs().find((d) => fold(d.title) === f) || null;
+    return docs.find((d) => String(d.title || '').replace(/\s+/g, ' ').trim() === exact) || docs.find((d) => fold(d.title) === f) || null;
   }
 
   function setTarget(a, doc) {
@@ -98,7 +102,7 @@
     const docs = otherDocs()
       .filter((d) => !q || fold(d.title).includes(q))
       .sort((x, y) => {
-        const rank = (d) => (fold(d.title) === t ? 0 : t && fold(d.title).includes(t) ? 1 : 2);
+        const rank = (d) => (text && d.title === text ? -1 : fold(d.title) === t ? 0 : t && fold(d.title).includes(t) ? 1 : 2);
         return rank(x) - rank(y) || x.title.localeCompare(y.title, 'fr');
       });
     if (dlgChoice && !docs.some((d) => d.id === dlgChoice)) dlgChoice = null;

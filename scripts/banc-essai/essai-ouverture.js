@@ -108,13 +108,19 @@ module.exports = async ({ page, electron, emit }) => {
   l = await lib();
   const back = l.docs.find((d) => d.id === made.id);
   assert(back && !back.missing && back.fileName === away && l.placement[made.id] === made.section && l.docs.length === made.count + 1, JSON.stringify(back));
-  // Copie du même document ailleurs (l'original existe toujours) : l'original s'ouvre, sans doublon.
+  // Copie du même document ailleurs (l'original existe toujours) : la copie s'ouvre, comme un document
+  // distinct (son propre identifiant) ; l'original garde le sien.
   const copy = path.join(path.dirname(away), 'Copie.tmtx');
   fs.copyFileSync(away, copy);
   await launch(copy);
   l = await lib();
-  assert.strictEqual(l.docs.length, made.count + 1);
+  assert.strictEqual(l.docs.length, made.count + 2);
   assert.strictEqual(l.docs.find((d) => d.id === made.id).fileName, away);
+  const copyId = JSON.parse(fs.readFileSync(copy, 'utf8')).id;
+  assert(copyId !== made.id && l.docs.find((d) => d.id === copyId).fileName === copy);
+  fs.rmSync(copy);
+  await page.evaluate((id) => window.frameText.forgetDoc(id), copyId);
+  l = await lib();
   // Document créé dans le logiciel, sorti de son dossier : introuvable puis retrouvé, avec sa section.
   const inside = await page.evaluate(async () => {
     const c = await window.frameText.createDoc('Notes internes');
@@ -147,7 +153,7 @@ module.exports = async ({ page, electron, emit }) => {
   await page.evaluate((id) => window.frameText.forgetDoc(id), inside.id);
   l = await lib();
   assert(!l.docs.some((d) => d.id === inside.id) && !l.placement[inside.id]);
-  ok('fichier ouvert depuis n\'importe où : jamais copié, « Non classés » une fois puis sa section gardée ; déplacé : introuvable puis retrouvé à sa nouvelle place ; copie : l\'original s\'ouvre');
+  ok('fichier ouvert depuis n\'importe où : jamais copié, « Non classés » une fois puis sa section gardée ; déplacé : introuvable puis retrouvé à sa nouvelle place ; copie : document distinct');
 
   // L'icône des documents est livrée avec le logiciel.
   const ico = fs.readFileSync(path.join(__dirname, '..', '..', 'src', 'assets', 'tmtx.ico'));

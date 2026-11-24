@@ -154,6 +154,20 @@ function uniqueFileName(title, exclude) {
   return name;
 }
 
+// Le nom de fichier correspond-il au titre : « Titre.tmtx » ou « Titre (2).tmtx » exactement ? (Pas un
+// simple début de nom : « fichier 1.5.tmtx » ne convient pas au titre « fichier 1 ».)
+function fitsTitle(fileName, title) {
+  const base = safeFileName(title);
+  const name = String(fileName);
+  const ext = '.' + FILE_EXT;
+  if (!name.endsWith(ext)) return false;
+  const stem = name.slice(0, -ext.length);
+  // (Casse comprise : « titre » renommé « Titre » renomme aussi son fichier.)
+  if (stem === base) return true;
+  const m = / \((\d+)\)$/.exec(stem);
+  return !!m && stem.slice(0, -m[0].length) === base;
+}
+
 // Fichier d'un document : un nom dans le dossier du projet (path.basename empêche d'en sortir), ou le chemin
 // complet d'un document rangé ailleurs sur l'ordinateur (ouvert depuis l'Explorateur, déplacé…).
 function inLibrary(fileName) {
@@ -368,6 +382,30 @@ async function docEntry(file, name) {
   return { ...entry };
 }
 
+// Deux fichiers qui portent le même document (copie faite dans l'Explorateur, copie enregistrée par une
+// version précédente) : la copie devient un document à part entière, avec son propre identifiant. Son
+// texte n'est pas touché ; l'historique des versions reste à l'original.
+// Même fichier sur le disque (chemins écrits autrement, raccourci de dossier, lecteur relié…).
+function sameFile(a, b) {
+  if (samePath(a, b)) return true;
+  try {
+    const x = fsSync.statSync(a, { bigint: true });
+    const y = fsSync.statSync(b, { bigint: true });
+    return x.ino !== 0n && x.ino === y.ino && x.dev === y.dev;
+  } catch {
+    return false;
+  }
+}
+
+async function giveNewId(file) {
+  const doc = await readJson(file, null);
+  if (!isFrameTextDoc(doc)) return null;
+  doc.id = crypto.randomUUID();
+  await writeJson(file, doc);
+  entryCache.delete(file);
+  return doc.id;
+}
+
 // Index d'un projet (bibliotheque.json) : sections, rangement de chaque document (par identifiant) et
 // emplacement de chaque document (files : { id: { path, title } }). Le classement est propre au logiciel :
 // un document garde sa section où que soit son fichier sur l'ordinateur.
@@ -395,9 +433,36 @@ async function loadLibrary(wantedProject) {
   const before = JSON.stringify(index.files);
 
   const entries = await renameOldDocs(libraryDir());
-  const found = await Promise.all(entries.filter(isDocFile).map((name) => docEntry(path.join(libraryDir(), name), name)));
-  const docs = [];
-  for (const d of found) if (d && !docs.some((x) => x.id === d.id)) docs.push(d);
+  const found = (await Promise.all(entries.filter(isDocFile).map((name) => docEntry(path.join(libraryDir(), name), name)))).filter(Boolean);
+  // Chaque fichier est un document distinct, même quand deux fichiers portent le même identifiant (l'un
+  // est la copie de l'autre) : le fichier connu de l'index garde l'identifiant, l'autre en reçoit un neuf
+  // et prend la même section.
+  const renamed = {};
+  const keeperOf = async (id, group) => {
+    const known = index.files[id] && typeof index.files[id].path === 'string' ? index.files[id].path : '';
+    const inFolder = group.find((d) => known && sameFile(path.join(libraryDir(), d.fileName), known));
+    if (inFolder) return inFolder;
+    // Fichier connu rangé hors du dossier du projet, toujours là et portant ce document : il reste l'original.
+    if (known && isDocFile(known.toLowerCase())) {
+      const e = await docEntry(known, known);
+      if (e && e.id === id) return null;
+    }
+    return group[0];
+  };
+  const groups = new Map();
+  for (const d of found) groups.set(d.id, [...(groups.get(d.id) || []), d]);
+  for (const [id, group] of groups) {
+    const keeper = await keeperOf(id, group);
+    for (const d of group) {
+      if (d === keeper) continue;
+      const fresh = await giveNewId(path.join(libraryDir(), d.fileName));
+      if (!fresh) continue;
+      d.id = fresh;
+      renamed[d.fileName] = fresh;
+      if (index.placement[id]) index.placement[fresh] = index.placement[id];
+    }
+  }
+  const docs = found;
   for (const d of docs) index.files[d.id] = { path: path.join(libraryDir(), d.fileName), title: d.title };
   // Documents rangés ailleurs sur l'ordinateur (ou sortis du dossier du projet) : lus à leur emplacement ;
   // introuvables, ils restent dans la liste (marqués), avec leur section.
@@ -412,7 +477,7 @@ async function loadLibrary(wantedProject) {
       docs.push({ fileName: at, id, title: (f && f.title) || 'Sans titre', modified: null, links: [], tags: [], missing: true });
     }
   }
-  if (JSON.stringify(index.files) !== before) await writeIndex(index);
+  if (JSON.stringify(index.files) !== before || Object.keys(renamed).length) await writeIndex(index);
   // On oublie les rangements de documents inconnus, ou de sections disparues.
   const known = sectionIds(index.sections);
   for (const [key, sid] of Object.entries(index.placement)) {
@@ -434,6 +499,7 @@ async function loadLibrary(wantedProject) {
     placement: index.placement,
     unsortedCollapsed: !!index.unsortedCollapsed,
     docs,
+    renamed,
     folder: libraryDir()
   };
 }
@@ -525,9 +591,8 @@ ipcMain.handle('doc:image', (_e, id, head, data) => fichiers.call('image', [id, 
 ipcMain.handle('doc:save', async (_e, fileName, doc) => {
   doc.modified = new Date().toISOString();
   let target = fileName;
-  const wanted = safeFileName(doc.title);
   // (Un document rangé hors du projet garde le nom de fichier choisi par l'utilisateur.)
-  if (!path.isAbsolute(String(fileName)) && !fileName.startsWith(wanted + '.') && !fileName.startsWith(wanted + ' (')) {
+  if (!path.isAbsolute(String(fileName)) && !fitsTitle(fileName, doc.title)) {
     target = uniqueFileName(doc.title, fileName);
   }
   await keepVersion(inLibrary(fileName), doc);
@@ -576,6 +641,15 @@ ipcMain.handle('doc:changeProject', async (_e, fileName, target) => {
   const doc = await readJson(from, null);
   if (!isFrameTextDoc(doc) || !doc.id) return { error: 'Ce document ne peut pas être lu.' };
   const dest = await readIndex(destDir);
+  // L'autre projet connaît déjà ce document dans un autre fichier (une copie) : celui qu'on déplace devient
+  // un document distinct, avec son propre identifiant.
+  const oldId = doc.id;
+  const there = dest.files[doc.id] && typeof dest.files[doc.id].path === 'string' ? dest.files[doc.id].path : '';
+  if (there && fsSync.existsSync(there) && !sameFile(there, from)) {
+    const fresh = await giveNewId(from);
+    if (!fresh) return { error: 'Ce document ne peut pas être lu.' };
+    doc.id = fresh;
+  }
   if (path.isAbsolute(String(fileName))) {
     dest.files[doc.id] = { path: from, title: doc.title };
   } else {
@@ -588,7 +662,7 @@ ipcMain.handle('doc:changeProject', async (_e, fileName, target) => {
       return { error: 'Impossible de déplacer le fichier (il est peut-être ouvert ailleurs).' };
     }
     dest.files[doc.id] = { path: path.join(destDir, file), title: doc.title };
-    const versions = path.join(libraryDir(), 'Historique des versions', path.basename(doc.id));
+    const versions = path.join(libraryDir(), 'Historique des versions', path.basename(oldId));
     const versionsTo = path.join(destDir, 'Historique des versions', path.basename(doc.id));
     if (fsSync.existsSync(versions) && !fsSync.existsSync(versionsTo)) {
       await fs.mkdir(path.dirname(versionsTo), { recursive: true });
@@ -597,7 +671,7 @@ ipcMain.handle('doc:changeProject', async (_e, fileName, target) => {
   }
   delete dest.placement[doc.id];
   await writeIndex(dest, destDir);
-  await forgetDoc(doc.id);
+  await forgetDoc(oldId);
   return { ok: true, project: name };
 });
 
@@ -625,7 +699,8 @@ ipcMain.handle('doc:export', async (_e, doc) => {
     filters: [{ name: 'Document Tomatoes Text', extensions: [FILE_EXT] }]
   });
   if (canceled || !filePath) return null;
-  await writeJson(filePath, doc);
+  // (La copie est un document distinct : son propre identifiant, pour ne pas être confondue avec l'original.)
+  await writeJson(filePath, { ...doc, id: crypto.randomUUID() });
   return filePath;
 });
 
@@ -841,7 +916,25 @@ async function importFiles(filePaths) {
     // Jamais de copie : le document est ouvert là où il est. Déjà connu d'un projet (même identifiant) :
     // ouvert dans ce projet, avec sa section ; à sa place connue s'il y est encore, sinon son nouvel
     // emplacement est retenu. Inconnu : ajouté au projet ouvert, dans « Non classés ».
-    const owner = await findOwner(doc.id);
+    // Copie d'un document connu (même identifiant, autre fichier, l'original toujours là) : c'est un
+    // document distinct, qui reçoit son propre identifiant.
+    let owner = await findOwner(doc.id);
+    if (owner && owner.fileName) {
+      const known = path.isAbsolute(owner.fileName) ? owner.fileName : path.join(owner.dir, owner.fileName);
+      if (fsSync.existsSync(known) && !sameFile(known, file)) {
+        const fresh = await giveNewId(file);
+        if (fresh) {
+          doc.id = fresh;
+          owner = null;
+          // Copie posée dans le dossier d'un projet : elle appartient à ce projet (lu à son ouverture).
+          const dir = path.dirname(file);
+          if (samePath(path.dirname(dir), projectsDir()) && fsSync.existsSync(path.join(dir, LIBRARY_INDEX))) {
+            imported.push(samePath(dir, libraryDir()) ? path.basename(file) : { project: path.basename(dir), fileName: path.basename(file) });
+            continue;
+          }
+        }
+      }
+    }
     if (owner) {
       let fileName = owner.fileName;
       if (!fileName || !fsSync.existsSync(owner.dir && !path.isAbsolute(fileName) ? path.join(owner.dir, fileName) : fileName)) {
