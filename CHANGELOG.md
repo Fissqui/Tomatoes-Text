@@ -13,8 +13,9 @@ nom. Le détail de chaque version publiée figure sur la
   - superposition (devant, derrière ou au niveau du texte) ;
   - encadrage (légende placée dessus, dessous ou sur un côté, numérotation « Figure 1 », « Fig. 1 », « 1. »
     ou par chapitre, police et couleur ; cadre, épaisseur, couleur, légende comprise ou non).
-- Déplacement à la souris fluide, d'une page à l'autre ; lignes créées sous le texte et retirées si l'image
-  remonte.
+- Déplacement à la souris d'une page à l'autre, le texte immobile pendant le geste et un trait à la place
+  visée ; une image glissée en bas d'une page où elle ne tient pas remonte et reste sur cette page ; lignes
+  créées sous le texte jusqu'à l'endroit visé (aussi par ligne), retirées si l'image remonte.
 - Images gardées dans les textes collés depuis Word ou une page web ; fichier déposé à l'endroit visé.
 - Anciens documents ouverts sans changement visible ; exports Word, PDF et EPUB fidèles aux nouveaux réglages.
 - Mode maths (interrupteur à côté du mode raccourcis ; l'un ou l'autre) : barre d'équation au clic dans

@@ -288,17 +288,37 @@ module.exports = async ({ page }) => {
   await frames();
   let sh = await sheetOf();
   assert(sh.inside && sh.i === 0, 'image dans sa page : ' + JSON.stringify(sh));
-  // Glissée tout en bas de la page 1 : elle ne peut pas y tenir, elle va en haut de la page 2.
+  // Glissée tout en bas de la page 1, où elle ne tient pas : elle remonte et reste entière sur la page 1,
+  // son bas au bas de la page (et non reportée à la page suivante).
   i0 = await info();
   await scrollTo(i0.t - 300);
   await frames();
   i0 = await info();
   const b0 = await page.evaluate(() => { const m = document.getElementById('editor'); const k = m.currentCSSZoom || 1; return m.getBoundingClientRect().top + window.FTVisibles.pageFrame(0).cb * k; });
+  const html0 = await saved();
+  d0 = await undoDepth();
   await drag(i0.l + 20, i0.t + 20, 120, b0 - 60 - i0.t);
   await frames(6);
   sh = await sheetOf();
-  assert(sh.inside && sh.i === 1, 'image passée sur la page 2, entière : ' + JSON.stringify(sh));
-  ok('pages : une image glissée en bas de page passe entière sur la page suivante');
+  assert(sh.inside && sh.i === 0 && sh.bottom > sh.f.cb - 60, 'image restée en bas de la page 1, entière : ' + JSON.stringify(sh));
+  assert.equal(await undoDepth(), d0 + 1, 'dépôt et correction : une seule étape');
+  await page.keyboard.press('Control+z');
+  await frames(4);
+  assert.equal(await saved(), html0, 'Ctrl+Z : image revenue à sa place');
+  await page.keyboard.press('Control+y');
+  await frames(6);
+  ok('pages : glissée en bas de page où elle ne tient pas, elle remonte et reste sur cette page');
+  // Glissée en haut de la page 2 : elle y passe.
+  i0 = await info();
+  await scrollTo(i0.t - 300);
+  await frames();
+  i0 = await info();
+  const t1 = await page.evaluate(() => { const m = document.getElementById('editor'); const k = m.currentCSSZoom || 1; return m.getBoundingClientRect().top + window.FTVisibles.pageFrame(1).ct * k; });
+  await drag(i0.l + 20, i0.t + 10, 0, t1 + 12 - i0.t);
+  await frames(6);
+  sh = await sheetOf();
+  assert(sh.inside && sh.i === 1 && sh.top < sh.f.ct + 80, 'image passée en haut de la page 2 : ' + JSON.stringify(sh));
+  ok('pages : glissée en haut de la page suivante, elle y passe');
   i0 = await info();
   await scrollTo(i0.t - 450);
   await frames();
@@ -313,6 +333,44 @@ module.exports = async ({ page }) => {
   sh = await sheetOf();
   assert(sh.inside && sh.i === 0, 'retour sur la page 1 : ' + JSON.stringify(sh));
   ok('pages : retour sur la page précédente');
+
+  // Par ligne, pages : glissée en bas de la page 1 où elle ne tient pas, elle remonte et y reste.
+  await reset(para(4).repeat(10), { mode: 'avance' });
+  await frames();
+  await caretIn('#editor > p:nth-child(4)', 5);
+  await insert(300, 180);
+  await frames();
+  await page.click('#image-tools button[data-act="ligne"]');
+  await frames();
+  const pageBottom = () => page.evaluate(() => { const m = document.getElementById('editor'); const k = m.currentCSSZoom || 1; return m.getBoundingClientRect().top + window.FTVisibles.pageFrame(0).cb * k; });
+  await scrollTo((await pageBottom()) - 760);
+  await frames();
+  i0 = await info();
+  const b1 = await pageBottom();
+  await drag(i0.l + 20, i0.t + 20, 0, b1 - 30 - (i0.t + 20));
+  await frames(6);
+  sh = await sheetOf();
+  assert(sh.inside && sh.i === 0 && sh.bottom > sh.f.cb - 90, 'par ligne : restée en bas de la page 1 : ' + JSON.stringify(sh));
+  ok('pages, par ligne : glissée en bas de page où elle ne tient pas, elle remonte et reste sur cette page');
+  // Par ligne, sous la fin du texte : des lignes vides jusqu'à l'endroit visé.
+  await reset(para(2) + para(1));
+  await caretIn('#editor > p:nth-child(1)', 3);
+  await insert(200, 120);
+  await frames();
+  await page.click('#image-tools button[data-act="ligne"]');
+  await frames();
+  i0 = await info();
+  const bottom = await page.evaluate(() => { const ps = document.querySelectorAll('#editor > p'); return ps[ps.length - 1].getBoundingClientRect().bottom; });
+  await drag(i0.l + 20, i0.t + 20, 0, bottom + 160 - i0.t);
+  await frames(4);
+  i1 = await info();
+  html = await saved();
+  assert(/data-ligne-image/.test(html) && Math.abs(i1.t - (bottom + 140)) < 40, 'par ligne : posée sous le texte, à l\'endroit visé (' + (i1.t - bottom) + ')');
+  const p2top = await page.evaluate(() => document.querySelector('#editor > p:nth-of-type(2)').getBoundingClientRect().top);
+  await drag(i1.l + 20, i1.t + 20, 0, p2top + 3 - (i1.t + 20));
+  html = await saved();
+  assert(!/data-ligne-image/.test(html), 'remontée : lignes vides retirées ' + html.replace(/Lorem[^<]*/g, 'L'));
+  ok('par ligne : sous la fin du texte, lignes vides créées puis retirées en remontant');
 
   // Anciens documents (versions 1.6 à 2.4) : ouverts sans rien perdre.
   const IMG = (attrs) => `<span class="ft-image" contenteditable="false" ${attrs}><img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt=""></span>`;

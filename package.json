@@ -1,7 +1,7 @@
 {
   "name": "tomatoes-text",
   "productName": "Tomatoes Text",
-  "version": "2.5.5",
+  "version": "2.5.6",
   "description": "Logiciel de rédaction de notes et de textes",
   "repository": {
     "type": "git",

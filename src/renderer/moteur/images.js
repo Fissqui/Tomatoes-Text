@@ -6,8 +6,10 @@
 //    d'elle quand il y a la place (du côté le plus large), ou elle est posée devant ou derrière le texte.
 //  - Ancrage mouvant (par défaut) : l'image suit le texte qui la précède. Ancrage fixe : elle reste au même
 //    endroit de sa page ; le texte s'écoule autour d'elle (elle change de ligne d'accroche quand il bouge).
-// Pendant un déplacement, l'image est cachée à sa place et un double est posé à l'endroit visé (décorations
-// du moteur) : le texte s'écarte autour de lui au fil de la souris, sans rien changer au document.
+// Pendant un déplacement, le texte ne bouge pas (les pages restent exactes) : l'image reste pâlie à sa place,
+// un double suit la souris et, par ligne, un trait montre où elle ira. Interface avancée : une image visée en
+// bas d'une page où elle ne tient pas remonte à la dernière place de cette page où elle tient (le découpage
+// la reporterait sinon à la page suivante) ; sous la fin du texte, des lignes vides vont jusqu'à l'endroit visé.
 // Dans le texte enregistré (span.ft-image, comme dans les versions d'avant) :
 //   data-wrap    (rien) : par ligne ; « gauche » / « droite » : libre, le texte passe de l'autre côté ;
 //                « devant » / « derriere » : libre, superposée au texte ; « ligne » : petite image dans la
@@ -365,7 +367,7 @@
       if (o === a) return;
       const tr = view.state.tr.setNodeMarkup(cur.pos, null, { ...cur.node.attrs, a: o });
       tr.setSelection(NodeSelection.create(tr.doc, cur.pos));
-      view.dispatch(tr);
+      view.dispatch(joined(tr));
     }
   }
 
@@ -666,33 +668,151 @@
     return { side: sd, mx: gap ? round1((gap / col.width) * 100) : 0 };
   }
   // Par ligne : entre deux paragraphes ou entre deux lignes. y : pointeur (écran). Renvoie { pos, kind:
-  // 'block' (entre deux blocs) | 'split' (dans un paragraphe), top } ou null.
+  // 'block' (entre deux blocs) | 'split' (dans un paragraphe) | 'fill' (sous la fin du texte : lignes vides
+  // jusque-là), y (écran : où l'image commencera), el } ou null. Mesuré sur le texte tel qu'il est affiché.
   function aimLine(y, x) {
     const h = textAt(y, x);
     if (!h) return null;
     if (h.after) {
-      // Sous le texte : après le dernier bloc.
+      // Sous le texte : après le dernier bloc, ou plus bas (lignes vides créées jusqu'au pointeur).
       const d = h.top.pmViewDesc;
-      return { pos: d.posAfter, kind: 'block', end: true };
+      const bottom = h.top.getBoundingClientRect().bottom;
+      if (y > bottom + lineHeight()) return { pos: d.posAfter, kind: 'fill', y };
+      return { pos: d.posAfter, kind: 'block', end: true, y: bottom };
     }
-    if (h.before === true) return { pos: h.top.pmViewDesc.posBefore, kind: 'block' };
+    if (h.before === true) {
+      // Entre deux blocs (marge, bas de page laissé blanc, passage à la page suivante) : entre les deux,
+      // repère au plus près du pointeur.
+      const prev = h.top.previousElementSibling;
+      const pb = prev && prev.pmViewDesc ? prev.getBoundingClientRect().bottom : null;
+      const nt = h.top.getBoundingClientRect().top;
+      // (Interface avancée : sur la page du pointeur — bas de page laissé blanc : à la fin de cette page.)
+      const near = pb !== null && (paged() ? frameAt(pb - 1).page === frameAt(y).page : y - pb < nt - y);
+      return { pos: h.top.pmViewDesc.posBefore, kind: 'block', y: near ? pb : nt };
+    }
     const el = h.inside ? h.block : h.top;
     const r = el.getBoundingClientRect();
     if (!h.inside || !el.matches('p')) {
       // Titre, tableau, objet : avant ou après lui, selon la moitié visée.
       const d = (h.inside ? el : h.top).pmViewDesc;
-      return { pos: y < r.top + r.height / 2 ? d.posBefore : d.posAfter, kind: 'block' };
+      const up = y < r.top + r.height / 2;
+      return { pos: up ? d.posBefore : d.posAfter, kind: 'block', y: up ? r.top : r.bottom };
     }
     // Paragraphe : avant la ligne visée (moitié haute) ou après elle.
     const l = lineAt(el, y);
     const desc = el.pmViewDesc;
-    if (!l.count) return { pos: y < r.top + r.height / 2 ? desc.posBefore : desc.posAfter, kind: 'block' };
+    if (!l.count) {
+      const up = y < r.top + r.height / 2;
+      return { pos: up ? desc.posBefore : desc.posAfter, kind: 'block', y: up ? r.top : r.bottom };
+    }
     const lower = y > l.top + l.height / 2;
     const index = l.index + (lower ? 1 : 0);
-    if (index === 0) return { pos: desc.posBefore, kind: 'block' };
-    if (index >= l.count) return { pos: desc.posAfter, kind: 'block' };
-    const pos = lower ? lineEnd(el, l.index) : l.pos;
-    return { pos, kind: 'split', el };
+    if (index === 0) return { pos: desc.posBefore, kind: 'block', y: r.top };
+    if (index >= l.count) return { pos: desc.posAfter, kind: 'block', y: r.bottom };
+    if (!lower) return { pos: l.pos, kind: 'split', el, y: l.top };
+    const next = D().linesOf(el)[l.index + 1];
+    return { pos: lineEnd(el, l.index), kind: 'split', el, y: next ? next.top : l.top + l.height };
+  }
+  // Par ligne : la dernière place qui commence au plus bas à la hauteur y (écran) — début d'une ligne ou d'un
+  // bloc. Pour une image qui doit tenir avant le bas de la page.
+  function aimAbove(y, x) {
+    let lim = y;
+    for (let i = 0; i < 8; i++) {
+      const t = aimAboveOnce(lim, x);
+      if (!t) return null;
+      if (t.y <= y + 1) return t;
+      lim = Math.min(lim, t.y) - 2;
+    }
+    return null;
+  }
+  function aimAboveOnce(y, x) {
+    const h = textAt(y, x);
+    if (!h) return null;
+    if (h.after) return { pos: h.top.pmViewDesc.posAfter, kind: 'block', y: h.top.getBoundingClientRect().bottom };
+    if (h.before === true) {
+      const prev = h.top.previousElementSibling;
+      return { pos: h.top.pmViewDesc.posBefore, kind: 'block', y: prev && prev.pmViewDesc ? prev.getBoundingClientRect().bottom : h.top.getBoundingClientRect().top };
+    }
+    const top = h.top;
+    if (top.parentElement === mount && !top.matches(TEXTS)) {
+      // Liste, encadré, tableau… : la dernière place au-dessus de y, avant ou après un de ses paragraphes,
+      // où une image peut aller ; sinon avant lui.
+      let best = { pos: top.pmViewDesc.posBefore, kind: 'block', y: top.getBoundingClientRect().top };
+      for (const e of top.querySelectorAll(TEXTS)) {
+        if (!anchorable(e) || e.closest('table')) continue;
+        const r = e.getBoundingClientRect();
+        for (const [pos, yy] of [[e.pmViewDesc.posBefore, r.top], [e.pmViewDesc.posAfter, r.bottom]]) {
+          if (yy > y || yy < best.y || !blockFits(pos)) continue;
+          best = { pos, kind: 'block', y: yy };
+        }
+      }
+      return best;
+    }
+    const el = top;
+    const r = el.getBoundingClientRect();
+    if (!el.matches('p')) return { pos: el.pmViewDesc.posBefore, kind: 'block', y: r.top };
+    const lines = D().linesOf(el);
+    let i = 0;
+    while (i + 1 < lines.length && lines[i + 1].top <= y) i++;
+    if (!lines.length || i === 0) return { pos: el.pmViewDesc.posBefore, kind: 'block', y: r.top };
+    const l = lineAt(el, lines[i].top + 1);
+    return { pos: l.pos, kind: 'split', el, y: lines[i].top };
+  }
+
+  // Une image par ligne peut-elle être posée exactement à pos ?
+  function blockFits(pos) {
+    const $p = view.state.doc.resolve(pos);
+    return $p.parent.canReplaceWith($p.index(), $p.index(), N.image);
+  }
+
+  // ----- Pages (interface avancée) : une image qui ne tient pas en bas d'une page remonte -----
+
+  const paged = () => !!(window.FTPages && window.FTPages.isPaged() && V() && V().pageFrame);
+  // Hauteur y (écran) → px depuis le haut de la zone d'écriture, sans zoom ; et inversement.
+  const toDoc = (y) => (y - mount.getBoundingClientRect().top) / zoom();
+  const toScreen = (y) => mount.getBoundingClientRect().top + y * zoom();
+  // Page d'une hauteur (écran) et sa zone de texte (écran) : { page, ct, cb }.
+  // (cb : un peu au-dessus du bas, pour qu'une image posée juste au bas tienne sans arrondi qui la reporte.)
+  const SAFE = 3;
+  function frameAt(y) {
+    const p = V().pageOfY(toDoc(y));
+    const f = V().pageFrame(p);
+    return { page: p, ct: toScreen(f.ct), cb: toScreen(f.cb) - SAFE };
+  }
+  // Hauteur de l'image avec ses marges (écran) ; libre : depuis son haut (sa marge du haut est l'écart
+  // avec sa ligne d'accroche).
+  function boxHeight(dom, h, free) {
+    const cs = getComputedStyle(dom);
+    // (Image en haut d'une page : sa marge du haut porte le passage à la page ; sa marge propre est 0,4 em.)
+    const mt = free ? 0 : dom.hasAttribute('data-pm-sp') ? 0.4 * (parseFloat(cs.fontSize) || 16) : parseFloat(cs.marginTop) || 0;
+    return h + (mt + (parseFloat(cs.marginBottom) || 0)) * zoom();
+  }
+  // Par ligne : place visée t ; si l'image (hauteur H, écran) n'y tient pas avant le bas de sa page, la
+  // dernière place de cette page où elle tient (sinon le découpage la reporterait à la page suivante).
+  function fitLine(g, t) {
+    if (!t || !paged()) return t;
+    if (t.kind === 'block' && (t.pos === g.pos || t.pos === g.pos + g.node.nodeSize)) return t;
+    const f = frameAt(t.y);
+    if (t.kind === 'fill') {
+      if (t.y + g.H <= f.cb + 1) return t;
+      const y = Math.max(f.ct, f.cb - g.H);
+      return y < t.y ? { ...t, y } : t;
+    }
+    // (L'image quitte sa place : ce qui la suit sur la même page remonte d'autant.)
+    const shift = g.pos < t.pos && frameAt(g.r0.top).page === f.page ? g.H : 0;
+    if (t.y - shift + g.H <= f.cb + 1) return t;
+    const limit = f.cb - g.H + shift;
+    if (limit < f.ct + 1) return t;
+    const t2 = aimAbove(limit, t.x);
+    if (!t2 || t2.y < f.ct - 1 || t2.y > t.y) return t;
+    return { ...t2, fitted: true };
+  }
+  // Libre : haut voulu (écran) ; remonté si l'image ne tient pas avant le bas de sa page.
+  function fitTop(top, H) {
+    if (!paged()) return top;
+    const f = frameAt(top);
+    if (top + H <= f.cb + 1) return top;
+    return Math.max(f.ct, f.cb - H);
   }
 
   // Lignes vides créées sous le texte pour une image posée plus bas (marquées : retirées si l'image remonte
@@ -700,10 +820,7 @@
   const AUTO = 'data-ligne-image';
   function fillTo(tr, spot) {
     // (Pas d'une ligne vide : hauteur de ligne et écart entre paragraphes.)
-    const probe = mount.querySelector(':scope > p') || mount;
-    const pcs = getComputedStyle(probe);
-    const lh = lineHeight(probe) + Math.max(parseFloat(pcs.marginTop) || 0, parseFloat(pcs.marginBottom) || 0) * zoom();
-    const count = Math.max(0, Math.min(200, Math.floor((spot.y - textBottom()) / lh)));
+    const count = Math.max(0, Math.min(200, Math.floor((spot.y - textBottom()) / autoStep())));
     // (Avant les notes de fin de document.)
     let end = tr.doc.content.size;
     const last = tr.doc.lastChild;
@@ -713,31 +830,96 @@
     tr.insert(end, paras);
     return end + (paras.length - 1) * 2 + 1;
   }
-  // Lignes vides créées pour une image, restées vides et en fin de texte, sans image : retirées.
+  function autoStep() {
+    const probe = mount.querySelector(':scope > p') || mount;
+    const pcs = getComputedStyle(probe);
+    return lineHeight(probe) + Math.max(parseFloat(pcs.marginTop) || 0, parseFloat(pcs.marginBottom) || 0) * zoom();
+  }
+  // Après le dépôt sous le texte : le nombre de lignes vides est corrigé d'après leur vraie place (les
+  // passages d'une page à l'autre comptent), pour que la ligne d'accroche (ou l'image par ligne) commence au
+  // plus près de la hauteur voulue, sans la dépasser. pos : l'image ; y : hauteur voulue (écran).
+  function fixFill(pos, y) {
+    const lh = autoStep();
+    let last = 0; // dernier changement : +1 lignes ajoutées, -1 retirées
+    for (let pass = 0; pass < 8; pass++) {
+      const node = view.state.doc.nodeAt(pos);
+      if (!isImg(node)) return pos;
+      const $p = view.state.doc.resolve(pos);
+      // Ligne d'accroche (libre) ou bloc de l'image (par ligne), et les lignes vides qui la précèdent.
+      const inPara = $p.parent.isTextblock && $p.depth === 1;
+      const at = inPara ? $p.before() : pos;
+      const dom = view.nodeDOM(at);
+      if (!dom || dom.nodeType !== 1) return pos;
+      const top = dom.getBoundingClientRect().top;
+      const d = (y - top) / lh;
+      if (d >= -0.25 && d < 1) return pos;
+      // (Ajout qui fait passer à la page suivante, puis retrait : on s'arrête au plus près, au-dessus.)
+      if (d >= 1 && last < 0) return pos;
+      const $at = view.state.doc.resolve(at);
+      const tr = view.state.tr;
+      if (d >= 1) {
+        const paras = [];
+        for (let i = 0; i < Math.min(200, Math.floor(d)); i++) paras.push(emptyPara({ [AUTO]: '' }));
+        tr.insert(at, paras);
+        last = 1;
+      } else {
+        // Trop bas : des lignes vides créées juste avant sont retirées (une à une après un ajout).
+        let n = last > 0 ? 1 : Math.max(1, Math.ceil(-d));
+        let from = at;
+        for (let i = $at.index(0) - 1; i >= 0 && n > 0; i--, n--) {
+          const c = view.state.doc.child(i);
+          if (c.type !== N.paragraph || bagOf(c)[AUTO] === undefined || c.childCount) break;
+          from -= c.nodeSize;
+        }
+        if (from === at) return pos;
+        tr.delete(from, at);
+        last = -1;
+      }
+      const np = tr.mapping.map(pos);
+      if (isImg(tr.doc.nodeAt(np))) tr.setSelection(NodeSelection.create(tr.doc, np));
+      view.dispatch(joined(tr));
+      pos = np;
+    }
+    return pos;
+  }
+  // Modification fondue dans l'étape d'annulation qui précède (le dépôt d'une image et ses corrections).
+  const joined = (tr) => tr.setMeta('appendedTransaction', view.state.tr);
+
+  // Lignes vides créées pour une image, restées vides et en fin de texte, sans image : retirées (la ligne
+  // vide ordinaire posée après une image en fin de texte reste).
   function dropAutoLines(tr) {
     const doc = tr.doc;
     let end = doc.childCount;
     let from = null;
+    let to = null;
     let pos = doc.content.size;
+    let plain = 0;
     for (let i = doc.childCount - 1; i >= 0; i--) {
       const n = doc.child(i);
       pos -= n.nodeSize;
       if (/\bft-(footnotes|endnotes)\b/.test((n.attrs.a && n.attrs.a.class) || '')) { end = i; continue; }
       if (i >= end) continue;
-      if (n.type === N.paragraph && bagOf(n)[AUTO] !== undefined && n.childCount === 0) from = pos;
+      const empty = n.type === N.paragraph && n.childCount === 0;
+      if (empty && bagOf(n)[AUTO] !== undefined) {
+        from = pos;
+        if (to === null) to = pos + n.nodeSize;
+      } else if (empty && to === null && !plain) plain++;
       else break;
     }
     if (from === null) return;
-    let to = from;
-    for (let i = doc.resolve(from).index(0); i < end; i++) to += doc.child(i).nodeSize;
     // (Une ligne reste au bout du texte.)
     const keepOne = doc.resolve(from).index(0) === 0;
     if (to > from && !keepOne) tr.delete(from, to);
   }
 
   // ----- Déplacer à la souris -----
+  // Pendant le geste, le texte ne bouge pas (les pages restent exactes) : l'image reste à sa place, pâlie ;
+  // un double suit la souris, et (par ligne) un trait montre où l'image ira.
 
   let gesture = null; // geste en cours
+  const mark = document.createElement('div');
+  mark.className = 'ft-img-mark';
+  mark.hidden = true;
 
   function startMove(cur, e) {
     const a = cur.a;
@@ -745,9 +927,9 @@
     const dom = cur.dom;
     const r0 = dom.getBoundingClientRect();
     gesture = {
-      kind: 'move', pos: cur.pos, node: cur.node, a, move, layer: layerOf(a), dom,
+      kind: 'move', pos: cur.pos, node: cur.node, a, move, layer: layerOf(a), dom, r0,
       x0: e.clientX, y0: e.clientY, gx: e.clientX - r0.left, gy: e.clientY - r0.top,
-      w: r0.width, h: r0.height, started: false, last: e, raf: 0, target: null, scroll: 0
+      w: r0.width, h: r0.height, H: boxHeight(dom, r0.height, move === 'libre'), started: false, last: e, raf: 0, target: null, scroll: 0
     };
     window.addEventListener('mousemove', onMoveMove, true);
     window.addEventListener('mouseup', onMoveUp, true);
@@ -772,21 +954,16 @@
       g.free = true;
       return;
     }
-    // Double de l'image (mêmes attributs), posé à l'endroit visé ; l'image est cachée à sa place.
-    ghostEl.className = 'ft-image ft-img-ghost';
+    // Double de l'image (mêmes attributs, sans ceux de sa place), qui suit la souris ; l'image est pâlie.
+    ghostEl.className = 'ft-image ft-img-ghost ft-img-ghost-out';
     ghostEl.innerHTML = g.node.attrs.inner;
     ghostEl.querySelectorAll('[contenteditable]').forEach((c) => c.removeAttribute('contenteditable'));
     for (const at of [...ghostEl.attributes]) if (!/^(class|contenteditable)$/.test(at.name)) ghostEl.removeAttribute(at.name);
-    for (const [k, v] of Object.entries(g.a)) if (k !== 'class' && k !== 'contenteditable') ghostEl.setAttribute(k, v);
+    for (const [k, v] of Object.entries(g.a)) if (!/^(class|contenteditable|style|data-wrap|data-align|data-anchor|data-page)$/.test(k)) ghostEl.setAttribute(k, v);
     ghostEl.style.display = '';
     hidden = g.pos;
-    // Par ligne : le double prend d'abord la place de l'image (le texte ne saute pas au début du geste).
-    if (g.move === 'ligne' && g.node.type === N.image) {
-      ghostSpec = { pos: g.pos, kind: 'block' };
-      g.key = 'block:' + g.pos;
-      ghostLine(g, false);
-    }
     setDecos();
+    if (mark.parentNode !== page) page.append(mark);
   }
   function autoScroll(g, e) {
     const r = workspace.getBoundingClientRect();
@@ -800,6 +977,27 @@
       workspace.scrollTop += g.scrollSpeed;
       if (!g.raf) g.raf = requestAnimationFrame(() => { g.raf = 0; moveFrame(g); });
     }, 16);
+  }
+  // Double posé à l'écran (x, y : son coin haut gauche).
+  function floatGhost(g, x, y) {
+    const pr = page.getBoundingClientRect();
+    const pk = page.currentCSSZoom || 1;
+    ghostEl.style.left = (x - pr.left) / pk + 'px';
+    ghostEl.style.top = (y - pr.top) / pk + 'px';
+    ghostEl.style.width = g.w / pk + 'px';
+    if (ghostEl.parentNode !== page) page.append(ghostEl);
+  }
+  // Trait de la place visée (par ligne), sur la largeur du texte.
+  function showMark(g, t) {
+    const same = !t || (t.kind === 'block' && (t.pos === g.pos || t.pos === g.pos + g.node.nodeSize) && g.node.type === N.image);
+    if (same) { mark.hidden = true; return; }
+    const pr = page.getBoundingClientRect();
+    const pk = page.currentCSSZoom || 1;
+    const col = t.el ? column(t.el) : textColumn();
+    mark.style.left = (col.left - pr.left) / pk + 'px';
+    mark.style.width = col.width / pk + 'px';
+    mark.style.top = (t.y - pr.top) / pk - 1 + 'px';
+    mark.hidden = false;
   }
   function moveFrame(g) {
     if (gesture !== g) return;
@@ -820,78 +1018,21 @@
       return;
     }
     if (g.move === 'ligne' || g.move === 'texte') {
-      // Par ligne : le double se pose entre les lignes ; le texte s'écarte au-dessus ou au-dessous de lui.
-      const my = mapY(g, e.clientY);
-      const t = bare(() => aimLine(my, e.clientX));
-      if (!t) return;
-      const key = t.kind + ':' + t.pos;
-      if (key !== g.key) {
-        g.key = key;
-        g.target = t;
-        ghostEl.style.display = '';
-        ghostSpec = { pos: t.pos, kind: t.kind === 'split' ? 'line' : 'block' };
-        ghostLine(g, t.kind === 'split');
-        setDecos();
-      }
+      // Par ligne : entre les lignes, mesuré sur le texte affiché (qui ne bouge pas pendant le geste).
+      const t = aimLine(e.clientY, e.clientX);
+      // (Sous la fin du texte : l'image commencera au haut du double.)
+      if (t && t.kind === 'fill') t.y = Math.max(y, t.y - g.gy);
+      g.target = t ? fitLine(g, { ...t, x: e.clientX }) : null;
+      floatGhost(g, x, y);
+      showMark(g, g.target);
       placeFrame(ghostEl);
       return;
     }
-    // Libre au niveau du texte : le double suit la souris, le texte passe à côté de lui.
-    const t = bare(() => aimFree(x, y, e.clientX, e.clientY, { w: g.w, h: g.h }));
-    if (!t) return;
-    g.target = t;
-    if (t.kind === 'end') {
-      // Sous le texte : le double flotte à l'endroit visé (les lignes vides seront créées au dépôt).
-      ghostSpec = null;
-      const k = zoom();
-      const pr = page.getBoundingClientRect();
-      ghostEl.className = 'ft-image ft-img-ghost ft-img-ghost-out';
-      ghostEl.style.left = (x - pr.left) / k + 'px';
-      ghostEl.style.top = (y - pr.top) / k + 'px';
-      ghostEl.style.width = g.w / k + 'px';
-      if (ghostEl.parentNode !== page) { setDecos(); page.append(ghostEl); }
-      g.key = 'end';
-      placeFrame(ghostEl);
-      return;
-    }
-    ghostEl.className = 'ft-image ft-img-ghost';
-    ghostEl.style.left = '';
-    ghostEl.style.top = '';
-    ghostEl.style.width = '';
-    ghostEl.style.setProperty('width', sv(g.a, 'width') || '');
-    ghostEl.setAttribute('data-wrap', t.side);
-    ghostEl.style.setProperty('--mx', t.mx ? t.mx + '%' : '0px');
-    ghostEl.style.setProperty('--dy', Math.round(t.dy) + 'px');
-    const key = 'line:' + t.pos;
-    if (key !== g.key || ghostEl.parentNode === page) {
-      g.key = key;
-      if (ghostEl.parentNode === page) ghostEl.remove();
-      ghostSpec = { pos: t.pos, kind: 'inline' };
-      setDecos();
-    }
+    // Libre au niveau du texte : le double suit la souris (remonté s'il ne tient pas en bas de sa page).
+    const top = fitTop(y, g.H);
+    floatGhost(g, x, top);
+    g.target = { left: x, top, width: g.w, height: g.h };
     placeFrame(ghostEl);
-  }
-  // Par ligne : le pointeur sous le double compte comme s'il n'y était pas (sinon le double, qui repousse
-  // le texte, se poursuivrait lui-même).
-  function mapY(g, y) {
-    if (!ghostSpec || ghostEl.style.display === 'none' || !ghostEl.isConnected) return y;
-    const r = ghostEl.getBoundingClientRect();
-    if (!r.height) return y;
-    // (Hauteur avec les marges : tout le texte qui suit le double est décalé d'autant.)
-    const cs = getComputedStyle(ghostEl);
-    const k = zoom();
-    const top = r.top - (parseFloat(cs.marginTop) || 0) * k;
-    const bottom = r.bottom + (parseFloat(cs.marginBottom) || 0) * k;
-    if (y > bottom) return y - (bottom - top);
-    if (y >= top) return top - 1 + (y - top < (bottom - top) / 2 ? 0 : 2);
-    return y;
-  }
-  function ghostLine(g, split) {
-    ghostEl.removeAttribute('data-wrap');
-    ghostEl.classList.toggle('ft-img-ghost-split', split);
-    for (const p of PLACE) ghostEl.style.removeProperty(p);
-    ghostEl.style.left = '';
-    ghostEl.style.top = '';
   }
   function onMoveUp() {
     const g = gesture;
@@ -904,7 +1045,6 @@
     document.body.classList.remove('ft-dragging', 'ft-img-gesture');
     if (!g.started) { select(g.pos); placeTools(); return; }
     let want = null;
-    const ghostRect = ghostEl.isConnected && ghostEl.style.display !== 'none' ? ghostEl.getBoundingClientRect() : null;
     if (g.free) {
       want = g.dom.getBoundingClientRect();
       view.domObserver.stop();
@@ -912,26 +1052,29 @@
       view.domObserver.start();
     }
     const target = g.target;
-    // Le double et l'image cachée disparaissent ; l'image va à sa nouvelle place.
+    // Le double et le trait disparaissent ; l'image va à sa nouvelle place.
     ghostSpec = null;
     hidden = null;
-    if (ghostEl.parentNode === page) ghostEl.remove();
+    if (ghostEl.parentNode) ghostEl.remove();
+    mark.hidden = true;
     setDecos();
     if (!target) { select(g.pos); placeTools(); return; }
-    drop(g, target, want, ghostRect);
+    drop(g, target, want);
   }
 
-  // Dépôt : une seule modification (une étape d'annulation).
-  function drop(g, t, want, ghostRect) {
+  // Dépôt : une seule étape d'annulation (avec les corrections faites ensuite).
+  function drop(g, t, want) {
     const doc = view.state.doc;
     const node = doc.nodeAt(g.pos);
     if (!isImg(node)) return;
     const tr = view.state.tr;
     const a = bagOf(node);
     let at = null;
+    let fill = null; // hauteur voulue (écran) d'une image posée sous la fin du texte
+    let page0 = null; // page visée (interface avancée)
     if (g.free) {
       // Devant ou derrière : accrochée à la ligne de son nouveau haut ; place corrigée ensuite.
-      const spot = bare(() => aimFree(want.left, want.top, want.left, want.top, { w: want.width, h: want.height }));
+      const spot = withHidden(g.dom, () => aimFree(want.left, want.top, want.left, want.top, { w: want.width, h: want.height }));
       tr.delete(g.pos, g.pos + node.nodeSize);
       if (spot && spot.kind === 'line') {
         at = tr.mapping.map(spot.pos);
@@ -948,38 +1091,52 @@
         placeTools();
         return;
       }
-      const target = t.pos;
+      if (paged()) page0 = frameAt(t.y).page;
       tr.delete(g.pos, g.pos + node.nodeSize);
-      const mapped = tr.mapping.map(target, t.kind === 'block' ? -1 : 1);
-      at = t.kind === 'split' ? placeBlock(tr, mapped, block, justified(t.el)) : insertAt(tr, mapped, block);
+      if (t.kind === 'fill') {
+        // Sous la fin du texte : des lignes vides jusqu'à la hauteur visée, l'image après elles.
+        let end = fillTo(tr, { y: t.y }) - 1;
+        // (fillTo ajoute la ligne d'accroche d'une image libre : ici, l'image prend sa place.)
+        tr.delete(end, end + 2);
+        end = Math.min(end, tr.doc.content.size);
+        at = insertAt(tr, end, block);
+        fill = t.y;
+      } else {
+        const mapped = tr.mapping.map(t.pos, t.kind === 'block' ? -1 : 1);
+        at = t.kind === 'split' ? placeBlock(tr, mapped, block, justified(t.el)) : insertAt(tr, mapped, block);
+      }
       lineAfterIfLast(tr, at);
     } else {
-      // Libre au niveau du texte.
-      let o = put(a, 'data-wrap', t.side);
+      // Libre au niveau du texte : accrochée à la ligne du haut voulu, mesuré sur le texte sans l'image.
+      want = t;
+      const spot = withHidden(g.dom, () => aimFree(t.left, t.top, t.left + 2, t.top + 2, { w: t.width, h: t.height }));
+      if (!spot) { select(g.pos); placeTools(); return; }
+      if (paged()) page0 = frameAt(t.top).page;
+      let o = put(a, 'data-wrap', spot.side);
       o = put(o, 'data-align', null);
-      o = styles(o, { '--mx': t.mx ? t.mx + '%' : null, '--x': null, '--y': null });
-      if (t.kind === 'end') {
-        tr.delete(g.pos, g.pos + node.nodeSize);
-        at = fillTo(tr, t);
+      o = styles(o, { '--mx': spot.mx ? spot.mx + '%' : null, '--x': null, '--y': null });
+      tr.delete(g.pos, g.pos + node.nodeSize);
+      if (spot.kind === 'end') {
+        at = fillTo(tr, spot);
         o = withStyle(o, '--dy', null);
-        tr.insert(at, inlineNode(o, node.attrs.inner));
-        want = ghostRect;
+        fill = t.top;
       } else {
-        o = withStyle(o, '--dy', t.dy > 0.5 ? Math.round(t.dy) + 'px' : null);
-        tr.delete(g.pos, g.pos + node.nodeSize);
-        at = tr.mapping.map(t.pos, -1);
-        tr.insert(at, inlineNode(o, node.attrs.inner));
+        o = withStyle(o, '--dy', spot.dy > 0.5 ? Math.round(spot.dy) + 'px' : null);
+        at = tr.mapping.map(spot.pos, -1);
       }
+      tr.insert(at, inlineNode(o, node.attrs.inner));
     }
     dropAutoLinesAround(tr, at);
     at = Math.min(at, tr.doc.content.size);
     const sel = tr.doc.nodeAt(at);
     if (isImg(sel)) tr.setSelection(NodeSelection.create(tr.doc, at));
     view.dispatch(step(tr));
+    if (fill !== null) at = fixFill(at, fill);
     if (want) settle(want);
     keepFixed();
     view.focus();
     placeTools();
+    if (page0 !== null && !g.free) whenShown(() => keepOnPage(page0, 3));
   }
   // Lignes vides créées pour une image et restées vides : retirées si l'image n'y est plus accrochée.
   function dropAutoLinesAround(tr) {
@@ -989,6 +1146,61 @@
     tr.doc.forEach((n) => { if (bagOf(n)[AUTO] !== undefined && n.childCount) holds = true; });
     if (!holds) dropAutoLines(tr);
     return before !== tr.doc.content.size;
+  }
+  // Une fois l'image sélectionnée affichée (chargée et mise en page) : fn.
+  function whenShown(fn) {
+    const cur = selectedImage();
+    if (!cur || !cur.dom) return;
+    const imgs = [...cur.dom.getElementsByTagName('img')];
+    const loads = imgs.filter((im) => !im.complete).map((im) => new Promise((ok) => { im.addEventListener('load', ok, { once: true }); im.addEventListener('error', ok, { once: true }); }));
+    const timeout = new Promise((ok) => setTimeout(ok, 1500));
+    Promise.race([Promise.all(loads), timeout]).then(() => requestAnimationFrame(() => requestAnimationFrame(fn)));
+  }
+  // Image déposée sur la page visée mais reportée à la suivante par le découpage (elle ne tenait pas) :
+  // remontée à la dernière place de cette page où elle tient. Fondu dans l'étape du dépôt.
+  function keepOnPage(page0, tries) {
+    if (gesture || !paged()) return;
+    const cur = selectedImage();
+    if (!cur || !cur.dom || isFar(cur.dom) || isFixed(cur.a) || layerOf(cur.a) !== 'niveau') return;
+    const r = cur.dom.getBoundingClientRect();
+    if (!r.height || frameAt(r.top).page <= page0) return;
+    const f = V().pageFrame(page0);
+    const ct = toScreen(f.ct);
+    const cb = toScreen(f.cb) - SAFE;
+    const H = boxHeight(cur.dom, r.height, moveOf(cur.a) === 'libre');
+    const limit = cb - H;
+    if (limit < ct + 1) return;
+    const { pos, node, a } = cur;
+    const tr = view.state.tr;
+    let at;
+    if (moveOf(a) === 'libre') {
+      const want = { left: r.left, top: limit, width: r.width, height: r.height };
+      const spot = withHidden(cur.dom, () => aimFree(want.left, want.top, want.left + 2, want.top + 2, { w: r.width, h: r.height }));
+      if (!spot || spot.kind !== 'line') return;
+      tr.delete(pos, pos + node.nodeSize);
+      at = tr.mapping.map(spot.pos, -1);
+      tr.insert(at, inlineNode(withStyle(a, '--dy', spot.dy > 0.5 ? Math.round(spot.dy) + 'px' : null), node.attrs.inner));
+      tr.setSelection(NodeSelection.create(tr.doc, at));
+      view.dispatch(joined(tr));
+      settle(want);
+    } else {
+      const same = (t) => t && (t.pos === pos || t.pos === pos + node.nodeSize);
+      let t = aimAbove(limit, r.left + 2);
+      // (Déjà là, mais reportée quand même : une place plus haut.)
+      if (same(t)) t = aimAbove(t.y - 2, r.left + 2);
+      if (!t || t.y < ct - 1 || same(t)) return;
+      tr.delete(pos, pos + node.nodeSize);
+      const m = tr.mapping.map(t.pos, t.kind === 'block' ? -1 : 1);
+      const block = blockNode(a, node.attrs.inner);
+      at = t.kind === 'split' ? placeBlock(tr, m, block, justified(t.el)) : insertAt(tr, m, block);
+      dropAutoLinesAround(tr);
+      at = Math.min(at, tr.doc.content.size);
+      if (isImg(tr.doc.nodeAt(at))) tr.setSelection(NodeSelection.create(tr.doc, at));
+      view.dispatch(joined(tr));
+    }
+    keepFixed();
+    placeTools();
+    if (tries > 1) whenShown(() => keepOnPage(page0, tries - 1));
   }
 
   // ----- Taille à la souris : huit poignées -----
