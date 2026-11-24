@@ -121,8 +121,8 @@ module.exports = async ({ page }) => {
   assert(await v(() => document.querySelector('#custom-dialog .styles-tabs [data-tab="couleurs"]').classList.contains('on')), 'onglet Couleurs');
   await v(() => document.getElementById('custom-dialog').close());
   await openPalette();
-  list = await search('mode avance');
-  assert.strictEqual(list[0].name, 'Mode avancé');
+  list = await search('interface avancee');
+  assert.strictEqual(list[0].name, 'Interface avancée');
   await page.keyboard.press('Enter');
   await page.waitForTimeout(400);
   assert(await v(() => document.querySelector('#mode-switch [data-mode="avance"]').getAttribute('aria-pressed') === 'true'), 'mode avancé');

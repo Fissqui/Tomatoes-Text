@@ -1931,12 +1931,12 @@
       el('div', { className: 'pop-title', textContent: 'Tout le document' }),
       // (En mode avancé : grisé, avec la raison.)
       el('div', { className: 'seg' }, [
-        popButton('Texte normal', n === 1, () => setDocColumns(1), paged ? 'Disponible en mode note' : 'Une seule colonne, sur toute la largeur', paged),
-        popButton('2 colonnes', n === 2, () => setDocColumns(2), paged ? 'Disponible en mode note' : '', paged),
-        popButton('3 colonnes', n === 3, () => setDocColumns(3), paged ? 'Disponible en mode note' : '', paged)
+        popButton('Texte normal', n === 1, () => setDocColumns(1), paged ? "Disponible dans l'interface note" : 'Une seule colonne, sur toute la largeur', paged),
+        popButton('2 colonnes', n === 2, () => setDocColumns(2), paged ? "Disponible dans l'interface note" : '', paged),
+        popButton('3 colonnes', n === 3, () => setDocColumns(3), paged ? "Disponible dans l'interface note" : '', paged)
       ]),
       ...(paged
-        ? [el('p', { className: 'pop-help pop-off', textContent: 'Disponible en mode note. En mode avancé, mettez une partie du document en colonnes (ci-dessous).' })]
+        ? [el('p', { className: 'pop-help pop-off', textContent: "Disponible dans l'interface note. Dans l'interface avancée, mettez une partie du document en colonnes (ci-dessous)." })]
         : (n > 1 ? [ruleCheck(docColumns.rule, (on) => setDocColumns(docColumns.count, on))] : [])),
       el('div', { className: 'pop-title', textContent: 'Seulement une partie du document' }),
       zone

@@ -66,7 +66,7 @@ module.exports = async ({ page }) => {
 
   // 2. Page de titre : bouton et entrée du menu grisés en mode note ; disponibles en mode avancé.
   st = await page.evaluate(() => ({ disabled: document.getElementById('cover-btn').disabled, title: document.getElementById('cover-btn').title }));
-  assert(st.disabled && /mode avancé/.test(st.title), JSON.stringify(st));
+  assert(st.disabled && /interface avancée/.test(st.title), JSON.stringify(st));
   r = await page.evaluate(() => { const e = document.getElementById('end'); e.scrollIntoView({ block: 'center' }); const b = e.getBoundingClientRect(); return { x: b.left + 10, y: b.top + 5 }; });
   await page.mouse.click(r.x, r.y, { button: 'right' });
   await page.waitForTimeout(100);

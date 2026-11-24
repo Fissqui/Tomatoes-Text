@@ -1405,12 +1405,12 @@
     const adv = mode === 'avance';
     const btn = $('pagenum-btn');
     btn.disabled = !adv;
-    btn.title = adv ? numTitle : 'Numéros de page : disponible en mode avancé';
+    btn.title = adv ? numTitle : "Numéros de page : disponible dans l'interface avancée";
     for (const el of dialog.querySelectorAll('.pg-adv-only')) {
       el.inert = !adv;
       if (el.matches('button')) el.disabled = !adv;
       if (el.dataset.title === undefined) el.dataset.title = el.title;
-      el.title = adv ? el.dataset.title : 'Disponible en mode avancé';
+      el.title = adv ? el.dataset.title : "Disponible dans l'interface avancée";
     }
   }
 

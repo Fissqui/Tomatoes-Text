@@ -413,7 +413,7 @@
   const syncBtn = () => {
     const paged = pageEl.classList.contains('paged');
     btn.disabled = !paged || !!$('page').hidden;
-    btn.title = paged ? title : 'Page de titre : disponible en mode avancé';
+    btn.title = paged ? title : "Page de titre : disponible dans l'interface avancée";
   };
   new MutationObserver(syncBtn).observe(pageEl, { attributes: true, attributeFilter: ['class'] });
   syncBtn();

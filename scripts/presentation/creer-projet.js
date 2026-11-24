@@ -77,7 +77,7 @@ doc('bienvenue', 'Bienvenue', [T('Guide', 'gris')], [
     `${L('catalogue', 'Catalogue des tomates')} : illustrations légendées et numérotées, tableau comparatif, notes de bas de page.`,
     `${L('calendrier', 'Calendrier des semis')} : grand tableau, schéma et dates reprises dans la Carte du temps.`,
     `${L('arrosage', 'Fiche technique sur l’arrosage')} : formules et encadrés.`,
-    `${L('rapport', 'Rapport d’activité 2026')} : mode avancé, page de titre, plan, renvois, table des illustrations, index et commentaires.`,
+    `${L('rapport', 'Rapport d’activité 2026')} : interface avancée, page de titre, plan, renvois, table des illustrations, index et commentaires.`,
     `${L('recettes', 'Recettes de saison')} : listes, étapes numérotées, astuces.`
   ]),
   H(2, 'Parcours de démonstration'),

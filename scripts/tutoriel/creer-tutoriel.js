@@ -85,7 +85,7 @@ doc('bienvenue', 'Bienvenue dans Tomatoes Text', [T('Tutoriel', 'rouge')], [
   H(3, 'Débuter'),
   UL([
     `${L('projets', 'Projets et documents')} : ranger, retrouver et enregistrer.`,
-    `${L('modes', 'Mode note et mode avancé')} : écrire sans pages, ou en pages comme dans Word.`,
+    `${L('modes', 'Interface note et interface avancée')} : écrire sans pages, ou en pages comme dans Word.`,
     `${L('barres', 'Les barres d’outils')} : où trouver chaque outil.`
   ]),
   H(3, 'Écrire'),
@@ -157,33 +157,33 @@ doc('projets', 'Projets et documents', [T('Tutoriel', 'rouge'), T('Débuter', 'v
     'Ajouter un tag à ce document.',
     'Taper # dans la recherche de la liste des documents, puis choisir un tag.'
   ),
-  SUITE('modes', 'Mode note et mode avancé')
+  SUITE('modes', 'Interface note et interface avancée')
 ].join(''));
 
-// ----- 3. Mode note et mode avancé -----
+// ----- 3. Interface note et interface avancée -----
 
-doc('modes', 'Mode note et mode avancé', [T('Tutoriel', 'rouge'), T('Débuter', 'vert')], [
-  `<h1 class="ft-title">Mode note et mode avancé</h1>`,
-  P('Chaque document s’écrit dans l’un de deux modes, choisis par l’interrupteur en haut à droite de la page. Le mode se change à tout moment, sans perte.'),
+doc('modes', 'Interface note et interface avancée', [T('Tutoriel', 'rouge'), T('Débuter', 'vert')], [
+  `<h1 class="ft-title">Interface note et interface avancée</h1>`,
+  P('Chaque document s’écrit dans l’une de deux interfaces, choisie par l’interrupteur en haut à droite de la page. L’interface se change à tout moment, sans perte.'),
   TABLE([
-    ['', 'Mode note', 'Mode avancé'],
+    ['', 'Interface note', 'Interface avancée'],
     ['Affichage', 'Texte continu, sans pages', 'Pages au format choisi, comme dans Word'],
     ['Usage', 'Notes, brouillons, cours, listes', 'Rapports, mémoires, lettres, livres'],
     ['Pages', 'Format et marges seulement', 'Format, orientation, marges, en-tête, pied de page'],
     ['Numéros de page', '—', 'Position, style, première page, pages exclues'],
     ['Page de titre', '—', 'Page de couverture en tête du document'],
     ['Colonnes', 'Tout le document', 'Une partie du document']
-  ], { style: 'colore', color: 'theme', header: true, first: true, sep: true }, 'Différences entre les deux modes', 'tab-modes'),
-  P(`Les outils propres au mode avancé sont grisés en mode note (${XREF('tab-modes')}). Ils s’activent dès le passage en mode avancé.`),
-  H(2, 'Le mode note'),
-  P('Le mode note convient à l’écriture courante : le texte défile sans coupure de page. Tous les outils d’écriture restent disponibles : titres, tableaux, images, schémas, notes, liens.'),
-  H(2, 'Le mode avancé'),
-  P(`Le mode avancé découpe le texte en pages. Le bouton <b>Réglages des pages</b> (groupe <b>Mise en page</b>) règle le format, l’orientation, les marges, l’en-tête et le pied de page ; le bouton <b>Numéros de page</b> règle la numérotation. Le document ${L('miseenpage', 'Mise en page')} est écrit en mode avancé.`),
-  BOX('trait', 'bleu', '<b>Bon à savoir.</b> Un modèle de mise en page (mémoire, rapport, lettre…) fait passer le document en mode avancé et règle pages, thème et page de titre en une fois.'),
+  ], { style: 'colore', color: 'theme', header: true, first: true, sep: true }, 'Différences entre les deux interfaces', 'tab-modes'),
+  P(`Les outils propres à l’interface avancée sont grisés dans l’interface note (${XREF('tab-modes')}). Ils s’activent dès le passage à l’interface avancée.`),
+  H(2, 'L’interface note'),
+  P('L’interface note convient à l’écriture courante : le texte défile sans coupure de page. Tous les outils d’écriture restent disponibles : titres, tableaux, images, schémas, notes, liens.'),
+  H(2, 'L’interface avancée'),
+  P(`L’interface avancée découpe le texte en pages. Le bouton <b>Réglages des pages</b> (groupe <b>Mise en page</b>) règle le format, l’orientation, les marges, l’en-tête et le pied de page ; le bouton <b>Numéros de page</b> règle la numérotation. Le document ${L('miseenpage', 'Mise en page')} est écrit dans l’interface avancée.`),
+  BOX('trait', 'bleu', '<b>Bon à savoir.</b> Un modèle de mise en page (mémoire, rapport, lettre…) fait passer le document à l’interface avancée et règle pages, thème et page de titre en une fois.'),
   H(2, 'Le mode lecture'),
   P(`Le mode lecture (${K('Ctrl+Maj+F')}, ou bouton <b>Lecture</b>) affiche le document en plein écran, page par page, comme un livre. Les flèches du clavier tournent les pages ; Échap revient à l’écriture.`),
   TRY(
-    'Passer ce document en mode avancé avec l’interrupteur, puis revenir en mode note.',
+    'Passer ce document à l’interface avancée avec l’interrupteur, puis revenir à l’interface note.',
     `Ouvrir le mode lecture avec ${K('Ctrl+Maj+F')}, puis le quitter avec Échap.`
   ),
   SUITE('barres', 'Les barres d’outils')
@@ -373,7 +373,7 @@ doc('objets', 'Images, schémas et formules', [T('Tutoriel', 'rouge'), T('Écrir
     H(2, 'Liens vers un site'),
     P(`Une adresse tapée ou collée (https://…) devient un lien. Pour placer un lien sur un mot : sélectionner le mot, puis ${K('Ctrl+Maj+L')} ou le bouton <b>Lien</b> (groupe Liens). Le clic droit sur un lien permet de le modifier ou de le retirer.`),
     H(2, 'Notes'),
-    P(`Une note de bas de page s’insère par le bouton <b>Note</b> ou en tapant ^ dans le texte${n.ref('Exemple de note de bas de page. En mode avancé, elle s’affiche en bas de sa page ; en mode note, à la fin du document.')}. Les notes de fin, numérotées i, ii, iii, sont rangées dans une partie « Notes » à la fin du document.`),
+    P(`Une note de bas de page s’insère par le bouton <b>Note</b> ou en tapant ^ dans le texte${n.ref('Exemple de note de bas de page. Dans l’interface avancée, elle s’affiche en bas de sa page ; dans l’interface note, à la fin du document.')}. Les notes de fin, numérotées i, ii, iii, sont rangées dans une partie « Notes » à la fin du document.`),
     H(2, 'Renvois et signets'),
     UL([
       '<b>Renvoi</b> : cite un titre, une figure ou un tableau par son numéro ou sa page (« voir figure 2, page 5 ») ; il se met à jour seul.',
@@ -393,17 +393,17 @@ doc('objets', 'Images, schémas et formules', [T('Tutoriel', 'rouge'), T('Écrir
   ].join(''));
 }
 
-// ----- 9. Mise en page (mode avancé) -----
+// ----- 9. Mise en page (interface avancée) -----
 
 const cover = '<div class="ft-cover" contenteditable="false" data-model="moderne">' +
   '<div class="ft-cover-head"><p class="ft-cover-field" data-field="surtitre" data-ph="Organisme ou établissement" contenteditable="true">Tutoriel Tomatoes Text</p></div>' +
   '<div class="ft-cover-main"><p class="ft-cover-field" data-field="titre" data-ph="Titre" contenteditable="true">Mise en page</p><p class="ft-cover-field" data-field="soustitre" data-ph="Sous-titre" contenteditable="true">Modèles, thèmes, pages et parties du document</p></div>' +
-  '<div class="ft-cover-foot"><p class="ft-cover-field" data-field="auteur" data-ph="Auteur" contenteditable="true">Exemple de document en mode avancé</p><p class="ft-cover-field" data-field="date" data-ph="Date" contenteditable="true">Version 2.4</p><p class="ft-cover-field" data-field="mention" data-ph="Mention (type de document, version)" contenteditable="true">Document modifiable</p></div></div>';
+  '<div class="ft-cover-foot"><p class="ft-cover-field" data-field="auteur" data-ph="Auteur" contenteditable="true">Exemple de document en interface avancée</p><p class="ft-cover-field" data-field="date" data-ph="Date" contenteditable="true">Version 2.4</p><p class="ft-cover-field" data-field="mention" data-ph="Mention (type de document, version)" contenteditable="true">Document modifiable</p></div></div>';
 doc('miseenpage', 'Mise en page', [T('Tutoriel', 'rouge'), T('Finaliser', 'violet')], [
   cover,
   PLACE('toc'),
   H(1, 'Présentation', 'mp-intro'),
-  P('Ce document est en <b>mode avancé</b> : il commence par une page de titre, suivie d’un plan, et ses pages sont numérotées. Tous les outils décrits ici se trouvent dans les groupes <b>Parties du document</b> et <b>Mise en page</b> de la barre d’insertion.'),
+  P('Ce document est écrit dans l’<b>interface avancée</b> : il commence par une page de titre, suivie d’un plan, et ses pages sont numérotées. Tous les outils décrits ici se trouvent dans les groupes <b>Parties du document</b> et <b>Mise en page</b> de la barre d’insertion.'),
   H(1, 'Mettre en forme tout le document', 'mp-forme'),
   H(2, 'Modèle de mise en page'),
   P('Un modèle (mémoire, rapport, roman, lettre, compte rendu…) règle en une fois le thème, le format des pages, les numéros, l’en-tête, la page de titre et une structure type. Il s’applique à un document existant, ou à un nouveau document par Fichier &gt; Nouveau document depuis un modèle.'),
@@ -416,7 +416,7 @@ doc('miseenpage', 'Mise en page', [T('Tutoriel', 'rouge'), T('Finaliser', 'viole
     ['Bouton', 'Réglages'],
     ['Réglages des pages', 'Format (A4, A5, Lettre…), orientation, marges, en-tête et pied de page.'],
     ['Numéros de page', 'Affichage, position, style (1, i, I), première page numérotée, pages exclues.'],
-    ['Colonnes', 'Deux ou trois colonnes, pour tout le document (mode note) ou une partie (mode avancé).']
+    ['Colonnes', 'Deux ou trois colonnes, pour tout le document (interface note) ou une partie (interface avancée).']
   ], REF, 'Réglages des pages', 'tab-pages'),
   P(`Le ${XREF('tab-pages')} résume les trois boutons. Réglages des pages permet aussi de commencer chaque titre 1 sur une nouvelle page.`),
   H(1, 'Les parties du document', 'mp-parties'),
@@ -513,7 +513,7 @@ doc('personnaliser', 'Personnaliser le logiciel', [T('Tutoriel', 'rouge'), T('Fi
   UL([
     `<b>Mode jour, crépuscule ou lune</b> (${K('Ctrl+D')}) : interface claire, sombre avec page claire, ou entièrement sombre.`,
     '<b>Thème du logiciel</b> (Affichage &gt; Thème du logiciel) : des thèmes prêts, et l’onglet Aspect pour régler les couleurs, la police de l’interface, les icônes (en couleur ou en gris), les noms des groupes et la densité.',
-    `<b>Zoom</b> : ${K('Ctrl++')} et ${K('Ctrl+-')}, ${K('Ctrl+0')} pour la taille réelle ; en mode avancé, l’affichage en double page est disponible en bas de la fenêtre.`
+    `<b>Zoom</b> : ${K('Ctrl++')} et ${K('Ctrl+-')}, ${K('Ctrl+0')} pour la taille réelle ; dans l’interface avancée, l’affichage en double page est disponible en bas de la fenêtre.`
   ]),
   H(2, 'Raccourcis clavier'),
   P('Affichage &gt; Raccourcis clavier liste toutes les commandes. Un clic sur une combinaison permet de la remplacer par une autre.'),

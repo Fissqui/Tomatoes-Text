@@ -27,7 +27,7 @@ module.exports = async ({ page }) => {
   assert.strictEqual(await mode(), 'note');
   let s = await state();
   assert.ok(s.num && s.cover && s.tabs.length === 2 && s.tabs.every(Boolean) && s.rows && s.shown, JSON.stringify(s));
-  assert.ok(/mode avancé/.test(s.numTitle), s.numTitle);
+  assert.ok(/interface avancée/.test(s.numTitle), s.numTitle);
   await v(() => document.getElementById('pagenum-btn').click());
   await page.waitForTimeout(200);
   assert.strictEqual(await mode(), 'note', 'le bouton grisé ne change pas de mode');
@@ -51,7 +51,7 @@ module.exports = async ({ page }) => {
   await page.waitForTimeout(600);
   s = await state();
   assert.ok(!s.num && !s.cover && s.tabs.every((x) => !x) && !s.rows, JSON.stringify(s));
-  assert.ok(!/disponible en mode avancé/.test(s.numTitle), s.numTitle);
+  assert.ok(!/disponible dans l'interface avancée/.test(s.numTitle), s.numTitle);
   assert.strictEqual(await layoutButtons(), '3:true,true,true');
   ok('mode avancé : outils des pages actifs ; « Tout le document » en colonnes grisé');
   await v(() => document.getElementById('pagenum-btn').click());

@@ -10,7 +10,7 @@
   · <a href="CHANGELOG.md">Historique des versions</a>
 </p>
 
-![Tomatoes Text : un document en mode avancé, affiché en double page](docs/captures/double-page.png)
+![Tomatoes Text : un document dans l'interface avancée, affiché en double page](docs/captures/double-page.png)
 
 Tomatoes Text réunit la prise de notes et la rédaction de documents longs dans un même outil. Les notes sont
 classées en projets et reliées entre elles ; le même texte peut ensuite être mis en page, paginé et exporté
@@ -37,7 +37,7 @@ ligne nécessaire.
 - Historique des versions de chaque document, suivi des modifications, commentaires, signets.
 
 **Mise en page**
-- Mode note (texte continu) et mode avancé (pages réelles, en-têtes, pieds de page, numérotation, pages en
+- Interface note (texte continu) et interface avancée (pages réelles, en-têtes, pieds de page, numérotation, pages en
   paysage).
 - Notes de bas de page, notes de fin, renvois, table des matières, index, bibliographie et citations
   (styles APA, Chicago, ISO 690…).
