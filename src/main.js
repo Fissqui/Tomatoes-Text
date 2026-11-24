@@ -1152,6 +1152,24 @@ ipcMain.handle('sources:importFile', async () => {
 // Remplissage d'une source par son DOI, ISBN, lien ou titre : bases publiques (sources-en-ligne.js).
 registerSourcesEnLigne(ipcMain);
 
+// Collage d'un passage d'une page web dont les notes n'ont pas été copiées (Wikipédia…) : la page est relue
+// pour y prendre le texte des notes (notes-collage.js). Rien d'autre n'est envoyé que l'adresse de la page.
+ipcMain.handle('paste:page', async (_e, url) => {
+  if (typeof url !== 'string' || !/^https?:\/\/[^\s]+$/i.test(url) || url.length > 2000) return null;
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 15000);
+  try {
+    const res = await fetch(url, { signal: ctrl.signal, redirect: 'follow', headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) TomatoesText', 'Accept': 'text/html' } });
+    if (!res.ok || !/html/i.test(res.headers.get('content-type') || '')) return null;
+    const text = await res.text();
+    return text.length > 8 * 1024 * 1024 ? text.slice(0, 8 * 1024 * 1024) : text;
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
+});
+
 const ZOTERO_API = 'http://127.0.0.1:23119/api/users/0/';
 async function zoteroGet(rel) {
   const ctrl = new AbortController();

@@ -96,6 +96,7 @@ contextBridge.exposeInMainWorld('frameText', {
   zoteroCollections: () => ipcRenderer.invoke('sources:zoteroCollections'),
   zoteroItems: (collection) => ipcRenderer.invoke('sources:zoteroItems', collection),
   lookupSource: (text) => ipcRenderer.invoke('sources:lookup', text),
+  pastePage: (url) => ipcRenderer.invoke('paste:page', url),
   bioPortrait: (id, file) => ipcRenderer.invoke('bio:portrait', id, file),
   importPdf: () => ipcRenderer.invoke('pdf:import'),
   readPdf: (file) => ipcRenderer.invoke('pdf:read', file),

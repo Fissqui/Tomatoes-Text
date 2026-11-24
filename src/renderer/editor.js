@@ -802,11 +802,132 @@
   }, true);
   const SHORT = 80;
 
+  // ----- Notes collées -----
+  // Les blocs de notes d'un collage (paste.js) sont posés à la fin du document dans la même étape que le
+  // texte : moteur/notes.js réunit leurs lignes avec celles du document, dans l'ordre des appels.
+
+  const isNoteBox = (n) => n.type === schema.nodes.container && /\bft-(foot|end)notes\b/.test((n.attrs.a && n.attrs.a.class) || '');
+
+  // Écrit le texte (html : ses paragraphes) d'une note restée vide : list [{ kind, id, html }].
+  function fillNotes(list, history) {
+    const tr = view.state.tr;
+    for (const it of list) {
+      const key = it.kind === 'en' ? 'data-en' : 'data-fn';
+      let at = null;
+      tr.doc.forEach((top, pos) => {
+        if (at !== null || !isNoteBox(top)) return;
+        top.descendants((n, p) => {
+          if (at !== null) return false;
+          if (n.type === schema.nodes.list_item && n.attrs.a[key] === it.id) { at = { pos: pos + 1 + p, node: n }; return false; }
+          return true;
+        });
+      });
+      if (!at || at.node.textContent.trim()) continue;
+      const content = PMParser.fromSchema(schema).parse(window.FTSchema.prepare(it.html)).content;
+      if (!content.size) continue;
+      tr.replaceWith(at.pos + 1, at.pos + at.node.nodeSize - 1, content);
+    }
+    if (!tr.docChanged) return;
+    if (!history) tr.setMeta('addToHistory', false);
+    view.dispatch(tr);
+  }
+
+  // Blocs de notes d'un HTML collé : retirés de box ; renvoie { frag, missing, lines }.
+  function takeNotes(box) {
+    const boxes = [...box.querySelectorAll(':scope > div.ft-footnotes, :scope > div.ft-endnotes')];
+    if (!boxes.length) return null;
+    const missing = [];
+    const lines = [];
+    for (const b of boxes) {
+      const kind = b.classList.contains('ft-endnotes') ? 'en' : 'fn';
+      for (const li of b.querySelectorAll(':scope > ol > li')) {
+        const id = li.getAttribute(kind === 'en' ? 'data-en' : 'data-fn');
+        const url = li.getAttribute('data-paste-url');
+        if (url) {
+          li.removeAttribute('data-paste-url');
+          const i = url.indexOf('#');
+          missing.push({ kind, id, url: url.slice(0, i), frag: url.slice(i + 1) });
+        }
+        lines.push({ kind, id, html: li.innerHTML });
+      }
+      b.remove();
+    }
+    const holder = box.ownerDocument.createElement('div');
+    holder.append(...boxes);
+    return { frag: PMParser.fromSchema(schema).parse(holder).content, missing, lines };
+  }
+  const addNotes = (tr, notes) => { if (notes) tr.insert(tr.doc.content.size, notes.frag); };
+  // Notes d'une page web copiées sans leur texte : relues sur la page, écrites dès qu'elles arrivent.
+  function fetchNotes(notes) {
+    if (notes && notes.missing.length && window.FTNotesCollage) window.FTNotesCollage.fetchMissing(notes.missing, (kind, id, html) => fillNotes([{ kind, id, html }], false));
+  }
+
+  // Copie dans le document : le texte des notes des appels copiés est gardé pour le collage qui suit
+  // (copier-coller ou couper-coller d'un passage avec ses notes, d'un document à l'autre).
+  let copiedNotes = new Map(); // « fn:id » → ligne de note
+  const REF = /^<sup\b[^>]*\bclass="[^"]*\bft-(fn|en)-ref\b[^>]*\bdata-(?:fn|en)="([^"]+)"/;
+  const refOf = (n) => (n.type === schema.nodes.raw_inline ? REF.exec(n.attrs.html) : null);
+  function rememberNotes() {
+    const sel = view.state.selection;
+    if (sel.empty || !view.hasFocus()) return;
+    const want = new Set();
+    view.state.doc.nodesBetween(sel.from, sel.to, (n) => { const m = refOf(n); if (m) want.add(m[1] + ':' + m[2]); return !n.isAtom; });
+    const map = new Map();
+    if (want.size) {
+      view.state.doc.forEach((top) => {
+        if (!isNoteBox(top)) return;
+        top.descendants((n) => {
+          if (n.type !== schema.nodes.list_item) return true;
+          const k = n.attrs.a['data-fn'] ? 'fn:' + n.attrs.a['data-fn'] : n.attrs.a['data-en'] ? 'en:' + n.attrs.a['data-en'] : null;
+          if (k && want.has(k) && !n.attrs.a['data-cite']) map.set(k, n);
+          return false;
+        });
+      });
+    }
+    copiedNotes = map;
+  }
+  document.addEventListener('copy', rememberNotes, true);
+  document.addEventListener('cut', rememberNotes, true);
+
+  // Collage d'un passage copié dans le logiciel : ses appels de note reçoivent leurs notes (nouveaux
+  // identifiants : une note copiée est une note de plus). Renvoie false s'il n'y a pas de note à poser.
+  function pasteWithNotes(slice) {
+    if (!slice || !copiedNotes.size) return false;
+    const lines = { fn: [], en: [] };
+    const map = (frag) => {
+      const out = [];
+      frag.forEach((n) => {
+        const m = refOf(n);
+        const li = m && copiedNotes.get(m[1] + ':' + m[2]);
+        if (li) {
+          const id = (m[1] === 'en' ? 'e' : 'n') + Math.random().toString(36).slice(2, 9);
+          const attr = 'data-' + m[1];
+          out.push(n.type.create({ ...n.attrs, html: n.attrs.html.replace(`${attr}="${m[2]}"`, `${attr}="${id}"`) }, null, n.marks));
+          lines[m[1]].push(schema.nodes.list_item.create({ ...li.attrs, a: { ...li.attrs.a, [attr]: id } }, li.content, li.marks));
+        } else if (n.content.size) out.push(n.copy(map(n.content)));
+        else out.push(n);
+      });
+      return PM.model.Fragment.fromArray(out);
+    };
+    const content = map(slice.content);
+    if (!lines.fn.length && !lines.en.length) return false;
+    const tr = view.state.tr.replaceSelection(new PM.model.Slice(content, slice.openStart, slice.openEnd));
+    const N = schema.nodes;
+    if (lines.en.length) {
+      const title = N.raw_block.create({ html: '<div class="ft-endnotes-title" contenteditable="false">Notes</div>' });
+      tr.insert(tr.doc.content.size, N.container.create({ a: { class: 'ft-endnotes' } }, [title, N.ordered_list.create({ a: {} }, lines.en)]));
+    }
+    if (lines.fn.length) tr.insert(tr.doc.content.size, N.container.create({ a: { class: 'ft-footnotes' } }, N.ordered_list.create({ a: {} }, lines.fn)));
+    view.dispatch(tr.scrollIntoView());
+    return true;
+  }
+
   // Insère un HTML (déjà nettoyé) à la place de la sélection.
   function insertHtml(html, range) {
     const box = window.FTSchema.prepare(html);
     // (Images collées : affichées depuis la mémoire, comme à l'ouverture.)
     if (box.querySelector('img')) adoptImages(box);
+    const notes = takeNotes(box);
     // Tableaux collés : style des prochains tableaux.
     const S = window.FTStructure;
     for (const t of box.querySelectorAll('table.ft-table[data-paste]')) {
@@ -835,7 +956,12 @@
         const size = view.state.doc.content.size;
         view.dispatch(view.state.tr.setSelection(TextSelection.create(view.state.doc, Math.min(range.from, size), Math.min(range.to, size))));
       }
-      if (PM.tables.handlePaste(view, null, slice)) { view.focus(); return; }
+      if (PM.tables.handlePaste(view, null, slice)) {
+        // (Collage case par case : les notes, créées vides, reçoivent leur texte.)
+        if (notes) { fillNotes(notes.lines, true); fetchNotes(notes); }
+        view.focus();
+        return;
+      }
     }
     if (inCell) {
       const line = document.createElement('p');
@@ -865,18 +991,22 @@
       const after = pos + tr.doc.nodeAt(pos).nodeSize;
       if (!(tr.doc.resolve(after).nodeAfter || {}).isTextblock) tr.insert(after, schema.nodes.paragraph.create({ tag: 'p', a: {}, bare: false }));
       tr.setSelection(TextSelection.near(tr.doc.resolve(after + 1)));
+      addNotes(tr, notes);
       view.dispatch(tr.scrollIntoView());
+      fetchNotes(notes);
       view.focus();
       return;
     }
     tr.replaceSelection(slice).scrollIntoView();
+    addNotes(tr, notes);
     view.dispatch(tr);
+    fetchNotes(notes);
     view.focus();
   }
 
   // Texte venu d'ailleurs : nettoyé (voir paste.js), directement s'il est court, sinon avec un aperçu.
   // Un passage copié dans le logiciel même se colle tel quel.
-  function handlePaste(v, e) {
+  function handlePaste(v, e, pmSlice) {
     const cd = e.clipboardData;
     if (!cd) return false;
     const text = cd.getData('text/plain') || '';
@@ -888,7 +1018,7 @@
       return true;
     }
     let html = cd.getData('text/html') || '';
-    if (/data-pm-slice/.test(html)) return false;
+    if (/data-pm-slice/.test(html)) return pasteWithNotes(pmSlice);
     // Équation copiée seule en MathML (Word, logiciels de calcul) : collée comme une page qui la contient.
     const FC = window.FTFormulesCollage;
     if (FC && !FC.hasMath(html)) { const mml = FC.mathmlOf(cd); if (mml) html = mml; }

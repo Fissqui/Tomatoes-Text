@@ -156,6 +156,30 @@
       const math = c.querySelector('math');
       put(c, math ? L().fromMathML(math) : '', c.getAttribute('display') === 'true' || c.hasAttribute('display') && c.getAttribute('display') !== 'false');
     }
+    // MathJax 2 : rendu (span.MathJax, id « …-Frame ») suivi de son code TeX (<script type="math/tex">). Copié
+    // depuis le navigateur, le code n'y est plus : MathML joint (data-mathml, MathML d'accessibilité).
+    const MJ2 = '.MathJax, .MathJax_SVG, .MathJax_CHTML, .MathJax_PHTML, .MathJax_MathML';
+    for (const m of [...doc.querySelectorAll(MJ2)]) {
+      if (!m.isConnected || m.closest('.ft-math') || (m.parentElement && m.parentElement.closest(MJ2))) continue;
+      const disp = m.closest('.MathJax_Display, .MathJax_SVG_Display, .MathJax_CHTML_Display, .MJXc-display');
+      const id = (m.id || '').replace(/-Frame$/, '');
+      const script = id && id !== m.id ? doc.getElementById(id) : null;
+      let latex = '';
+      let block = !!disp;
+      if (script && /^math\/tex/.test(script.getAttribute('type') || '')) {
+        latex = script.textContent.trim();
+        block = block || /mode=display/.test(script.getAttribute('type'));
+        script.remove();
+      } else {
+        const data = m.getAttribute('data-mathml');
+        const math = (data && new DOMParser().parseFromString(data, 'text/html').querySelector('math')) || m.querySelector('math');
+        if (math) {
+          latex = L().fromMathML(math);
+          block = block || math.getAttribute('display') === 'block';
+        }
+      }
+      if (latex) put(disp && !disp.querySelector('.ft-math') ? disp : m, latex, block);
+    }
     for (const s of [...doc.querySelectorAll('script[type^="math/tex"]')]) put(s, s.textContent.trim(), /mode=display/.test(s.getAttribute('type')));
     for (const m of [...doc.querySelectorAll('[class^="MathJax"], [class*=" MathJax"]')]) if (m.isConnected && !m.querySelector('.ft-math')) m.remove();
     // Wikipédia et autres pages en MathML.

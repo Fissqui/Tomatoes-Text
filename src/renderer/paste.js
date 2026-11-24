@@ -100,7 +100,20 @@
     return out;
   }
 
+  // ----- Notes de bas de page (notes-collage.js) -----
+  // Comme les équations : chaque appel est remplacé par un jeton (\uE002n\uE003) ; render() pose l'appel
+  // de note du logiciel et, à la fin, le bloc des notes (editor.js le range avec les notes du document).
+  const NC = () => window.FTNotesCollage;
+  const notes = []; // { kind, html, url, frag }
+  const noteToken = (n) => '\uE002' + (notes.push(n) - 1) + '\uE003';
+  const NOTE = /\uE002(\d+)\uE003/g;
+
   function blocksFromText(text, opts) {
+    // Texte d'un PDF : appels « mot¹ » et lignes de note « 1 Texte » plus bas.
+    if (opts.structure && NC()) {
+      const t = NC().fromText(text, (note) => noteToken({ kind: 'fn', html: '<p>' + escape(latexIn(note)) + '</p>' }));
+      if (t !== null) text = t;
+    }
     // (Équation sur plusieurs lignes, $$…$$ ou \begin{align}… : reconnue avant le découpage en lignes.)
     if (/\$\$|\\\[|\\begin\{/.test(text)) text = text.replace(/\$\$[\s\S]+?\$\$|\\\[[\s\S]+?\\\]|\\begin\{(equation|align|gather|multline|eqnarray|displaymath)\*?\}[\s\S]+?\\end\{\1\*?\}/g, (m) => '\n' + latexIn(m) + '\n');
     const lines = text.replace(/\r\n?/g, '\n').replace(/\u000c/g, '\n').split('\n');
@@ -136,13 +149,25 @@
     return marks;
   }
 
+  // Blocs d'une note : un paragraphe chacun (un tableau devient des lignes de texte).
+  const noteParas = (parts) => parts
+    .flatMap((b) => (b.type === 'table' ? b.rows.map((r) => r.map((c) => c.html).join(' – ')) : [b.html]))
+    .map((h) => tidySpaces(h || '').replace(TOKEN, (m, i) => (isBlockToken(i) ? inlineToken(i) : m)).trim()).filter((h) => h.replace(/<[^>]+>/g, '').trim() || h.includes('\uE000'))
+    .map((h) => '<p>' + h.replace(/\n/g, '<br>') + '</p>').join('');
+
   function blocksFromHtml(html, opts) {
-    const doc = new DOMParser().parseFromString(html, 'text/html');
+    const doc = typeof html === 'string' ? new DOMParser().parseFromString(html, 'text/html') : html;
     // Équations (Word, pages web) : avant le nettoyage, qui en retirerait les morceaux.
     if (FC()) FC().markMath(doc);
-    doc.querySelectorAll(DROP).forEach((n) => n.remove());
-    // Pages web (Wikipédia…) : appels de note, liens « [archive] », « [modifier] », éléments cachés.
-    doc.querySelectorAll(NOISE).forEach((n) => n.remove());
+    // Notes de bas de page : appels remplacés par un repère, notes mises de côté.
+    const found = NC() ? NC().extract(doc) : [];
+    const clear = (root) => {
+      root.querySelectorAll(DROP).forEach((n) => n.remove());
+      // Pages web (Wikipédia…) : appels de note restants, liens « [archive] », « [modifier] », éléments cachés.
+      root.querySelectorAll(NOISE).forEach((n) => n.remove());
+    };
+    clear(doc);
+    for (const f of found) if (f.box) clear(f.box);
     // Word : puces et numéros écrits à la main dans les listes (mso-list: Ignore), commentaires conditionnels.
     doc.querySelectorAll('[style*="mso-list"]').forEach((n) => { if (/mso-list:\s*ignore/i.test(n.getAttribute('style'))) n.remove(); });
     const blocks = [];
@@ -178,6 +203,14 @@
         const b = ensure();
         b.html += token(el.outerHTML);
         b.text = (b.text || '') + '∗';
+        return;
+      }
+      if (el.classList.contains('ft-paste-fn')) {
+        const f = found[Number(el.dataset.k)];
+        if (!f) return;
+        const b = ensure();
+        b.html += noteToken({ kind: f.kind, html: f.box ? noteHtml(f.box) : '', url: f.url, frag: f.frag });
+        b.text = (b.text || '') + '¹';
         return;
       }
       if (t === 'TABLE') return table(el);
@@ -294,6 +327,18 @@
       const parts = blocks.splice(saved[0]);
       cur = saved[1];
       return parts.filter((b) => b.html).map((b) => b.html.trim()).join('\n');
+    }
+
+    // Texte d'une note : ses paragraphes, avec la mise en forme gardée.
+    function noteHtml(box) {
+      const saved = [blocks.length, cur, listStack];
+      cur = null;
+      listStack = [];
+      if (BLOCKS.has(box.tagName) || box.tagName === 'TD') for (const c of box.childNodes) inline(c, []);
+      else inline(box, []);
+      const parts = blocks.splice(saved[0]);
+      [, cur, listStack] = saved;
+      return noteParas(parts);
     }
 
     for (const c of doc.body.childNodes) inline(c, []);
@@ -449,7 +494,31 @@
       }
     }
     closeLists(0);
+    // Notes : appels numérotés dans l'ordre (notes.js les renumérote dans le document) et blocs des notes.
+    const used = { fn: [], en: [] };
+    const attr = (s) => s.replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+    out = out.replace(NOTE, (m, i) => {
+      const n = notes[i];
+      if (!n) return '';
+      const id = (n.kind === 'en' ? 'e' : 'n') + Math.random().toString(36).slice(2, 9);
+      const list = used[n.kind === 'en' ? 'en' : 'fn'];
+      list.push({ ...n, id });
+      return n.kind === 'en'
+        ? `<sup class="ft-en-ref" data-en="${id}" contenteditable="false">${list.length}</sup>`
+        : `<sup class="ft-fn-ref" data-fn="${id}" contenteditable="false">${list.length}</sup>`;
+    });
+    const items = (list, key) => list.map((n) => `<li data-${key}="${n.id}"${!n.html && n.url ? ` data-paste-url="${attr(n.url + '#' + n.frag)}"` : ''}>${n.html || '<p><br></p>'}</li>`).join('');
+    if (used.en.length) out += `<div class="ft-endnotes"><div class="ft-endnotes-title" contenteditable="false">Notes</div><ol>${items(used.en, 'en')}</ol></div>`;
+    if (used.fn.length) out += `<div class="ft-footnotes"><ol>${items(used.fn, 'fn')}</ol></div>`;
     return out.replace(TOKEN, (m, i) => formulas[i] || '');
+  }
+
+  // Texte d'une note relue sur une page (notes-collage.js) : ses paragraphes, nettoyés comme un collage.
+  function noteHtml(box) {
+    const doc = new DOMParser().parseFromString('<body></body>', 'text/html');
+    doc.body.append(doc.importNode(box, true));
+    const opts = { lines: false, spaces: true, inline: loadPrefs().inline !== false, structure: true };
+    return noteParas(blocksFromHtml(doc, opts)).replace(NOTE, '').replace(TOKEN, (m, i) => formulas[i] || '');
   }
 
   // ----- Insertion dans le document -----
@@ -732,7 +801,10 @@
     imgs.slice(60).forEach((img) => img.remove());
     const api = window.frameText;
     const load = (src) => new Promise((r) => { const im = new Image(); im.onload = () => r(im); im.onerror = () => r(null); im.src = src; });
+    // (Image d'une équation, Wikipédia… : laissée telle quelle, formules-collage.js en reprend le code.)
+    const MATH_IMG = 'img.tex, img.latex, img[src*="latex"], img[src*="codecogs"], img.mwe-math-fallback-image-inline, img.mwe-math-fallback-image-display';
     await Promise.all(imgs.slice(0, 60).map(async (img) => {
+      if (img.matches(MATH_IMG) && /[\\^_{}=]/.test(img.getAttribute('alt') || '')) return;
       let src = img.getAttribute('src') || '';
       if (!/^data:image\//.test(src)) src = /^(https?|file):/i.test(src) && api && api.pasteImage ? await api.pasteImage(src).catch(() => null) : null;
       const im = src && await load(src);
@@ -756,5 +828,5 @@
     return '<html><body>' + doc.body.innerHTML + '</body></html>';
   }
 
-  window.FTPaste = { build, render, looksWrapped, joinLines, open: ask, prefs: loadPrefs, resolveImages };
+  window.FTPaste = { build, render, looksWrapped, joinLines, open: ask, prefs: loadPrefs, resolveImages, noteHtml };
 })();
