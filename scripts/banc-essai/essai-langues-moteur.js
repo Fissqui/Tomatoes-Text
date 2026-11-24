@@ -266,7 +266,7 @@ module.exports = async ({ page, electron }) => {
   await page.waitForTimeout(400);
   const read = await v(async () => { const r = await window.FTReadability.analyze(); return { name: r.scoreName, score: r.score, sentences: r.sentences.length }; });
   assert.ok(/Kandel/.test(read.name) && read.sentences >= 6, JSON.stringify(read));
-  await page.click('#rl-close');
+  await page.click('#assist-close');
   ok('lisibilité sur le texte du moteur : ' + read.name + ', ' + Math.round(read.score) + ', ' + read.sentences + ' phrases');
 
   // 6. Source PDF côte à côte : volet ouvert, passage cité au curseur.

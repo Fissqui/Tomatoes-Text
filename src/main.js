@@ -1490,13 +1490,10 @@ function buildMenu(settings) {
         // Tout sélectionner : seulement le texte du document (ou la case où l'on écrit), pas toute la fenêtre.
         { label: 'Tout sélectionner', accelerator: 'CmdOrCtrl+A', click: () => send('select-all') },
         { type: 'separator' },
-        { label: 'Rechercher…', accelerator: acc('find', 'CmdOrCtrl+F'), click: () => send('find') },
-        { label: 'Remplacer…', accelerator: acc('replace', 'CmdOrCtrl+H'), click: () => send('replace') },
+        { label: 'Rechercher et remplacer…', accelerator: acc('find', 'CmdOrCtrl+F'), click: () => send('find') },
         { type: 'separator' },
         { label: 'Suivi des modifications (marche / arrêt)', accelerator: acc('track', 'CmdOrCtrl+Shift+R'), click: () => send('track') },
         { label: 'Signets…', accelerator: acc('bookmarks', 'CmdOrCtrl+Shift+G'), click: () => send('bookmarks') },
-        { label: 'Vérifier la cohérence (noms, dates)…', accelerator: acc('coherence', ''), click: () => send('coherence') },
-        { label: 'Statistiques de lisibilité…', accelerator: acc('readability', ''), click: () => send('readability') },
         { type: 'separator' },
         { label: 'Langues du document…', accelerator: acc('languages', ''), click: () => send('languages') },
         {
@@ -1514,16 +1511,12 @@ function buildMenu(settings) {
     {
       label: 'Affichage',
       submenu: [
-        { label: 'Mode jour / crépuscule / lune', accelerator: acc('theme', 'CmdOrCtrl+D'), click: () => send('theme') },
-        { label: 'Modèle de mise en page…', accelerator: acc('layout-model', ''), click: () => send('layout-model') },
         { label: 'Thème du document…', accelerator: acc('doc-theme', ''), click: () => send('doc-theme') },
         { label: 'Thème du logiciel…', accelerator: acc('customize', ''), click: () => send('customize') },
         { label: 'Raccourcis clavier…', accelerator: acc('shortcuts', ''), click: () => send('shortcuts') },
         { label: 'Liste des documents', accelerator: acc('sidebar', 'CmdOrCtrl+Shift+B'), click: () => send('sidebar') },
         { label: 'Volet de navigation', accelerator: acc('navpane', 'CmdOrCtrl+Shift+P'), click: () => send('navpane') },
-        { label: "Afficher l'Aide au Texte", accelerator: acc('assist', 'CmdOrCtrl+Shift+A'), click: () => send('assist') },
-        { label: 'Mindmap', accelerator: acc('mindmap', 'CmdOrCtrl+M'), click: () => send('mindmap') },
-        { label: 'Carte du temps', accelerator: acc('timeline', 'CmdOrCtrl+Shift+T'), click: () => send('timeline') },
+        { label: "Aide au texte", accelerator: acc('assist', 'CmdOrCtrl+Shift+A'), click: () => send('assist') },
         { label: 'Mode lecture', accelerator: acc('focus', 'CmdOrCtrl+Shift+F'), click: () => send('focus') },
         { label: 'Objectifs et statistiques…', accelerator: acc('goals', ''), click: () => send('goals') },
         {

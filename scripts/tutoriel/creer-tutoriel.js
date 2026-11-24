@@ -450,7 +450,7 @@ doc('relecture', 'Relire et améliorer', [T('Tutoriel', 'rouge'), T('Finaliser',
   ]),
   P('<span class="ft-comment" data-c="c1">Ce passage porte un commentaire.</span> Un clic sur le texte surligné l’affiche dans la marge.'),
   H(2, 'Aide au texte'),
-  P(`L’<b>Aide au texte</b> (${K('Ctrl+Maj+A')}) s’ouvre dans un volet à droite. Elle fonctionne avec un modèle d’intelligence artificielle installé sur l’ordinateur (téléchargement unique, depuis les réglages du volet) :`),
+  P(`L’<b>Aide au texte</b> (${K('Ctrl+Maj+A')}) s’ouvre dans un volet à droite, en deux onglets. L’onglet <b>Rédaction</b> fonctionne avec un modèle d’intelligence artificielle installé sur l’ordinateur (téléchargement unique, depuis les réglages du volet) :`),
   UL([
     'reformulation du passage sélectionné, selon un style et une intensité ;',
     'synonymes d’un à trois mots sélectionnés ;',
@@ -458,12 +458,12 @@ doc('relecture', 'Relire et améliorer', [T('Tutoriel', 'rouge'), T('Finaliser',
     'vérification de la cohérence : noms écrits de plusieurs façons, dates impossibles ;',
     'faux texte (lorem ipsum) en français, sans modèle.'
   ]),
+  P('L’onglet <b>Lisibilité</b> donne, sans modèle, l’indice de lisibilité, la longueur des phrases, les phrases les plus longues, les mots rares et le temps de lecture. Les phrases longues et les mots rares peuvent être surlignés dans le texte.'),
   H(2, 'Autres outils'),
   TABLE([
     ['Outil', 'Emplacement'],
     ['Rechercher et remplacer', 'Ctrl+F, Ctrl+H'],
-    ['Statistiques de lisibilité', 'Édition &gt; Statistiques de lisibilité'],
-    ['Vérifier la cohérence', 'Édition &gt; Vérifier la cohérence'],
+    ['Vérifier la cohérence', 'Aide au texte &gt; Vérifier la cohérence'],
     ['Objectifs et statistiques (mots par jour)', 'Affichage &gt; Objectifs et statistiques'],
     ['Historique des versions', 'Fichier &gt; Historique des versions']
   ], REF),

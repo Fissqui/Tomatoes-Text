@@ -71,7 +71,7 @@ async function summarize(sender, { id, title, text, length, lang }) {
   const settings = await readSettings();
   local.setModelsDir(settings.modelsDir);
   if (!local.isDownloaded(settings.localModel)) {
-    return { error: 'Le modèle de l’AAT n’est pas encore installé.', needsSetup: true };
+    return { error: 'Le modèle de l’Aide au texte n’est pas encore installé.', needsSetup: true };
   }
   const want = LENGTHS[length] || LENGTHS.moyen;
   const name = title ? ` intitulé « ${title} »` : '';

@@ -311,8 +311,8 @@
     if (me !== running) return;
     running = 0;
     if (res.cancelled) return aiState({ info: 'Vérification arrêtée.' });
-    if (res.error) return aiState({ error: res.needsSetup ? 'Le modèle de l’AAT n’est pas encore installé. Ouvrez l’Aide au Texte, puis « Réglages de l’AAT ».' : res.error, setup: !!res.needsSetup });
-    aiState({ results: res.contradictions, info: `${res.facts} faits relevés, ${res.subjects} noms comparés. Trouvé par le modèle local de l'AAT : vérifiez avant de corriger.` });
+    if (res.error) return aiState({ error: res.needsSetup ? 'Le modèle de l’Aide au texte n’est pas encore installé. Ouvrez l’Aide au texte, puis « Réglages de l’Aide au texte ».' : res.error, setup: !!res.needsSetup });
+    aiState({ results: res.contradictions, info: `${res.facts} faits relevés, ${res.subjects} noms comparés. Trouvé par le modèle local de l'Aide au texte : vérifiez avant de corriger.` });
   }
 
   function setProgress({ done, total, step }) {

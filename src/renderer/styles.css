@@ -526,6 +526,13 @@ kbd { font-family: Consolas, "JetBrains Mono", monospace; font-size: calc(11px *
 }
 .assist-header { display: flex; align-items: center; justify-content: space-between; }
 .assist-header h2 { font-size: calc(16px * var(--ui-scale)); margin: 0; font-weight: 600; }
+.assist-tabs { display: flex; border-bottom: 1px solid var(--border); margin: 0 -14px 2px; padding: 0 14px; gap: 2px; }
+.assist-tabs button { flex: 1; border: 0; border-bottom: 2px solid transparent; border-radius: 0; background: transparent; padding: 6px 8px 5px; margin-bottom: -1px; font-size: calc(13px * var(--ui-scale)); color: var(--text-muted); }
+.assist-tabs button:hover { color: var(--text); }
+.assist-tabs button[aria-selected="true"] { color: var(--text); font-weight: 600; border-bottom-color: var(--accent); }
+.assist-pane { display: flex; flex-direction: column; gap: 8px; }
+.assist-pane[hidden] { display: none; }
+#assist-pane-redaction { flex: 1 0 auto; }
 .assist-label { font-size: calc(12px * var(--ui-scale)); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); margin-top: 4px; }
 .assist-label-row { display: flex; align-items: center; justify-content: space-between; margin-top: 4px; }
 .assist-label-row .small { font-size: calc(12px * var(--ui-scale)); color: var(--text-muted); }
@@ -2851,8 +2858,12 @@ body.tb-moving, body.tb-moving * { cursor: grabbing !important; user-select: non
 #statusbar #status-update[hidden] { display: none; }
 
 /* ---------- Statistiques de lisibilité (readability.js) ---------- */
-#read-dialog { position: fixed; inset: 92px 18px 44px auto; width: 400px; height: auto; max-height: none; max-width: calc(100vw - 32px); margin: 0; padding: 0; z-index: 60; box-shadow: 0 8px 30px rgba(0,0,0,0.18); }
-#read-dialog[open] { display: flex; flex-direction: column; }
+/* Lisibilité : onglet de l'Aide au texte */
+.rl-head { display: flex; align-items: center; gap: 8px; }
+#rl-title { flex: 1; min-width: 0; font-weight: 600; font-size: calc(13.5px * var(--ui-scale)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#assist-pane-lisibilite .rl-card { margin: 4px 0; }
+#assist-pane-lisibilite .rl-stats { margin: 6px 0 0; }
+#assist-pane-lisibilite .coh-section h3 { margin: 12px 0 6px; }
 #goals-dialog .spacer { flex: 1; }
 .rl-card { margin: 12px 0 4px; padding: 12px 14px; border: 1px solid var(--border); border-radius: calc(10px * var(--round)); background: var(--page); }
 .rl-score-row { display: flex; align-items: baseline; gap: 10px; }
@@ -2865,14 +2876,14 @@ body.tb-moving, body.tb-moving * { cursor: grabbing !important; user-select: non
 .rl-stats { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; margin: 12px 0 4px; font-size: calc(13px * var(--ui-scale)); }
 .rl-stats dt { color: var(--text-muted); }
 .rl-stats dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
-.rl-bar { display: grid; grid-template-columns: 150px 1fr auto; align-items: center; gap: 8px; margin: 4px 0; font-size: calc(12.5px * var(--ui-scale)); }
+.rl-bar { display: grid; grid-template-columns: 128px 1fr auto; align-items: center; gap: 8px; margin: 4px 0; font-size: calc(12.5px * var(--ui-scale)); }
 .rl-bar-name { color: var(--text-muted); }
 .rl-bar-track { height: 8px; border-radius: 4px; background: color-mix(in srgb, var(--text-muted) 16%, transparent); overflow: hidden; }
 .rl-bar-track i { display: block; height: 100%; border-radius: 4px; background: #3c9a5f; }
 .rl-b1 .rl-bar-track i { background: #8bb04a; }
 .rl-b2 .rl-bar-track i { background: #e0a526; }
 .rl-b3 .rl-bar-track i { background: #d0603a; }
-.rl-bar-num { font-variant-numeric: tabular-nums; min-width: 72px; text-align: right; }
+.rl-bar-num { font-variant-numeric: tabular-nums; min-width: 64px; text-align: right; }
 .rl-check { display: flex; align-items: center; gap: 6px; margin: 8px 0 0; font-size: calc(12.5px * var(--ui-scale)); }
 .rl-sub { font-weight: 400; color: var(--text-muted); font-size: calc(12px * var(--ui-scale)); margin-left: 4px; }
 .rl-list { display: flex; flex-direction: column; gap: 5px; }

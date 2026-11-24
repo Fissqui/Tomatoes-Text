@@ -17,6 +17,8 @@
     if (b && !b.disabled) b.click();
   };
   const structure = (name) => () => window.FTStructure.command(name);
+  // Commandes retirées des menus de la fenêtre : leur raccourci est traité ici.
+  const menu = (id) => () => window.FTApp.menu(id);
 
   // [groupe, id, nom, raccourci d'origine, sorte, action | élément de la barre (pour l'infobulle)]
   const COMMANDS = [
@@ -32,25 +34,25 @@
     ['Fichier', 'presentation', 'Mode présentation', '', 'menu'],
     ['Édition', 'undo', 'Annuler', 'Ctrl+Z', 'touche', '#undo-btn'],
     ['Édition', 'redo', 'Rétablir', 'Ctrl+Y', 'touche', '#redo-btn'],
-    ['Édition', 'find', 'Rechercher', 'Ctrl+F', 'menu'],
-    ['Édition', 'replace', 'Remplacer', 'Ctrl+H', 'menu'],
+    ['Édition', 'find', 'Rechercher et remplacer', 'Ctrl+F', 'menu'],
+    ['Édition', 'replace', 'Remplacer', 'Ctrl+H', 'action', menu('replace')],
     ['Édition', 'track', 'Suivi des modifications', 'Ctrl+Shift+R', 'menu', '#track-btn'],
     ['Édition', 'bookmarks', 'Signets', 'Ctrl+Shift+G', 'menu', '#bookmarks-btn'],
-    ['Édition', 'coherence', 'Vérifier la cohérence', '', 'menu'],
-    ['Édition', 'readability', 'Statistiques de lisibilité', '', 'menu'],
+    ['Édition', 'coherence', 'Vérifier la cohérence', '', 'action', menu('coherence')],
+    ['Édition', 'readability', 'Statistiques de lisibilité', '', 'action', menu('readability')],
     ['Édition', 'languages', 'Langues du document', '', 'menu'],
     ['Édition', 'lorem', 'Faux texte (lorem ipsum)', '', 'action', () => window.FTLorem.open()],
-    ['Affichage', 'theme', 'Mode jour / crépuscule / lune', 'Ctrl+D', 'menu', '#theme-toggle'],
+    ['Affichage', 'theme', 'Mode jour / crépuscule / lune', 'Ctrl+D', 'action', '#theme-toggle'],
     ['Affichage', 'sidebar', 'Liste des documents', 'Ctrl+Shift+B', 'menu', '#sidebar-toggle'],
     ['Affichage', 'navpane', 'Volet de navigation', 'Ctrl+Shift+P', 'menu', '#navpane-toggle'],
-    ['Affichage', 'assist', "Aide au Texte (AAT)", 'Ctrl+Shift+A', 'menu', '#assist-toggle'],
+    ['Affichage', 'assist', 'Aide au texte', 'Ctrl+Shift+A', 'menu', '#assist-toggle'],
     ['Affichage', 'sidemode', 'Mode raccourcis (barres latérales)', '', 'action', () => window.FTToolbar.toggleSide()],
     ['Affichage', 'mathmode', 'Mode maths', '', 'action', () => window.FTModeMaths && window.FTModeMaths.toggle()],
-    ['Affichage', 'mindmap', 'Mindmap', 'Ctrl+M', 'menu'],
-    ['Affichage', 'timeline', 'Carte du temps', 'Ctrl+Shift+T', 'menu'],
+    ['Affichage', 'mindmap', 'Mindmap', 'Ctrl+M', 'action', menu('mindmap')],
+    ['Affichage', 'timeline', 'Carte du temps', 'Ctrl+Shift+T', 'action', menu('timeline')],
     ['Affichage', 'focus', 'Mode lecture', 'Ctrl+Shift+F', 'menu', '#reading-btn'],
     ['Affichage', 'goals', 'Objectifs et statistiques', '', 'menu'],
-    ['Affichage', 'layout-model', 'Modèle de mise en page', '', 'menu', '#layout-tab'],
+    ['Affichage', 'layout-model', 'Modèle de mise en page', '', 'action', '#layout-tab'],
     ['Affichage', 'doc-theme', 'Thème du document', '', 'menu', '#doc-theme-tab'],
     ['Affichage', 'customize', 'Thème du logiciel', '', 'menu'],
     ['Affichage', 'shortcuts', 'Raccourcis clavier', '', 'menu'],
@@ -109,7 +111,8 @@
     ['Affichage', 'docstyles', 'Styles du document', '', 'action', click('#docstyles-btn')]
   ].map(([group, id, label, def, kind, extra, aliases]) => ({
     group, id, label, def, kind, aliases: aliases || [],
-    run: typeof extra === 'function' ? extra : null,
+    // Action sans fonction : clic sur l'élément de la barre.
+    run: typeof extra === 'function' ? extra : (kind === 'action' && extra ? click(extra) : null),
     target: typeof extra === 'string' ? extra : null
   }));
   const byId = new Map(COMMANDS.map((c) => [c.id, c]));

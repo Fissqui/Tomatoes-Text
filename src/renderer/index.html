@@ -296,7 +296,7 @@
           <svg class="ic" viewBox="0 0 24 24"><path class="ic-plus" d="M6.5 3.5v7M3 7h7" stroke-width="2"/><path class="ic-moins" d="M14 7h7" stroke-width="2"/><path d="M3 15h18M3 19.5h12"/></svg>
           <span class="tb-label">Suivi</span>
         </button>
-          <button data-tb="assist" id="assist-toggle" title="Aide au texte (AAT) : reformulation du passage sélectionné (Ctrl+Maj+A)">
+          <button data-tb="assist" id="assist-toggle" title="Aide au texte : reformulation, synonymes, lisibilité (Ctrl+Maj+A)">
             <svg class="ic" viewBox="0 0 24 24"><path d="M4 3.5h12a2 2 0 0 1 2 2V8M10 15.5H8.5l-4 3.5v-3.5H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2"/><path class="ic-a" d="M5.5 7.5h8M5.5 11h5"/><path d="M13 21l.8-3.3 6.5-6.5a1.6 1.6 0 0 1 2.3 2.3l-6.5 6.5z"/><path class="ic-a" d="M18.8 12.7l2.3 2.3"/></svg>
             <span class="tb-label tb-label-aat">Aide au texte</span>
           </button>
@@ -625,6 +625,11 @@
           <h2>Aide au texte</h2>
           <button id="assist-close" class="icon-btn" title="Fermer">✕</button>
         </div>
+        <div class="assist-tabs" role="tablist" aria-label="Aide au texte">
+          <button type="button" role="tab" id="assist-tab-redaction" data-tab="redaction" aria-selected="true">Rédaction</button>
+          <button type="button" role="tab" id="assist-tab-lisibilite" data-tab="lisibilite" aria-selected="false">Lisibilité</button>
+        </div>
+        <div id="assist-pane-redaction" class="assist-pane" role="tabpanel" aria-labelledby="assist-tab-redaction">
         <label class="assist-label" for="assist-source">Texte sélectionné</label>
         <textarea id="assist-source" readonly placeholder="Sélectionnez un passage dans votre texte : une reformulation apparaîtra ici (des synonymes pour un à trois mots)."></textarea>
 
@@ -674,13 +679,13 @@
         </div>
 
         <details id="assist-settings" class="assist-settings">
-          <summary>Réglages de l'AAT</summary>
+          <summary>Réglages de l'Aide au texte</summary>
           <p class="assist-help">Les reformulations et propositions d'aides sont réalisées à l'aide d'un LLM local installé sur cet ordinateur. En cas d'absence de modèle local, cette partie du logiciel ne peut fonctionner.</p>
           <label class="assist-label" for="assist-model">Modèle</label>
           <select id="assist-model"></select>
           <p class="assist-folder">Dossier des modèles :<br><span id="assist-folder"></span></p>
           <button id="assist-folder-change" class="small">Changer de dossier…</button>
-          <button id="assist-model-locate" class="small" title="Dossier contenant un LLM local au format GGUF : il est détecté et utilisé par l’AAT">Indiquer l’emplacement du LLM…</button>
+          <button id="assist-model-locate" class="small" title="Dossier contenant un LLM local au format GGUF : il est détecté et utilisé par l’Aide au texte">Indiquer l’emplacement du LLM…</button>
           <p id="assist-model-status"></p>
           <progress id="assist-model-progress" max="100" value="0" hidden></progress>
           <div class="assist-actions">
@@ -689,6 +694,31 @@
             <button id="assist-model-delete" class="small" hidden>Supprimer le modèle</button>
           </div>
         </details>
+        </div>
+
+        <div id="assist-pane-lisibilite" class="assist-pane" role="tabpanel" aria-labelledby="assist-tab-lisibilite" hidden>
+          <div class="rl-head">
+            <span id="rl-title"></span>
+            <button type="button" id="rl-refresh" class="small" title="Refaire l'analyse">↻ Actualiser</button>
+          </div>
+          <div id="rl-score" class="rl-card"></div>
+          <dl id="rl-stats" class="rl-stats"></dl>
+          <section class="coh-section">
+            <h3>Longueur des phrases</h3>
+            <div id="rl-dist"></div>
+            <label class="rl-check"><input type="checkbox" id="rl-mark-long"> Surligner les phrases longues dans le texte</label>
+          </section>
+          <section class="coh-section">
+            <h3>Phrases les plus longues</h3>
+            <div id="rl-long" class="rl-list"></div>
+          </section>
+          <section class="coh-section">
+            <h3>Mots rares <span id="rl-rare-count" class="rl-sub"></span></h3>
+            <p class="coh-hint">Mots peu employés en français (moins d'une occurrence par million de mots, toutes formes du mot réunies). Les noms propres ne sont pas comptés.</p>
+            <div id="rl-rare" class="rl-words"></div>
+            <label class="rl-check"><input type="checkbox" id="rl-mark-rare"> Souligner les mots rares dans le texte</label>
+          </section>
+        </div>
       </div>
     </aside>
   </div>
@@ -760,7 +790,7 @@
     <section class="fr-part" id="fr-llm">
       <h3>Aide au texte : LLM local <span class="fr-optional">(facultatif)</span></h3>
       <p>L’aide au texte reformule un passage selon le style choisi et propose des synonymes adaptés au contexte. Elle résume aussi le document et vérifie sa cohérence (noms, dates, faits).</p>
-      <p class="fr-note">Elle requiert un LLM local au format GGUF (par exemple Mistral Nemo 12B). Le logiciel fonctionne sans, à l’exception de l’aide au texte. Réglage modifiable ensuite dans Aide au texte > Réglages de l’AAT.</p>
+      <p class="fr-note">Elle requiert un LLM local au format GGUF (par exemple Mistral Nemo 12B). Le logiciel fonctionne sans, à l’exception de l’Aide au texte. Réglage modifiable ensuite dans Aide au texte > Réglages de l’Aide au texte.</p>
       <div class="fr-row">
         <button type="button" id="fr-llm-locate">Indiquer l’emplacement du LLM…</button>
         <span class="fr-state" id="fr-llm-state" role="status"></span>
@@ -904,45 +934,17 @@
     <div class="coh-body">
       <div id="coh-local"></div>
       <section class="coh-section coh-ai">
-        <h3>Contradictions (Aide au Texte)</h3>
+        <h3>Contradictions (Aide au texte)</h3>
         <p class="coh-hint">Le modèle local relève les faits (âges, apparence, familles, métiers, lieux, dates) et cherche ceux qui se contredisent d'un passage à l'autre.</p>
         <div class="coh-ai-actions">
-          <button type="button" id="coh-ai-run" class="primary">Lancer la vérification par l'AAT</button>
+          <button type="button" id="coh-ai-run" class="primary">Lancer la vérification par l'Aide au texte</button>
           <button type="button" id="coh-ai-stop" hidden>Arrêter</button>
-          <button type="button" id="coh-ai-setup" hidden>Ouvrir les réglages de l'AAT</button>
+          <button type="button" id="coh-ai-setup" hidden>Ouvrir les réglages de l'Aide au texte</button>
         </div>
         <div id="coh-ai-progress" hidden><div class="sum-bar"><span></span></div><p id="coh-ai-step"></p></div>
         <p id="coh-ai-error" class="sum-error" hidden></p>
         <div id="coh-ai-results"></div>
         <p id="coh-ai-info" class="sum-info"></p>
-      </section>
-    </div>
-  </dialog>
-
-  <dialog id="read-dialog">
-    <div class="coh-head">
-      <h2>Lisibilité : <span id="rl-title"></span></h2>
-      <span class="spacer"></span>
-      <button type="button" id="rl-refresh" title="Refaire l'analyse">↻ Actualiser</button>
-      <button type="button" id="rl-close" title="Fermer (Échap)">✕</button>
-    </div>
-    <div class="coh-body">
-      <div id="rl-score" class="rl-card"></div>
-      <dl id="rl-stats" class="rl-stats"></dl>
-      <section class="coh-section">
-        <h3>Longueur des phrases</h3>
-        <div id="rl-dist"></div>
-        <label class="rl-check"><input type="checkbox" id="rl-mark-long"> Surligner les phrases longues dans le texte</label>
-      </section>
-      <section class="coh-section">
-        <h3>Phrases les plus longues</h3>
-        <div id="rl-long" class="rl-list"></div>
-      </section>
-      <section class="coh-section">
-        <h3>Mots rares <span id="rl-rare-count" class="rl-sub"></span></h3>
-        <p class="coh-hint">Mots peu employés en français (moins d'une occurrence par million de mots, toutes formes du mot réunies). Les noms propres ne sont pas comptés.</p>
-        <div id="rl-rare" class="rl-words"></div>
-        <label class="rl-check"><input type="checkbox" id="rl-mark-rare"> Souligner les mots rares dans le texte</label>
       </section>
     </div>
   </dialog>
@@ -967,7 +969,7 @@
     <div class="modal-actions">
       <button type="button" id="sum-redo" title="Demander un nouveau résumé au modèle">Refaire</button>
       <button type="button" id="sum-stop" hidden>Arrêter</button>
-      <button type="button" id="sum-setup" hidden>Ouvrir les réglages de l'AAT</button>
+      <button type="button" id="sum-setup" hidden>Ouvrir les réglages de l'Aide au texte</button>
       <span class="spacer"></span>
       <button type="button" id="sum-copy">Copier</button>
       <button type="button" id="sum-insert" title="Écrire le résumé à l'endroit du curseur, dans le document ouvert">Insérer dans le texte</button>
@@ -1166,7 +1168,7 @@
 
   <dialog id="lang-dialog">
     <h2>Langues du document</h2>
-    <p class="lg-note">La langue de chaque passage est reconnue parmi les langues cochées. Orthographe, grammaire, synonymes et AAT suivent cette langue.</p>
+    <p class="lg-note">La langue de chaque passage est reconnue parmi les langues cochées. Orthographe, grammaire, synonymes et Aide au texte suivent cette langue.</p>
     <div id="lg-list" class="lg-list"></div>
     <div class="lg-row">
       <label for="lg-main">Langue principale</label>

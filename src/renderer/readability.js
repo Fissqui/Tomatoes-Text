@@ -1,5 +1,5 @@
-// Statistiques de lisibilité (Édition > « Statistiques de lisibilité… », ou « Objectifs et statistiques »).
-// Fenêtre à droite du document : indice de lisibilité (adaptation de Flesch propre à la langue du texte),
+// Statistiques de lisibilité : onglet « Lisibilité » de l'Aide au texte (aussi ouvert depuis « Objectifs et
+// statistiques »). Indice de lisibilité (adaptation de Flesch propre à la langue du texte),
 // longueur des phrases, phrases les plus longues, mots rares, temps de lecture. Les phrases longues et
 // les mots rares peuvent être surlignés dans le texte ; un clic sur une phrase ou un mot y mène.
 // Mots rares : mots en minuscules absents de la liste des mots courants du français (vendor/frequences-fr,
@@ -10,7 +10,8 @@
   // Moteur 2.0 : le nouveau moteur (moteur/generes.js).
   let G = null;
   const workspace = $('workspace');
-  const dialog = $('read-dialog');
+  // Visible : tiroir de l'Aide au texte ouvert sur l'onglet Lisibilité.
+  const shown = () => !!(window.FTAssistant && window.FTAssistant.isOpen() && window.FTAssistant.tab() === 'lisibilite');
 
   const LONG = 21;       // phrase longue : plus de 20 mots
   const VERY_LONG = 31;  // très longue : plus de 30 mots
@@ -319,7 +320,7 @@
   // Surlignage des phrases longues et des mots rares dans le texte (API Highlight : le texte n'est pas modifié).
   function paint() {
     Object.values(hl).forEach((h) => h.clear());
-    if (!last || !dialog.open || !window.Highlight) return;
+    if (!last || !shown() || !window.Highlight) return;
     if (marks.long) {
       for (const x of last.sentences) {
         if (x.words < LONG || !x.b.block.isConnected) continue;
@@ -342,38 +343,51 @@
     sel.addRange(range);
   }
 
+  function clear() {
+    clearTimeout(timer);
+    Object.values(hl).forEach((h) => h.clear());
+    last = null;
+  }
+
   async function refresh() {
+    if (!window.FTApp.currentId()) {
+      clear();
+      $('rl-title').textContent = '';
+      $('rl-score').replaceChildren(el('p', { className: 'rl-empty', textContent: 'Aucun document ouvert.' }));
+      for (const id of ['rl-stats', 'rl-dist', 'rl-long', 'rl-rare']) $(id).replaceChildren();
+      $('rl-rare-count').textContent = '';
+      return;
+    }
     await loadWords();
+    if (!shown()) return;
     last = analyze();
     render(last);
   }
 
-  async function open() {
+  function open() {
     if (!window.FTApp.currentId()) return;
-    if (!dialog.open) dialog.show();
-    await refresh();
+    // Le tiroir est masqué en mode lecture.
+    if (window.FTReading && window.FTReading.isOn()) window.FTReading.set(false);
+    window.FTAssistant.showTab('lisibilite');
   }
 
   function close() {
-    dialog.close();
+    window.FTAssistant.toggle(false);
   }
-  dialog.addEventListener('close', () => {
-    Object.values(hl).forEach((h) => h.clear());
-    last = null;
-  });
+
+  // Onglet affiché ou masqué (assistant.js).
+  document.addEventListener('ft-assist-view', () => { if (shown()) refresh(); else clear(); });
 
   // Le texte change : nouvelle analyse après une pause de frappe.
   const later = () => {
-    if (!dialog.open) return;
+    if (!shown()) return;
     clearTimeout(timer);
     timer = setTimeout(refresh, 800);
   };
   editor.addEventListener('input', later);
-  document.addEventListener('ft-docname', () => { if (dialog.open) refresh(); });
+  document.addEventListener('ft-docname', () => { if (shown()) refresh(); });
 
   $('rl-refresh').addEventListener('click', refresh);
-  $('rl-close').addEventListener('click', close);
-  dialog.addEventListener('keydown', (e) => { if (e.key === 'Escape') { e.preventDefault(); close(); } });
   $('rl-mark-long').addEventListener('change', (e) => { marks.long = e.target.checked; paint(); });
   $('rl-mark-rare').addEventListener('change', (e) => { marks.rare = e.target.checked; paint(); });
 

@@ -49,7 +49,7 @@ ligne nécessaire.
   dans un même document.
 - Grammaire avec LanguageTool, exécuté localement.
 - Synonymes, doublons, lisibilité, vérification de la cohérence (noms, dates).
-- Aide au texte (AAT) : reformulation, résumé et propositions par un modèle de langage local
+- Aide au texte : reformulation, synonymes, résumé et statistiques de lisibilité (modèle de langage local pour la reformulation et le résumé)
   (Mistral, via llama.cpp), sans connexion à un service externe.
 
 **Import et export**
@@ -151,7 +151,7 @@ Tomatoes Text s'appuie notamment sur [Electron](https://www.electronjs.org) (MIT
 (LGPL/GPL/MPL) et ses dictionnaires, les thésaurus de LibreOffice (LGPL/GPL),
 [LanguageTool](https://languagetool.org) (LGPL 2.1) avec Java [Eclipse Temurin](https://adoptium.net)
 (GPL 2.0 avec exception « Classpath »), livrés avec le programme d'installation, et des polices sous
-licence SIL Open Font License. Les modèles Mistral (Apache 2.0) de l'Aide au Texte sont téléchargés à la
+licence SIL Open Font License. Les modèles Mistral (Apache 2.0) de l'Aide au texte sont téléchargés à la
 demande. Les portraits des repères biographiques, tirés de Wikimedia Commons, sont dans le domaine public.
 
 La liste complète des composants, de leurs licences et de leurs auteurs est dans

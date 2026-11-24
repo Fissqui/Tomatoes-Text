@@ -24,6 +24,11 @@ nom. Le détail de chaque version publiée figure sur la
   blogs) ou un PDF garde ses notes, qui deviennent des notes du document ; une note absente du passage copié
   sur une page web est relue sur la page. Un passage copié dans le logiciel garde aussi le texte de ses notes.
 - Équations gardées au collage depuis les sites qui utilisent MathJax 2 et depuis Wikipédia copié dans Chrome.
+- Aide au texte en deux onglets : Rédaction (reformulation, synonymes, résumé, cohérence, faux texte) et
+  Lisibilité (statistiques de lisibilité, auparavant dans une fenêtre à part).
+- Menus Édition et Affichage allégés : « Rechercher et remplacer… » en une seule entrée ; modes jour /
+  crépuscule / lune, Mindmap, Carte du temps, modèle de mise en page, lisibilité et cohérence retirés des
+  menus, toujours accessibles par leurs boutons et leurs raccourcis.
 
 ## 2.4 « Corbarino » — novembre 2026
 

@@ -240,7 +240,7 @@ async function suggest(request) {
   const settings = await readSettings();
   local.setModelsDir(settings.modelsDir);
   if (!local.isDownloaded(settings.localModel)) {
-    return { error: 'Le modèle n’est pas encore installé : ouvrez « Réglages de l’AAT ».', needsSetup: true };
+    return { error: 'Le modèle n’est pas encore installé : ouvrez « Réglages de l’Aide au texte ».', needsSetup: true };
   }
   try {
     let text = '';

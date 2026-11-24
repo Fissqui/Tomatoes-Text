@@ -87,7 +87,7 @@ async function check(sender, { id, title, text, langs }) {
   current = controller;
   const settings = await readSettings();
   local.setModelsDir(settings.modelsDir);
-  if (!local.isDownloaded(settings.localModel)) return { error: 'Le modèle de l’AAT n’est pas encore installé.', needsSetup: true };
+  if (!local.isDownloaded(settings.localModel)) return { error: 'Le modèle de l’Aide au texte n’est pas encore installé.', needsSetup: true };
   const progress = (done, total, step) => { if (!sender.isDestroyed()) sender.send('assist:coherenceProgress', { id, done, total, step }); };
   const gen = (prompt, schema, maxTokens) => local.generate(settings.localModel, { system: SYSTEM, examples: [], text: prompt }, { temperature: 0.1, maxTokens, schema, signal: controller.signal });
   try {

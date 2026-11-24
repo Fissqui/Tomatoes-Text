@@ -37,7 +37,7 @@ module.exports = async ({ page }) => {
   await page.check('#rl-mark-long');
   await page.check('#rl-mark-rare');
   const ui = await page.evaluate(() => ({
-    open: document.getElementById('read-dialog').open,
+    open: document.getElementById('assist').classList.contains('open') && !document.getElementById('assist-pane-lisibilite').hidden && document.getElementById('assist-pane-redaction').hidden,
     score: document.querySelector('#rl-score .rl-score').textContent,
     level: document.querySelector('#rl-score .rl-level').textContent,
     rare: document.querySelectorAll('#rl-rare .rl-word').length,
@@ -45,7 +45,7 @@ module.exports = async ({ page }) => {
     hl: [...CSS.highlights.get('ft-read-vlong')].length + [...CSS.highlights.get('ft-read-rare')].length
   }));
   assert(ui.open && ui.rare === 5 && ui.long === 1 && ui.hl === 6, JSON.stringify(ui));
-  ok(`fenêtre : score ${ui.score} « ${ui.level} », ${ui.long} phrase longue, ${ui.rare} mots rares, ${ui.hl} surlignages`);
+  ok(`Aide au texte, onglet Lisibilité : score ${ui.score} « ${ui.level} », ${ui.long} phrase longue, ${ui.rare} mots rares, ${ui.hl} surlignages`);
   await page.click('#rl-long .rl-sentence');
   const sel = await page.evaluate(() => getSelection().toString());
   assert(/^Cette phrase/.test(sel) && /claire\.$/.test(sel), sel);
@@ -57,9 +57,26 @@ module.exports = async ({ page }) => {
   const n = await page.evaluate(() => document.querySelector('#rl-stats dd:nth-of-type(2)').textContent);
   assert.strictEqual(n, '7');
   ok('analyse refaite après une modification : 7 phrases');
-  await page.keyboard.press('Escape');
-  await page.click('#rl-close').catch(() => {});
+  // Onglet Rédaction : surlignages retirés ; retour à Lisibilité : remis ; tiroir fermé : retirés.
+  const hlCount = () => page.evaluate(() => [...CSS.highlights.get('ft-read-rare')].length);
+  await page.click('#assist-tab-redaction');
   await page.waitForTimeout(200);
-  assert.strictEqual(await page.evaluate(() => [...CSS.highlights.get('ft-read-rare')].length), 0);
-  ok('fenêtre fermée : surlignages retirés');
+  assert.strictEqual(await hlCount(), 0);
+  await page.click('#assist-tab-lisibilite');
+  await page.waitForTimeout(600);
+  assert.strictEqual(await hlCount(), 5);
+  await page.click('#assist-close');
+  await page.waitForTimeout(200);
+  assert.strictEqual(await hlCount(), 0);
+  ok('onglet Rédaction ou tiroir fermé : surlignages retirés ; retour à Lisibilité : remis');
+  // Plus d'entrée « Statistiques de lisibilité » ni « Vérifier la cohérence » dans le menu Édition.
+  const labels = (menu) => menu.submenu.filter((x) => x.label).map((x) => x.label);
+  const tpl = require('electron')._test.menuTemplate;
+  if (tpl) {
+    const edit = labels(tpl.find((m) => m.label === 'Édition'));
+    const view = labels(tpl.find((m) => m.label === 'Affichage'));
+    assert.ok(edit.includes('Rechercher et remplacer…') && !edit.some((l) => /Remplacer…|lisibilité|cohérence/.test(l)), edit.join(' | '));
+    assert.ok(!view.some((l) => /crépuscule|Mindmap|Carte du temps|Modèle de mise en page/.test(l)), view.join(' | '));
+    ok('menus : Édition « Rechercher et remplacer… » seul ; Affichage sans modes, Mindmap, Carte du temps ni modèle');
+  }
 };

@@ -58,7 +58,7 @@
 
   function infoOf(entry) {
     const when = new Date(entry.date).toLocaleString('fr-FR', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' });
-    return `Résumé de ${entry.words.toLocaleString('fr-FR')} mots, fait le ${when}. Écrit par le modèle local de l'AAT : relisez-le avant de l'utiliser.`;
+    return `Résumé de ${entry.words.toLocaleString('fr-FR')} mots, fait le ${when}. Écrit par le modèle local de l'Aide au texte : relisez-le avant de l'utiliser.`;
   }
 
   async function open(id) {
@@ -94,7 +94,7 @@
     running = 0;
     if (res.cancelled) { showState({ info: 'Résumé arrêté.' }); return; }
     if (res.error) {
-      showState({ error: res.needsSetup ? 'Le modèle de l’AAT n’est pas encore installé. Ouvrez l’Aide au Texte, puis « Réglages de l’AAT » pour le télécharger ou choisir son dossier.' : res.error, setup: !!res.needsSetup });
+      showState({ error: res.needsSetup ? 'Le modèle de l’Aide au texte n’est pas encore installé. Ouvrez l’Aide au texte, puis « Réglages de l’Aide au texte » pour le télécharger ou choisir son dossier.' : res.error, setup: !!res.needsSetup });
       return;
     }
     const entry = { hash: hashOf(doc.text), length, text: res.text, date: new Date().toISOString(), words };

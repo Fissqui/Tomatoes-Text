@@ -340,7 +340,7 @@
     // Résumé du document par l'AAT (summary.js).
     const sum = document.createElement('button');
     sum.className = 'more-btn sum-btn';
-    sum.title = 'Résumer ce document (Aide au Texte)';
+    sum.title = 'Résumer ce document (Aide au texte)';
     sum.innerHTML = '<svg viewBox="0 0 16 16"><path d="M3 3.5h10M3 6.5h10M3 9.5h6"/><path d="M11.5 9.2l.7 1.6 1.6.7-1.6.7-.7 1.6-.7-1.6-1.6-.7 1.6-.7z"/></svg>';
     sum.addEventListener('click', (e) => { e.stopPropagation(); h.summarize(doc.fileName); });
     li.appendChild(sum);
@@ -385,7 +385,7 @@
         { text: 'Historique des versions…', action: () => h.versions(doc.fileName) },
         '-',
         ...(active && doc.fileName !== active ? [{ text: 'Insérer un lien dans le document ouvert', action: () => h.insertDocLink(doc.id) }] : []),
-        { text: 'Résumer (AAT)…', action: () => h.summarize(doc.fileName) },
+        { text: 'Résumer (Aide au texte)…', action: () => h.summarize(doc.fileName) },
         { text: 'Vérifier la cohérence…', action: () => window.FTCoherence.open(doc.id) },
         '-',
         { label: 'Déplacer vers' },

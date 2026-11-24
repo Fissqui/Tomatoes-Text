@@ -1614,7 +1614,7 @@
   // Mode lecture : le texte est fermé. Les commandes qui le modifieraient sont sans effet ; celles qui
   // ouvrent un autre document, une autre vue ou un outil du texte quittent d'abord la lecture.
   const READING_KEEPS = new Set(['focus', 'fullscreen-left', 'theme', 'save', 'before-close', 'tags-on', 'tags-off', 'minibar-on', 'minibar-off',
-    'grammar-on', 'grammar-off', 'grammar-reset', 'export', 'export-word', 'export-pdf', 'export-choose', 'report', 'update', 'goals', 'readability',
+    'grammar-on', 'grammar-off', 'grammar-reset', 'export', 'export-word', 'export-pdf', 'export-choose', 'report', 'update', 'goals',
     'shortcuts', 'customize']);
   const READING_IGNORES = new Set(['undo', 'redo', 'select-all', 'zoom-in', 'zoom-out', 'zoom-reset']);
 

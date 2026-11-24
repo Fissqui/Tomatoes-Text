@@ -1,4 +1,5 @@
-// Aide au texte (AAT) : tiroir à droite qui propose une reformulation dès qu'un passage est sélectionné.
+// Aide au texte : tiroir à droite en deux onglets. « Rédaction » propose une reformulation dès qu'un passage
+// est sélectionné ; « Lisibilité » affiche les statistiques de lisibilité (readability.js).
 (function () {
   const api = window.frameText;
   const $ = (id) => document.getElementById(id);
@@ -11,6 +12,7 @@
   const DELAY = 700; // on attend que la sélection soit stable avant de lancer le modèle
 
   let open = false;
+  let tab = 'redaction'; // onglet affiché : 'redaction' ou 'lisibilite'
   let settings = null;
   let timer = null;
   let requestId = 0;
@@ -28,27 +30,50 @@
     return !!(m && m.downloaded);
   }
 
+  // Prévient readability.js : onglet Lisibilité visible ou non.
+  const announce = () => document.dispatchEvent(new CustomEvent('ft-assist-view', { detail: { open, tab } }));
+
+  function startRedaction() {
+    refreshSettings().then(() => {
+      if (!open || tab !== 'redaction') return;
+      if (modelReady()) api.assistWarmUp();
+      const range = window.FTEditor.captureSelection();
+      onSelection(range ? range.toString() : '');
+    });
+  }
+
   function toggle(force) {
     open = typeof force === 'boolean' ? force : !open;
     panel.classList.toggle('open', open);
     panel.setAttribute('aria-hidden', String(!open));
     $('assist-toggle').classList.toggle('on', open);
-    if (open) {
-      refreshSettings().then(() => {
-        if (modelReady()) api.assistWarmUp();
-        const range = window.FTEditor.captureSelection();
-        onSelection(range ? range.toString() : '');
-      });
+    if (open && tab === 'redaction') startRedaction();
+    if (!open) {
+      clearTimeout(timer);
+      api.assistCancel();
+    }
+    announce();
+  }
+
+  function showTab(name) {
+    tab = name === 'lisibilite' ? 'lisibilite' : 'redaction';
+    for (const b of panel.querySelectorAll('.assist-tabs [data-tab]')) b.setAttribute('aria-selected', String(b.dataset.tab === tab));
+    $('assist-pane-redaction').hidden = tab !== 'redaction';
+    $('assist-pane-lisibilite').hidden = tab !== 'lisibilite';
+    if (tab === 'redaction') {
+      if (open) startRedaction();
     } else {
       clearTimeout(timer);
       api.assistCancel();
     }
+    if (!open) toggle(true);
+    else announce();
   }
 
   // ----- Propositions automatiques -----
 
   function onSelection(text) {
-    if (!open) return;
+    if (!open || tab !== 'redaction') return;
     source.value = text;
     clearTimeout(timer);
     // Un à trois mots : des synonymes plutôt qu'une reformulation.
@@ -194,7 +219,7 @@
     if (!force && key === lastKey) return;
     if (!modelReady()) await refreshSettings(); // le téléchargement a pu se terminer entre-temps
     if (!modelReady()) {
-      setStatus('Le modèle n’est pas encore installé : voyez « Réglages de l’AAT » en bas.', true);
+      setStatus('Le modèle n’est pas encore installé : voir « Réglages de l’Aide au texte » en bas.', true);
       $('assist-settings').open = true;
       return;
     }
@@ -343,5 +368,12 @@
   $('assist-style').addEventListener('change', () => { savePrefs(); request(false); });
   $('assist-intensity').addEventListener('change', () => { savePrefs(); request(false); });
 
-  window.FTAssistant = { toggle };
+  for (const b of panel.querySelectorAll('.assist-tabs [data-tab]')) b.addEventListener('click', () => showTab(b.dataset.tab));
+
+  window.FTAssistant = {
+    toggle,
+    showTab,
+    isOpen: () => open,
+    tab: () => tab
+  };
 })();

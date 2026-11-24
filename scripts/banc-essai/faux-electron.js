@@ -71,7 +71,7 @@ BrowserWindow.all = [];
 module.exports = {
   app, ipcMain, BrowserWindow,
   dialog: { showOpenDialog: async () => ({ canceled: true, filePaths: [] }), showSaveDialog: async () => ({ canceled: true }), showErrorBox() {} },
-  Menu: { buildFromTemplate: (t) => t, setApplicationMenu() {} },
+  Menu: { buildFromTemplate: (t) => t, setApplicationMenu(t) { module.exports._test.menuTemplate = t; } },
   shell: { openPath: async () => '', trashItem: async (p) => fs.rmSync(p, { recursive: true, force: true }), showItemInFolder() {}, openExternal() {} },
   nativeTheme: { shouldUseDarkColors: false },
   safeStorage: { isEncryptionAvailable: () => true, encryptString: (s) => Buffer.from('chiffre:' + s), decryptString: (b) => b.toString().replace(/^chiffre:/, '') },
