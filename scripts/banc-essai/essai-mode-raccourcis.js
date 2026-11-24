@@ -63,12 +63,23 @@ module.exports = async ({ page }) => {
   assert(geo.r.left >= geo.p.right && geo.r.left - geo.p.right <= 10, 'droite collée : ' + JSON.stringify(geo));
   assert(geo.l.width <= 50 && geo.r.width <= 50, 'barres fines : ' + geo.l.width + ' / ' + geo.r.width);
   assert(new Set(geo.li).size === 1 && new Set(geo.ri).size === 1, 'icônes alignées : ' + geo.li + ' | ' + geo.ri);
-  // Au défilement, les barres restent visibles en haut de la zone de texte.
+  // Au milieu de la hauteur visible, aussi en haut du document.
+  const mid0 = await page.evaluate(() => {
+    const mid = (r) => (r.top + r.bottom) / 2;
+    return Math.abs(mid(document.getElementById('tb-side-r').getBoundingClientRect()) - mid(document.getElementById('workspace').getBoundingClientRect()));
+  });
+  assert(mid0 <= 2, 'centrées : ' + mid0);
   await page.evaluate(() => { document.getElementById('editor').innerHTML += '<p>Suite.</p>'.repeat(120); });
   await page.evaluate(() => { document.getElementById('workspace').scrollTop = 1500; });
   await page.waitForTimeout(200);
-  const top = await page.evaluate(() => [document.getElementById('tb-side-l').getBoundingClientRect().top, document.getElementById('workspace').getBoundingClientRect().top]);
-  assert(top[0] >= top[1] && top[0] - top[1] < 20, 'fixes au défilement : ' + top);
+  // Au milieu de la zone visible, avant et après le défilement.
+  const middle = () => page.evaluate(() => {
+    const mid = (r) => (r.top + r.bottom) / 2;
+    const w = document.getElementById('workspace').getBoundingClientRect();
+    return ['tb-side-l', 'tb-side-r'].map((id) => Math.abs(mid(document.getElementById(id).getBoundingClientRect()) - mid(w)));
+  });
+  let off = await middle();
+  assert(off.every((d) => d <= 2), 'centrées au défilement : ' + off);
   await page.evaluate(() => { document.getElementById('workspace').scrollTop = 0; document.getElementById('editor').innerHTML = '<p>Le marché des tomates anciennes en Italie.</p>'; });
   await page.waitForTimeout(200);
   // Noms des groupes de la barre horizontale : aucun chevauchement.

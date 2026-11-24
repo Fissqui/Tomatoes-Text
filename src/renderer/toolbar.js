@@ -210,7 +210,7 @@
   fold.addEventListener('click', () => setFolded(!folded));
 
   // Barres latérales collées aux bords de la feuille (la page en interface note, les feuilles en
-  // interface avancée, les deux feuilles en double page), en haut de la page puis fixes au défilement.
+  // interface avancée, les deux feuilles en double page), au milieu de la hauteur visible.
   const workspace = document.getElementById('workspace');
   const pageEl = document.getElementById('page');
   const GAP = 8;
@@ -227,13 +227,13 @@
     sides.forEach((s) => s.classList.toggle('tb-side-away', !paper || !ws.width));
     if (!paper || !ws.width) return;
     const inner = ws.left + workspace.clientWidth;   // (sans la barre de défilement)
-    const top = Math.max(ws.top + 10, Math.min(paper.top, ws.bottom - 60));
     const [l, r] = sides;
     l.style.left = Math.max(ws.left + 4, paper.left - GAP - l.offsetWidth) + 'px';
     r.style.left = Math.min(inner - r.offsetWidth - 4, paper.right + GAP) + 'px';
+    // Au milieu de la zone visible (elles suivent le défilement).
     for (const s of sides) {
-      s.style.top = top + 'px';
-      s.style.maxHeight = Math.max(80, ws.bottom - top - 10) + 'px';
+      s.style.maxHeight = Math.max(80, ws.height - 20) + 'px';
+      s.style.top = Math.max(ws.top + 10, ws.top + (ws.height - s.offsetHeight) / 2) + 'px';
     }
   }
   let placing = 0;
