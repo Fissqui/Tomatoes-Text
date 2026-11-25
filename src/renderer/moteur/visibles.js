@@ -1484,14 +1484,39 @@
           seen.set(id, { i, pos });
         } else tr.setNodeMarkup(pos, null, withKeep(node, null));
       }
+      // Ligne effacée juste avant un bloc gardé, curseur à son début (Retour arrière) : le bloc suit le
+      // texte et remonte.
+      const sel = newState.selection;
+      const $h = sel.$head;
+      if (b.content.size < a.content.size && sel.empty && $h.depth === 1 && $h.parentOffset === 0 && begin <= $h.pos) {
+        const node = (tr ? tr.doc : b).child($h.index(0));
+        if (keptId(node)) {
+          tr = tr || newState.tr;
+          tr.setNodeMarkup($h.before(1), null, withKeep(node, null));
+        }
+      }
       // Les pages d'après la modification gardent leur début (découpage du texte d'avant).
       if (paged && lay && lay.opens && layDoc === a && pagesApi.keep() && nodes.length === a.childCount) {
+        // (Fin de la modification faite au clavier d'après ses étapes : entre des lignes vides identiques,
+        // la comparaison des deux textes la place trop tôt, et des pages d'avant la modification restaient
+        // en place. Les modifications ajoutées ensuite, numéros des notes…, ne comptent pas.)
+        const own = trs[0].mapping.maps;
+        let endA = end.a;
+        own.forEach((m, k) => m.forEach((os, oe) => {
+          let p = oe;
+          for (let q = k - 1; q >= 0; q--) p = own[q].invert().map(p, 1);
+          endA = Math.max(endA, p);
+        }));
         let i = 0;
-        while (i < nodes.length && starts[i] < end.a) i++;
+        while (i < nodes.length && starts[i] < endA) i++;
         const old = new Set();
         for (let j = 1; j < nodes.length; j++) if (opensPage(j)) old.add(nodes[j]);
+        // (Le bloc juste après la modification, curseur à son début, suit le texte : Retour arrière qui
+        // efface la ligne vide d'au-dessus, le bloc remonte.)
+        const atHead = sel.empty && $h.depth === 1 && $h.parentOffset === 0 ? $h.index(0) - dn : -1;
         for (let j = i; j < nodes.length; j++) {
           const node = nodes[j];
+          if (j === atHead) continue;
           if (!old.has(node) || flowing.has(node) || !node.attrs.a || keptId(node) || isChapter(node)) continue;
           tr = tr || newState.tr;
           tr.setNodeMarkup(starts[j] + end.b - end.a, null, withKeep(node, (++keepSeq).toString(36)));
@@ -1503,6 +1528,36 @@
       return tr && tr.setMeta(keepKey, true);
     }
   }));
+  // Retour arrière au début d'un bloc gardé en haut de sa page alors que la page d'avant finit en blanc
+  // (texte d'au-dessus raccourci) : le bloc et la suite reprennent leur place à la suite du texte, sans
+  // effacer quoi que ce soit ; les Retours arrière suivants effacent les lignes vides d'au-dessus une à
+  // une. (Sinon chaque Retour arrière effaçait une ligne vide sans que rien ne bouge, puis le bloc
+  // rejoignait d'un coup le paragraphe d'avant.)
+  M.addPlugin(PM.keymap.keymap({
+    Backspace: (state, dispatch) => {
+      const { selection: sel, doc } = state;
+      if (!paged || !sel.empty || sel.$from.depth !== 1 || sel.$from.parentOffset !== 0) return false;
+      const i = sel.$from.index(0);
+      const node = doc.child(i);
+      if (!i || !keptId(node) || !lay || !lay.push || layDoc !== doc || nodes[i] !== node) return false;
+      // (Place pour au moins deux lignes du bloc au bas de la page d'avant : sinon il n'y remonterait pas.)
+      const m = measOf(i);
+      const u = m.units;
+      const end = lay.R[i] - lay.push[i];
+      let r = 0;
+      while (r < lay.last && lay.region(r).cb < end) r++;
+      if (lay.region(r).cb - end < (m.mt || 0) + u[Math.min(1, u.length - 1)].b) return false;
+      if (dispatch) {
+        const tr = state.tr;
+        let pos = sel.$from.before(1);
+        for (let k = i; k < doc.childCount; pos += doc.child(k).nodeSize, k++) {
+          if (keptId(doc.child(k))) tr.setNodeMarkup(pos, null, withKeep(doc.child(k), null));
+        }
+        dispatch(tr.setMeta(keepKey, true).scrollIntoView());
+      }
+      return true;
+    }
+  }), true);
   function posOf(doc, i) {
     let pos = 0;
     for (let k = 0; k < i; k++) pos += doc.child(k).nodeSize;

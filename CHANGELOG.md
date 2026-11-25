@@ -41,6 +41,9 @@ nom. Le détail de chaque version publiée figure sur la
   l'image d'avant au lieu de se rétrécir à côté d'elle). Poignées de taille à leur place à tout zoom.
 - Texte à côté d'une image écarté d'elle (1,6 em), aussi après « Gauche » ou « Droite » ; de même en PDF, Word
   et EPUB.
+- Mode avancé, Retour arrière au début d'un texte resté en haut de sa page après un blanc (texte d'avant
+  raccourci, lignes vides, image) : le texte remonte dès le premier appui, puis chaque appui efface une ligne
+  vide d'au-dessus et le fait remonter d'autant (auparavant, rien ne bougeait avant un saut d'un coup).
 
 ## 2.4 « Corbarino » — novembre 2026
 
