@@ -372,6 +372,75 @@ module.exports = async ({ page }) => {
   assert(!/data-ligne-image/.test(html), 'remontée : lignes vides retirées ' + html.replace(/Lorem[^<]*/g, 'L'));
   ok('par ligne : sous la fin du texte, lignes vides créées puis retirées en remontant');
 
+  // Libre, pages : image en haut d'une page gardée (data-pg-start), la page d'avant finit par un tableau et un
+  // bas de page blanc. Glissée dans ce blanc, elle y reste (avant la 2.5.10 : renvoyée à la page suivante).
+  await reset(para(4) + para(3) + '<table class="ft-table"><tbody><tr><td>Figure 1. Légende en tableau</td></tr></tbody></table>'
+    + '<p data-pg-start="essai1">' + LOREM.repeat(8) + '</p>' + para(4), { mode: 'avance' });
+  await frames(4);
+  await page.evaluate(() => document.querySelector('#editor > p[data-pg-start]').scrollIntoView({ block: 'center' }));
+  await frames(4);
+  await caretIn('#editor > p[data-pg-start]', 0);
+  await insert(300, 180);
+  await frames(6);
+  sh = await sheetOf();
+  assert.equal(sh.i, 1, 'image en haut de la page 2 : ' + JSON.stringify(sh));
+  const keptLines = () => page.evaluate(() => window.FTDecoupage.linesOf(document.querySelector('#editor > p[data-pg-start]')).length);
+  const keptPage = () => page.evaluate(() => {
+    const m = document.getElementById('editor');
+    const k = m.currentCSSZoom || 1;
+    const r = document.querySelector('#editor > p[data-pg-start]').getBoundingClientRect();
+    return window.FTVisibles.pageOfY((r.top - m.getBoundingClientRect().top) / k + 2);
+  });
+  // (Page 1 et haut de la page 2 visibles ensemble.)
+  await page.setViewportSize({ width: 1300, height: 1400 });
+  await page.evaluate(() => window.FTZoom.set(60));
+  await frames(6);
+  i0 = await info();
+  await scrollTo(i0.t - 600);
+  await frames(4);
+  i0 = await info();
+  const html1 = await saved();
+  d0 = await undoDepth();
+  const tableBottom = await page.evaluate(() => document.querySelector('#editor > table').getBoundingClientRect().bottom);
+  await drag(i0.l + 20, i0.t + 20, 0, tableBottom + 60 - i0.t);
+  await frames(6);
+  sh = await sheetOf();
+  html = await saved();
+  assert(sh.inside && sh.i === 0, 'image remontée dans le blanc de la page 1 : ' + JSON.stringify(sh));
+  assert(/<p data-ligne-image="seule"><span class="ft-image"/.test(html), "ligne vide créée sous le tableau pour elle " + html.replace(/(Lorem[^<]{0,20})[^<]*/g, '$1'));
+  i1 = await info();
+  assert(Math.abs(i1.t - (tableBottom + 60)) < 25, 'à la hauteur visée (' + (i1.t - tableBottom - 60) + ')');
+  assert.equal(await keptPage(), 1, 'le paragraphe gardé reste en haut de la page 2');
+  const linesWithout = await keptLines();
+  await page.screenshot({ path: SHOTS + '/blanc-de-page.png' });
+  assert.equal(await undoDepth(), d0 + 1, 'un geste = une étape');
+  await page.keyboard.press('Control+z');
+  await frames(4);
+  assert.equal(await saved(), html1, 'Ctrl+Z : image revenue en haut de la page 2');
+  await page.keyboard.press('Control+y');
+  await frames(6);
+  // Le texte de la page 2 n'est plus habillé par l'image restée sur la page 1 (pas de coupure trop tôt).
+  const sheet2 = await page.evaluate(() => {
+    const m = document.getElementById('editor');
+    const k = m.currentCSSZoom || 1;
+    const r = document.querySelector('#editor > p[data-pg-start]').getBoundingClientRect();
+    return { bottom: (r.bottom - m.getBoundingClientRect().top) / k, f: window.FTVisibles.pageFrame(1) };
+  });
+  assert(sheet2.bottom <= sheet2.f.cb + 1, 'paragraphe gardé entier sur la page 2 : ' + JSON.stringify(sheet2) + ' lignes ' + linesWithout);
+  ok('pages, libre : glissée dans le bas blanc d\'une page (suite gardée à la page suivante), elle y reste');
+  // Retour en haut de la page 2 : la ligne vide créée pour elle est retirée.
+  i0 = await info();
+  const p2t = await page.evaluate(() => document.querySelector('#editor > p[data-pg-start]').getBoundingClientRect().top);
+  await drag(i0.l + 20, i0.t + 20, 0, p2t + 4 - i0.t);
+  await frames(6);
+  sh = await sheetOf();
+  html = await saved();
+  assert(sh.i === 1 && !/data-ligne-image/.test(html), 'revenue en page 2, ligne vide retirée : ' + JSON.stringify(sh));
+  ok('pages, libre : revenue sur la page suivante, la ligne vide créée pour elle est retirée');
+  await page.evaluate(() => window.FTZoom.set(100));
+  await page.setViewportSize({ width: 1300, height: 850 });
+  await frames(4);
+
   // Anciens documents (versions 1.6 à 2.4) : ouverts sans rien perdre.
   const IMG = (attrs) => `<span class="ft-image" contenteditable="false" ${attrs}><img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt=""></span>`;
   await reset('<p>Un.</p>' + IMG('data-wrap="gauche" data-pos="fixe" style="width: 30%;"') + '<p>Deux deux deux.</p>'

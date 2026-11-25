@@ -1296,6 +1296,9 @@ dialog p { margin: 0 0 12px; }
 /* Libre au niveau du texte : accrochée au début d'une ligne, écart --dy avec le haut de cette ligne. */
 #editor .ft-image[data-wrap="gauche"], #editor .ft-image[data-wrap="droite"] { margin-top: var(--dy, 0.3em); }
 #editor .ft-image[data-wrap="gauche"]:not([data-caption]), #editor .ft-image[data-wrap="droite"]:not([data-caption]) { margin-bottom: 0.5em; }
+/* Ligne vide créée pour une image posée dans un bas de page laissé blanc : elle contient toute l'image (le
+   texte qui suit, sur la page suivante, ne passe pas à côté d'elle). */
+#editor p[data-ligne-image="seule"] { display: flow-root; }
 /* Légende à gauche ou à droite de l'image. */
 #editor .ft-image:is([data-caption="gauche"], [data-caption="droite"]) { display: flex; align-items: center; gap: 0.8em; line-height: normal; }
 #editor .ft-image[data-wrap="ligne"]:is([data-caption="gauche"], [data-caption="droite"]) { display: inline-flex; }

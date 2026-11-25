@@ -656,9 +656,32 @@
       if (!tb) return { kind: 'end', top: bottom, y, ...side(x, w, textColumn()), col: textColumn() };
     }
     const l = lineAt(tb, Math.max(y + 2, tb.getBoundingClientRect().top));
+    if (!h.inside) {
+      // (Bas de page laissé blanc, ou tableau, objet… sans paragraphe après lui sur cette page : une ligne
+      // vide est créée sur la page visée, sinon l'image partirait à la page suivante.)
+      const gap = gapAt(h, y, l.top);
+      if (gap) {
+        const col = textColumn();
+        const sd = side(x, w, col);
+        return { kind: 'gap', pos: gap.pos, top: gap.top, side: sd.side, mx: sd.mx, dy: Math.max(0, (y - gap.top) / zoom()), col };
+      }
+    }
     const col = column(tb);
     const sd = side(x, w, col);
     return { kind: 'line', pos: l.pos, top: l.top, side: sd.side, mx: sd.mx, dy: Math.max(0, (y - l.top) / zoom()), tb, col };
+  }
+  // Interface avancée : hauteur y sur une page dont le texte s'arrête avant (la suite commence à la page
+  // suivante, à la hauteur at). Renvoie { pos (après le dernier bloc de la page de y), top (son bas) } ou null.
+  function gapAt(h, y, at) {
+    if (!paged()) return null;
+    const p = frameAt(y).page;
+    if (frameAt(at).page <= p) return null;
+    const list = shownTops();
+    const prev = h.before === true ? list[list.indexOf(h.top) - 1] : h.top;
+    if (!prev || !prev.pmViewDesc) return null;
+    const pb = prev.getBoundingClientRect().bottom;
+    if (frameAt(pb - 1).page !== p) return null;
+    return { pos: prev.pmViewDesc.posAfter, top: pb };
   }
   function side(x, w, col) {
     const sd = x + w / 2 <= col.left + col.width / 2 ? 'gauche' : 'droite';
@@ -830,6 +853,28 @@
     tr.insert(end, paras);
     return end + (paras.length - 1) * 2 + 1;
   }
+  // Ligne vide créée pour une image posée dans un bas de page laissé blanc, au milieu du texte (aimFree,
+  // kind 'gap') : retirée quand l'image la quitte et qu'on n'y a rien écrit.
+  const SEULE = 'seule';
+  function anchorGap(tr, spot) {
+    const p = tr.mapping.map(spot.pos);
+    tr.insert(p, emptyPara({ [AUTO]: SEULE }));
+    return p + 1;
+  }
+  // Ligne « seule » de l'image à pos (avant de la déplacer), ou null.
+  function homeOf(doc, pos) {
+    const $p = doc.resolve(pos);
+    const par = $p.parent;
+    if ($p.depth !== 1 || bagOf(par)[AUTO] !== SEULE || par.childCount !== 1) return null;
+    return { pos: $p.before(), size: par.nodeSize };
+  }
+  // L'image retirée : sa ligne « seule » restée vide part aussi (sauf si l'image y revient : spotPos dedans).
+  function leaveHome(tr, home, spotPos) {
+    if (!home || (spotPos !== null && spotPos > home.pos && spotPos < home.pos + home.size)) return;
+    const m = tr.mapping.map(home.pos);
+    const n = tr.doc.nodeAt(m);
+    if (n && n.type === N.paragraph && !n.childCount && bagOf(n)[AUTO] === SEULE) tr.delete(m, m + n.nodeSize);
+  }
   function autoStep() {
     const probe = mount.querySelector(':scope > p') || mount;
     const pcs = getComputedStyle(probe);
@@ -868,7 +913,7 @@
         let from = at;
         for (let i = $at.index(0) - 1; i >= 0 && n > 0; i--, n--) {
           const c = view.state.doc.child(i);
-          if (c.type !== N.paragraph || bagOf(c)[AUTO] === undefined || c.childCount) break;
+          if (c.type !== N.paragraph || bagOf(c)[AUTO] === undefined || bagOf(c)[AUTO] === SEULE || c.childCount) break;
           from -= c.nodeSize;
         }
         if (from === at) return pos;
@@ -1075,9 +1120,14 @@
     if (g.free) {
       // Devant ou derrière : accrochée à la ligne de son nouveau haut ; place corrigée ensuite.
       const spot = withHidden(g.dom, () => aimFree(want.left, want.top, want.left, want.top, { w: want.width, h: want.height }));
+      const home = homeOf(doc, g.pos);
       tr.delete(g.pos, g.pos + node.nodeSize);
+      leaveHome(tr, home, spot && spot.kind === 'line' ? spot.pos : null);
       if (spot && spot.kind === 'line') {
         at = tr.mapping.map(spot.pos);
+        tr.insert(at, inlineNode(put(a, 'data-align', null), node.attrs.inner));
+      } else if (spot && spot.kind === 'gap') {
+        at = anchorGap(tr, spot);
         tr.insert(at, inlineNode(put(a, 'data-align', null), node.attrs.inner));
       } else {
         at = fillTo(tr, { y: want.top });
@@ -1115,11 +1165,16 @@
       let o = put(a, 'data-wrap', spot.side);
       o = put(o, 'data-align', null);
       o = styles(o, { '--mx': spot.mx ? spot.mx + '%' : null, '--x': null, '--y': null });
+      const home = homeOf(doc, g.pos);
       tr.delete(g.pos, g.pos + node.nodeSize);
+      leaveHome(tr, home, spot.kind === 'line' ? spot.pos : null);
       if (spot.kind === 'end') {
         at = fillTo(tr, spot);
         o = withStyle(o, '--dy', null);
         fill = t.top;
+      } else if (spot.kind === 'gap') {
+        o = withStyle(o, '--dy', spot.dy > 0.5 ? Math.round(spot.dy) + 'px' : null);
+        at = anchorGap(tr, spot);
       } else {
         o = withStyle(o, '--dy', spot.dy > 0.5 ? Math.round(spot.dy) + 'px' : null);
         at = tr.mapping.map(spot.pos, -1);
@@ -1143,7 +1198,7 @@
     const before = tr.doc.content.size;
     // (Seulement si aucune image n'est accrochée dans ces lignes.)
     let holds = false;
-    tr.doc.forEach((n) => { if (bagOf(n)[AUTO] !== undefined && n.childCount) holds = true; });
+    tr.doc.forEach((n) => { if (bagOf(n)[AUTO] !== undefined && bagOf(n)[AUTO] !== SEULE && n.childCount) holds = true; });
     if (!holds) dropAutoLines(tr);
     return before !== tr.doc.content.size;
   }
@@ -1176,9 +1231,11 @@
     if (moveOf(a) === 'libre') {
       const want = { left: r.left, top: limit, width: r.width, height: r.height };
       const spot = withHidden(cur.dom, () => aimFree(want.left, want.top, want.left + 2, want.top + 2, { w: r.width, h: r.height }));
-      if (!spot || spot.kind !== 'line') return;
+      if (!spot || (spot.kind !== 'line' && spot.kind !== 'gap')) return;
+      const home = homeOf(view.state.doc, pos);
       tr.delete(pos, pos + node.nodeSize);
-      at = tr.mapping.map(spot.pos, -1);
+      leaveHome(tr, home, spot.kind === 'line' ? spot.pos : null);
+      at = spot.kind === 'gap' ? anchorGap(tr, spot) : tr.mapping.map(spot.pos, -1);
       tr.insert(at, inlineNode(withStyle(a, '--dy', spot.dy > 0.5 ? Math.round(spot.dy) + 'px' : null), node.attrs.inner));
       tr.setSelection(NodeSelection.create(tr.doc, at));
       view.dispatch(joined(tr));
@@ -2025,8 +2082,16 @@
     return bare(() => {
       view.domObserver.stop();
       const was = dom.style.display;
+      // (Sa ligne « seule » garde sa hauteur : le texte qui suit ne remonte pas pendant la mesure.)
+      const home = dom.parentElement && dom.parentElement.matches('p[' + AUTO + '="' + SEULE + '"]') ? dom.parentElement : null;
+      const mh = home ? home.style.minHeight : '';
+      if (home) home.style.minHeight = home.getBoundingClientRect().height / zoom() + 'px';
       dom.style.display = 'none';
-      try { return fn(); } finally { dom.style.display = was; view.domObserver.start(); }
+      try { return fn(); } finally {
+        dom.style.display = was;
+        if (home) home.style.minHeight = mh;
+        view.domObserver.start();
+      }
     });
   }
 

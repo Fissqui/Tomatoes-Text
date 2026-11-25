@@ -34,6 +34,8 @@ nom. Le détail de chaque version publiée figure sur la
 - Documents en plusieurs langues : un mot juste dans l'une des langues du document n'est plus signalé, même
   au milieu d'une phrase dans une autre langue ; propositions de correction tirées de toutes ces langues.
   Un paragraphe dont la langue est choisie à la main reste vérifié dans cette seule langue.
+- Image libre glissée dans le bas laissé blanc d'une page (après un tableau, ou avant une suite gardée à la
+  page suivante) : elle reste sur cette page, dans une ligne vide créée pour elle, retirée si l'image repart.
 
 ## 2.4 « Corbarino » — novembre 2026
 
