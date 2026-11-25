@@ -259,6 +259,7 @@
     bar.hidden = true;
     bar.addEventListener('mousedown', (e) => { e.preventDefault(); barHolds = true; setTimeout(() => { barHolds = false; }, 0); });
     document.body.append(bar);
+    new ResizeObserver(() => placeBar()).observe(bar);
   }
   // Partie sélectionnée d'une équation en cours d'écriture (toute l'équation sans sélection).
   function selectedLatex(field) {
@@ -270,8 +271,13 @@
 
   function fillBar(ctl) {
     const MM = window.FTModeMaths && window.FTModeMaths.on() ? window.FTModeMaths : null;
-    bar.classList.toggle('ft-math-bar-wide', !!MM);
-    const items = (MM ? MM.items() : F().quick()).map(([d, ins, title]) => {
+    bar.classList.toggle('ft-math-groups', !!MM);
+    // Mode maths : barre en groupes nommés (mode-maths.js).
+    if (MM) {
+      bar.replaceChildren(...MM.groups(ctl));
+      return;
+    }
+    const items = F().quick().map(([d, ins, title]) => {
       const b = document.createElement('button');
       b.type = 'button';
       b.title = title;
@@ -296,14 +302,6 @@
       return b;
     };
     const extra = [];
-    if (MM) {
-      extra.push(text('☆ Morceau', 'Ajouter la sélection (ou l’équation) aux morceaux', () => {
-        const field = ctl.field();
-        if (!field) return;
-        MM.save(selectedLatex(field));
-        field.focus();
-      }));
-    }
     if (ctl.block()) {
       const numbered = ctl.dom.hasAttribute('data-numero');
       extra.push(text('(1)', numbered ? 'Retirer le numéro' : 'Numéroter l’équation', () => {
@@ -329,6 +327,7 @@
   }
   function hideBar() {
     if (bar) bar.hidden = true;
+    if (window.FTModeMaths) window.FTModeMaths.closePop();
     barFor = null;
   }
   function placeBar() {
@@ -339,7 +338,8 @@
     const b = bar.getBoundingClientRect();
     let top = r.top - b.height - 8;
     if (top < 8) top = r.bottom + 8;
-    const left = Math.max(8, Math.min(window.innerWidth - b.width - 8, r.left + r.width / 2 - b.width / 2));
+    const right = window.FTModeMaths && window.FTModeMaths.on() ? window.FTModeMaths.rightEdge() : window.innerWidth;
+    const left = Math.max(8, Math.min(right - b.width - 8, r.left + r.width / 2 - b.width / 2));
     bar.style.left = left + 'px';
     bar.style.top = top + 'px';
   }
@@ -624,6 +624,7 @@
       return out;
     },
     copyLatex,
+    selectedLatex,
     refreshBar() { if (barFor && bar && !bar.hidden) fillBar(barFor); },
     numbering,
     chapters: () => chaptersOn(M.view.state.doc),

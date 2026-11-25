@@ -1172,9 +1172,24 @@ dialog p { margin: 0 0 12px; }
 #editor div.ft-math-edit > math-field { min-width: 3em; }
 .ft-math-bar { position: fixed; z-index: 60; display: flex; align-items: center; gap: 2px; padding: 3px; border: 1px solid var(--border); border-radius: calc(8px * var(--round)); background: var(--panel); box-shadow: 0 4px 16px rgba(0, 0, 0, 0.14); }
 .ft-math-bar[hidden] { display: none; }
-.ft-math-bar.ft-math-bar-wide { flex-wrap: wrap; max-width: min(560px, 96vw); }
 .ft-math-bar .txt { white-space: nowrap; }
-.ft-maths-texte .ML__latex { font-size: 1em; }
+/* Mode maths : barre en groupes nommés (mode-maths.js) */
+.ft-math-bar.ft-math-groups { width: max-content; align-items: stretch; gap: 0; padding: 4px 6px 3px; border-radius: calc(10px * var(--round)); box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18); }
+.ft-math-groups .mg-group { display: flex; flex-direction: column; align-items: center; justify-content: space-between; }
+.ft-math-groups .mg-group + .mg-group { border-left: 1px solid var(--border); margin-left: 5px; padding-left: 5px; }
+.ft-math-groups .mg-btns { display: flex; align-items: center; gap: 1px; }
+.ft-math-groups .mg-cap { font-size: calc(10.5px * var(--ui-scale)); color: var(--text-muted); line-height: 1.2; margin-top: 1px; white-space: nowrap; }
+.ft-math-groups button { height: 32px; min-width: 32px; padding: 0 5px; gap: 4px; }
+.ft-math-groups button .ML__latex { font-size: 1em; }
+.ft-math-groups button.mg-tall .ML__latex { font-size: 0.68em; }
+.ft-math-groups button.txt { padding: 0 9px; font-weight: 500; }
+.ft-math-groups button svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+.ft-math-groups .mg-arrow { font-size: 9px; color: var(--text-muted); }
+.ft-maths-pop { position: fixed; z-index: 61; width: 292px; padding: 6px; border: 1px solid var(--border); border-radius: calc(8px * var(--round)); background: var(--panel); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2); }
+.ft-maths-pop .mg-pop-title { font-size: calc(11.5px * var(--ui-scale)); font-weight: 600; color: var(--text-muted); padding: 2px 4px 5px; }
+.ft-maths-pop .mg-pop-grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 2px; }
+.ft-maths-pop button { height: 32px; padding: 0; display: flex; align-items: center; justify-content: center; border: 1px solid transparent; border-radius: calc(5px * var(--round)); background: transparent; color: var(--text); font-size: calc(14px * var(--ui-scale)); }
+.ft-maths-pop button:hover { background: var(--btn-hover); border-color: var(--border); }
 
 /* Mode maths : volet à droite de la page (mode-maths.js) */
 .maths-panel { position: fixed; z-index: 40; width: 212px; display: flex; flex-direction: column; border: 1px solid var(--border); border-radius: calc(10px * var(--round)); background: var(--panel); box-shadow: 0 6px 22px rgba(0, 0, 0, 0.12); font-size: calc(12.5px * var(--ui-scale)); overflow: hidden; }

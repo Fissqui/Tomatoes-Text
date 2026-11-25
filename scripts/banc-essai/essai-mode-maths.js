@@ -51,7 +51,8 @@ module.exports = async ({ page }) => {
   await page.mouse.click(last.x + 140, last.y + last.height / 2);
   await page.waitForTimeout(200);
   assert.ok(await v(() => { const b = document.querySelector('.ft-maths-texte'); return !!b && !b.hidden; }), 'barre au clic');
-  await v(() => [...document.querySelectorAll('.ft-maths-texte button')].find((b) => b.title === 'Fraction').click());
+  assert.strictEqual(await v(() => [...document.querySelectorAll('.ft-maths-texte .mg-cap')].map((c) => c.textContent).join(' | ')), 'Nouvelle | Structures | Opérateurs | Tableaux | Symboles | Fenêtre');
+  await v(() => [...document.querySelectorAll('.ft-maths-texte button')].find((b) => b.title === 'Fraction (/)').click());
   await page.waitForTimeout(300);
   assert.match(await field(), /^\\frac\{\\placeholder\{\}\}\{\\placeholder\{\}\}$/);
   await page.keyboard.type('(1+r');
@@ -66,7 +67,7 @@ module.exports = async ({ page }) => {
   let pieces = await v(() => window.FTModeMaths.pieces().map((p) => p.latex));
   assert.ok(pieces.some((p) => /\(1\+r\\right\)\^\{n\}/.test(p)) && pieces.some((p) => /^e\^\{-x\}$/.test(p)), JSON.stringify(pieces));
   assert.ok(!(await v(() => { const b = document.querySelector('.ft-maths-texte'); return !b.hidden; })), 'barre cachée pendant l’écriture');
-  ok(`barre au clic : fraction posée, Tab : case suivante ; morceaux gardés : ${pieces.join(' ; ')}`);
+  ok(`barre au clic en groupes nommés (Nouvelle, Structures…) : fraction posée, Tab : case suivante ; morceaux gardés : ${pieces.join(' ; ')}`);
 
   // 4. Morceau réinséré d'un clic : dans l'équation en cours d'écriture, sinon dans une nouvelle.
   await page.click('#editor span.ft-math');
@@ -97,7 +98,15 @@ module.exports = async ({ page }) => {
   // 5. Ajout à la main (☆ de la barre de l'équation, clic droit) : morceau épinglé, gardé.
   await page.click('#editor span.ft-math');
   await page.waitForTimeout(200);
-  await v(() => [...document.querySelectorAll('.ft-math-bar:not(.ft-maths-texte) button')].find((b) => b.textContent.includes('Morceau')).click());
+  const caps = await v(() => [...document.querySelectorAll('.ft-math-bar:not(.ft-maths-texte) .mg-cap')].map((c) => c.textContent).join(' | '));
+  assert.strictEqual(caps, 'Morceau | Structures | Opérateurs | Tableaux | Symboles | Fenêtre');
+  // Menu « Lettres grecques » : la lettre va dans l'équation en cours.
+  await v(() => [...document.querySelectorAll('.ft-math-bar:not(.ft-maths-texte) button')].find((b) => b.title === 'Lettres grecques').click());
+  assert.ok(await v(() => document.querySelectorAll('.ft-maths-pop button').length >= 30));
+  await v(() => [...document.querySelectorAll('.ft-maths-pop button')][1].click());
+  assert.ok((await field()).includes('\\beta'), await field());
+  assert.ok(await v(() => !document.querySelector('.ft-maths-pop')), 'menu refermé');
+  await v(() => [...document.querySelectorAll('.ft-math-bar:not(.ft-maths-texte) button')].find((b) => b.title.startsWith('Ajouter la sélection')).click());
   await page.keyboard.press('Escape');
   pieces = await v(() => window.FTModeMaths.pieces());
   assert.ok(pieces[0].pin && /^C_\{?n/.test(pieces[0].latex), JSON.stringify(pieces[0]));
@@ -110,7 +119,7 @@ module.exports = async ({ page }) => {
   for (let i = 0; i < 12; i++) await v((k) => window.FTModeMaths.save(`x_{${k}}+1`), i);
   pieces = await v(() => window.FTModeMaths.pieces());
   assert.strictEqual(pieces.length, 10, '10 morceaux au plus');
-  ok('ajout à la main (☆ dans la barre de l’équation, clic droit sur une équation) : morceaux épinglés ; 10 au plus');
+  ok('barre de l’équation en groupes nommés (Morceau, Structures, Opérateurs, Tableaux, Symboles, Fenêtre), menu « Lettres grecques » ; ajout à la main (Morceau, clic droit) : morceaux épinglés ; 10 au plus');
 
   // 6. Liste des équations : y aller, copie insérée au curseur.
   await v(() => { document.getElementById('workspace').scrollTop = 99999; });

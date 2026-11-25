@@ -1,7 +1,7 @@
 // Mode maths (interrupteur à côté du mode raccourcis ; l'un ou l'autre) :
-// A. un clic dans le texte fait paraître une barre d'équation : nouvelle équation (dans la ligne ou sur sa
-//    ligne), case avec exposant ou indice, fraction, racine, sommes, symboles courants… La barre de
-//    l'équation en cours d'écriture est la même, avec « ☆ Morceau » pour garder la partie sélectionnée.
+// A. un clic dans le texte fait paraître une barre d'équation en groupes nommés : Nouvelle (+ Équation),
+//    Structures, Opérateurs, Tableaux, Symboles (trois menus), Fenêtre. Pendant l'écriture d'une équation,
+//    la barre est la même, avec « Morceau » (et « Numéro » sur sa ligne) à la place de « Nouvelle ».
 // B. un volet à droite de la page, au milieu de la zone visible :
 //    - les 10 derniers morceaux d'équations écrits ((1+r), a/b, e^{-x}…), réinsérés d'un clic ; ceux
 //      ajoutés à la main (☆, clic droit) restent épinglés ;
@@ -27,66 +27,175 @@
     set(key, v) { try { localStorage.setItem(key, JSON.stringify(v)); } catch { /* stockage indisponible */ } }
   };
 
-  // ----- Éléments de la barre -----
+  // ----- Barre d'équation : groupes nommés -----
+  // Au clic dans le texte : « Nouvelle » (+ Équation : dans la ligne, ou sur sa propre ligne si la ligne est
+  // vide), Structures, Opérateurs, Tableaux, Symboles (trois menus), Fenêtre. Pendant l'écriture d'une
+  // équation (moteur/formules.js) : « Morceau » (et « Numéro » sur sa ligne) à la place de « Nouvelle ».
 
-  const ITEMS = [
-    ['x^{n}', '#@^{#?}', 'Case avec exposant'],
-    ['x_{i}', '#@_{#?}', 'Case avec indice'],
-    ['x_{i}^{n}', '#@_{#?}^{#?}', 'Case avec indice et exposant'],
-    ['\\frac{a}{b}', '\\frac{#@}{#?}', 'Fraction'],
+  const STRUCTURES = [
+    ['\\frac{a}{b}', '\\frac{#@}{#?}', 'Fraction (/)'],
+    ['x^{n}', '#@^{#?}', 'Exposant (^)'],
+    ['x_{i}', '#@_{#?}', 'Indice (_)'],
+    ['x_{i}^{n}', '#@_{#?}^{#?}', 'Indice et exposant'],
     ['\\sqrt{x}', '\\sqrt{#@}', 'Racine carrée'],
     ['\\left(x\\right)', '\\left(#@\\right)', 'Parenthèses'],
-    ['\\left|x\\right|', '\\left|#@\\right|', 'Valeur absolue'],
-    ['\\sum_{i=1}^{n}', '\\sum_{#?}^{#?}', 'Somme'],
-    ['\\int_{a}^{b}', '\\int_{#?}^{#?}#?\\,\\mathrm{d}#?', 'Intégrale'],
-    ['\\lim_{x\\to a}', '\\lim_{#?\\to #?}', 'Limite'],
-    ['\\vec{u}', '\\vec{#@}', 'Vecteur'],
-    ['\\begin{pmatrix}a&b\\\\c&d\\end{pmatrix}', '\\begin{pmatrix}#?&#?\\\\#?&#?\\end{pmatrix}', 'Matrice 2 × 2'],
-    ['\\begin{cases}a\\\\b\\end{cases}', '\\begin{cases}#?\\\\#?\\end{cases}', 'Système'],
-    ['\\alpha', '\\alpha', 'Alpha'],
-    ['\\pi', '\\pi', 'Pi'],
-    ['\\Delta', '\\Delta', 'Delta'],
-    ['\\infty', '\\infty', 'Infini'],
-    ['\\leq', '\\leq', 'Inférieur ou égal'],
-    ['\\neq', '\\neq', 'Différent'],
-    ['\\in', '\\in', 'Appartient à']
+    ['\\left|x\\right|', '\\left|#@\\right|', 'Valeur absolue']
   ];
+  const OPERATORS = [
+    ['\\textstyle\\sum_{i=1}^{n}', '\\sum_{#?}^{#?}', 'Somme'],
+    ['\\textstyle\\int_{a}^{b}', '\\int_{#?}^{#?}#?\\,\\mathrm{d}#?', 'Intégrale'],
+    ['\\textstyle\\lim_{x\\to a}', '\\lim_{#?\\to #?}', 'Limite'],
+    ['\\vec{u}', '\\vec{#@}', 'Vecteur']
+  ];
+  const ARRAYS = [
+    ['\\begin{pmatrix}a&b\\\\c&d\\end{pmatrix}', '\\begin{pmatrix}#?&#?\\\\#?&#?\\end{pmatrix}', 'Matrice 2 × 2'],
+    ['\\begin{cases}a\\\\b\\end{cases}', '\\begin{cases}#?\\\\#?\\end{cases}', 'Système']
+  ];
+  const sym = (list) => list.split(' ').map((l) => [l, l]);
+  const SYMBOLS = [
+    ['\\alpha', 'Lettres grecques', sym('\\alpha \\beta \\gamma \\delta \\varepsilon \\zeta \\eta \\theta \\iota \\kappa \\lambda \\mu \\nu \\xi \\pi \\rho \\sigma \\tau \\upsilon \\varphi \\chi \\psi \\omega \\Gamma \\Delta \\Theta \\Lambda \\Xi \\Pi \\Sigma \\Phi \\Psi \\Omega')],
+    ['\\leq', 'Relations, opérations et flèches', sym('= \\neq < > \\leq \\geq \\approx \\equiv \\sim \\simeq \\propto \\ll \\gg \\pm \\mp \\times \\div \\cdot \\circ \\infty \\partial \\nabla \\to \\leftarrow \\leftrightarrow \\Rightarrow \\Leftarrow \\Leftrightarrow \\mapsto')],
+    ['\\in', 'Ensembles et logique', sym('\\in \\notin \\subset \\subseteq \\supset \\supseteq \\cup \\cap \\setminus \\emptyset \\mathbb{N} \\mathbb{Z} \\mathbb{Q} \\mathbb{R} \\mathbb{C} \\forall \\exists \\neg \\land \\lor')]
+  ];
+  // (Ancienne liste, pour la barre des équations hors mode maths.)
+  const ITEMS = [...STRUCTURES, ...OPERATORS, ...ARRAYS];
+
+  const ICON = {
+    plus: '<svg viewBox="0 0 16 16"><path d="M8 3v10M3 8h10"/></svg>',
+    star: '<svg viewBox="0 0 16 16"><path d="M8 1.8l1.9 3.9 4.3.6-3.1 3 .7 4.3L8 11.6l-3.8 2 .7-4.3-3.1-3 4.3-.6z"/></svg>',
+    window: '<svg viewBox="0 0 16 16"><rect x="1.5" y="2.5" width="13" height="11" rx="1.5"/><path d="M1.5 5.5h13M4.5 8.5h4M4.5 10.8h6"/></svg>'
+  };
+
+  // Menu d'un groupe de symboles.
+  let pop = null;
+  function closePop() { if (pop) { pop.remove(); pop = null; } }
+  function openPop(button, title, list, put) {
+    const same = pop && pop.dataset.for === title;
+    closePop();
+    if (same) return;
+    pop = document.createElement('div');
+    pop.className = 'ft-maths-pop';
+    pop.dataset.for = title;
+    pop.addEventListener('mousedown', (e) => e.preventDefault());
+    const head = document.createElement('div');
+    head.className = 'mg-pop-title';
+    head.textContent = title;
+    const grid = document.createElement('div');
+    grid.className = 'mg-pop-grid';
+    for (const [d, ins] of list) {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.innerHTML = F().render(d, false);
+      b.addEventListener('click', () => { closePop(); put(ins); });
+      grid.append(b);
+    }
+    pop.append(head, grid);
+    document.body.append(pop);
+    const r = button.getBoundingClientRect();
+    const p = pop.getBoundingClientRect();
+    let top = r.bottom + 6;
+    if (top + p.height > window.innerHeight - 8) top = r.top - p.height - 6;
+    pop.style.left = Math.max(8, Math.min(rightEdge() - p.width - 8, r.left)) + 'px';
+    pop.style.top = top + 'px';
+  }
+  document.addEventListener('mousedown', (e) => { if (pop && !pop.contains(e.target) && !e.target.closest('.mg-sym')) closePop(); }, true);
+
+  // Groupes de la barre. ctl : équation en cours d'écriture (sinon : clic dans le texte).
+  function groups(ctl) {
+    const put = (ins) => {
+      if (ctl) {
+        const field = ctl.field();
+        if (!field) return;
+        field.focus();
+        field.insert(ins, { insertionMode: 'replaceSelection', selectionMode: 'placeholder', format: 'latex' });
+        field.dispatchEvent(new Event('input'));
+      } else {
+        hideBar();
+        V().insert(ins, { fresh: true });
+      }
+    };
+    const button = (inner, title, fn, cls) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      if (cls) b.className = cls;
+      b.title = title;
+      b.innerHTML = inner;
+      b.addEventListener('click', fn);
+      return b;
+    };
+    const group = (caption, buttons) => {
+      const g = document.createElement('div');
+      g.className = 'mg-group';
+      const row = document.createElement('div');
+      row.className = 'mg-btns';
+      row.append(...buttons);
+      const cap = document.createElement('div');
+      cap.className = 'mg-cap';
+      cap.textContent = caption;
+      g.append(row, cap);
+      return g;
+    };
+    // Matrices et systèmes : rendus plus petits, pour tenir dans la hauteur de la barre.
+    const math = (list) => list.map(([d, ins, title]) => button(F().render(d, false), title, () => put(ins), d.includes('\\begin') ? 'mg-tall' : ''));
+    const first = [];
+    if (!ctl) {
+      first.push(group('Nouvelle', [button(ICON.plus + '<span>Équation</span>', 'Nouvelle équation (Alt+=) : dans la ligne, ou sur sa propre ligne si la ligne est vide', () => { hideBar(); V().insert('', { fresh: true }); }, 'txt')]));
+    } else {
+      first.push(group('Morceau', [button(ICON.star, 'Ajouter la sélection (ou l’équation) aux morceaux', () => {
+        const field = ctl.field();
+        if (!field) return;
+        save(V().selectedLatex(field));
+        field.focus();
+      })]));
+      if (ctl.block()) {
+        const numbered = ctl.dom.hasAttribute('data-numero');
+        first.push(group('Numéro', [button('(1)', numbered ? 'Retirer le numéro' : 'Numéroter l’équation', () => {
+          ctl.set({ numbered: !ctl.dom.hasAttribute('data-numero') });
+          V().refreshBar();
+          const field = ctl.field();
+          if (field) field.focus();
+        }, 'txt' + (numbered ? ' on' : ''))]));
+      }
+    }
+    const symbols = SYMBOLS.map(([d, title, list]) => {
+      const b = button(F().render(d, false) + '<span class="mg-arrow">▾</span>', title, () => openPop(b, title, list, put), 'mg-sym');
+      return b;
+    });
+    const windowBtn = button(ICON.window, 'Fenêtre d’équation : toutes les structures et les réglages', () => {
+      closePop();
+      if (ctl) {
+        const dom = ctl.dom;
+        ctl.finish(null);
+        requestAnimationFrame(() => { if (dom.isConnected) F().open(dom); });
+      } else {
+        hideBar();
+        F().open(null);
+      }
+    });
+    return [
+      ...first,
+      group('Structures', math(STRUCTURES)),
+      group('Opérateurs', math(OPERATORS)),
+      group('Tableaux', math(ARRAYS)),
+      group('Symboles', symbols),
+      group('Fenêtre', [windowBtn])
+    ];
+  }
 
   let on = false;
 
-  // ----- A. Barre d'équation au clic dans le texte -----
+  // ----- Barre au clic dans le texte -----
 
   let bar = null;
   function makeBar() {
     bar = document.createElement('div');
-    bar.className = 'ft-math-bar ft-math-bar-wide ft-maths-texte';
+    bar.className = 'ft-math-bar ft-math-groups ft-maths-texte';
     bar.hidden = true;
     bar.addEventListener('mousedown', (e) => e.preventDefault());
-    const text = (label, title, fn) => {
-      const b = document.createElement('button');
-      b.type = 'button';
-      b.className = 'txt';
-      b.textContent = label;
-      b.title = title;
-      b.addEventListener('click', () => { hideBar(); fn(); });
-      return b;
-    };
-    const sep = () => Object.assign(document.createElement('span'), { className: 'sep' });
-    const items = ITEMS.map(([d, ins, title]) => {
-      const b = document.createElement('button');
-      b.type = 'button';
-      b.title = title;
-      b.innerHTML = F().render(d, false);
-      b.addEventListener('click', () => { hideBar(); V().insert(ins, { fresh: true }); });
-      return b;
-    });
-    bar.append(
-      text('Équation', 'Nouvelle équation dans la ligne (Alt+=)', () => V().insert('', { fresh: true })),
-      text('Sur sa ligne', 'Nouvelle équation sur sa propre ligne', () => V().insert('', { fresh: true, block: true })),
-      sep(), ...items, sep(),
-      text('Plus…', 'Ouvrir la fenêtre d’équation', () => F().open(null))
-    );
+    bar.append(...groups(null));
     document.body.append(bar);
+    // Largeur connue seulement une fois les polices des équations chargées.
+    new ResizeObserver(() => placeBar()).observe(bar);
   }
   function showBar() {
     if (!on || !F() || !V() || V().active() || !view.editable || app.classList.contains('reading-mode')) return;
@@ -106,18 +215,22 @@
     let top = c.bottom + 10;
     if (top + b.height > ws.bottom - 4) top = c.top - b.height - 10;
     if (c.bottom < ws.top || c.top > ws.bottom) { hideBar(); return; }
-    bar.style.left = Math.max(8, Math.min(window.innerWidth - b.width - 8, c.left - 40)) + 'px';
+    bar.style.left = Math.max(8, Math.min(rightEdge() - b.width - 8, c.left - 40)) + 'px';
     bar.style.top = top + 'px';
   }
-  function hideBar() { if (bar) bar.hidden = true; }
+  function hideBar() { if (bar) bar.hidden = true; closePop(); }
+  // Bord droit utilisable par les barres : elles ne recouvrent pas le volet du mode maths.
+  function rightEdge() {
+    return panel && !panel.hidden ? panel.getBoundingClientRect().left : window.innerWidth;
+  }
 
   view.dom.addEventListener('mouseup', (e) => {
     if (!on || e.button !== 0) return;
     setTimeout(showBar, 0);
   });
-  document.addEventListener('mousedown', (e) => { if (bar && !bar.hidden && !bar.contains(e.target)) hideBar(); }, true);
+  document.addEventListener('mousedown', (e) => { if (bar && !bar.hidden && !bar.contains(e.target) && !(pop && pop.contains(e.target))) hideBar(); }, true);
   view.dom.addEventListener('keydown', (e) => { if (!['Shift', 'Control', 'Alt', 'Meta'].includes(e.key)) hideBar(); }, true);
-  workspace.addEventListener('scroll', () => placeBar(), { passive: true });
+  workspace.addEventListener('scroll', () => { placeBar(); closePop(); }, { passive: true });
 
   // ----- Morceaux d'équations -----
 
@@ -517,6 +630,10 @@
     set,
     toggle() { set(!on); },
     items: () => ITEMS,
+    // Groupes de la barre de l'équation en cours d'écriture (moteur/formules.js).
+    groups: (ctl) => groups(ctl),
+    closePop,
+    rightEdge,
     save,
     pieces,
     fragments

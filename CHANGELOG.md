@@ -20,6 +20,8 @@ nom. Le détail de chaque version publiée figure sur la
 - Anciens documents ouverts sans changement visible ; exports Word, PDF et EPUB fidèles aux nouveaux réglages.
 - Mode maths (interrupteur à côté du mode raccourcis ; l'un ou l'autre) : barre d'équation au clic dans
   le texte, volet des derniers morceaux d'équations réutilisables et liste des équations du document.
+  Barre en groupes nommés (Nouvelle, Structures, Opérateurs, Tableaux, Symboles, Fenêtre) ; symboles
+  rangés en trois menus (lettres grecques, relations et flèches, ensembles et logique).
 - Notes de bas de page gardées au collage : un texte copié depuis Word, LibreOffice, une page web (Wikipédia,
   blogs) ou un PDF garde ses notes, qui deviennent des notes du document ; une note absente du passage copié
   sur une page web est relue sur la page. Un passage copié dans le logiciel garde aussi le texte de ses notes.
