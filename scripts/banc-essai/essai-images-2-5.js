@@ -178,7 +178,33 @@ module.exports = async ({ page }) => {
   await page.waitForTimeout(150);
   i1 = await info();
   assert(Math.abs(i1.l - col.l) < 2, 'aligné à gauche');
-  ok('centrage : gauche, centre, droite');
+  // Écart avec le texte à côté (avant la 2.5.11 : 0 après « Gauche » ou « Droite », le texte touchait l'image).
+  const textGap = () => page.evaluate(() => {
+    const im = document.querySelector('#editor .ft-image');
+    const ir = im.getBoundingClientRect();
+    const right = im.getAttribute('data-wrap') === 'droite';
+    const w = document.createTreeWalker(im.parentElement, NodeFilter.SHOW_TEXT);
+    const r = document.createRange();
+    let gap = Infinity;
+    for (let t = w.nextNode(); t; t = w.nextNode()) {
+      if (im.contains(t)) continue;
+      r.selectNodeContents(t);
+      for (const c of r.getClientRects()) {
+        if (c.bottom < ir.top + 5 || c.top > ir.bottom - 5 || !c.width) continue;
+        gap = Math.min(gap, right ? ir.left - c.right : c.left - ir.right);
+      }
+    }
+    return { gap, em: parseFloat(getComputedStyle(im.parentElement).fontSize) };
+  });
+  let tg = await textGap();
+  assert(tg.gap >= 1.4 * tg.em, 'à gauche : texte écarté de l\'image (' + JSON.stringify(tg) + ')');
+  await page.click('#image-tools button[data-act="droite"]');
+  await page.waitForTimeout(150);
+  tg = await textGap();
+  assert(tg.gap >= 1.4 * tg.em, 'à droite : texte écarté de l\'image (' + JSON.stringify(tg) + ')');
+  await page.click('#image-tools button[data-act="gauche"]');
+  await page.waitForTimeout(150);
+  ok('centrage : gauche, centre, droite ; le texte à côté reste écarté de l\'image');
 
   // Superposition : devant le texte, déplacée au pixel près ; derrière ; retour au niveau du texte.
   i0 = await info();
@@ -440,6 +466,22 @@ module.exports = async ({ page }) => {
   await page.evaluate(() => window.FTZoom.set(100));
   await page.setViewportSize({ width: 1300, height: 850 });
   await frames(4);
+
+  // Libre, même page : lâchée dans un grand espace vide entre deux paragraphes, une ligne y est créée pour elle
+  // (elle ne part pas habiller le paragraphe d'après).
+  await reset(para(2) + '<p style="margin-top: 320px;">' + LOREM.repeat(3) + '</p>' + para(2));
+  await caretIn('#editor > p:nth-child(1)', 3);
+  await insert(200, 100);
+  await frames(4);
+  i0 = await info();
+  const gapTop = await page.evaluate(() => document.querySelectorAll('#editor > p')[0].getBoundingClientRect().bottom);
+  await drag(i0.l + 20, i0.t + 20, 0, gapTop + 120 - i0.t);
+  await frames(4);
+  i1 = await info();
+  html = await saved();
+  assert(/<p data-ligne-image="seule"><span class="ft-image"/.test(html), 'ligne créée dans l\'espace vide ' + html.replace(/(Lorem[^<]{0,20})[^<]*/g, '$1'));
+  assert(Math.abs(i1.t - (gapTop + 120)) < 25, 'à la hauteur visée (' + (i1.t - gapTop - 120) + ')');
+  ok('libre : lâchée dans un espace vide entre deux paragraphes, une ligne est créée pour elle');
 
   // Anciens documents (versions 1.6 à 2.4) : ouverts sans rien perdre.
   const IMG = (attrs) => `<span class="ft-image" contenteditable="false" ${attrs}><img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt=""></span>`;

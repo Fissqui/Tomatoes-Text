@@ -56,7 +56,7 @@
       '.ft-image img { width: 100%; }',
       // (Images 2.5 : alignées, à côté du texte, dans la ligne ; devant ou derrière le texte : entre les paragraphes.)
       '.ft-image[data-align="gauche"] { margin-left: 0; } .ft-image[data-align="droite"] { margin-right: 0; }',
-      '.ft-image[data-wrap="gauche"] { float: left; margin: 0.3em 1.2em 0.6em 0; } .ft-image[data-wrap="droite"] { float: right; margin: 0.3em 0 0.6em 1.2em; }',
+      '.ft-image[data-wrap="gauche"] { float: left; margin: 0.3em 1.6em 0.6em 0; } .ft-image[data-wrap="droite"] { float: right; margin: 0.3em 0 0.6em 1.6em; }',
       '.ft-image[data-wrap="ligne"] { display: inline-block; margin: 0 0.15em; vertical-align: bottom; }',
       '.ft-image[data-frame] img { border: 1px solid #888; padding: 4px; box-sizing: border-box; }',
       '.ft-image[data-cap-b] .ft-caption { font-weight: bold; } .ft-image[data-cap-i="0"] .ft-caption { font-style: normal; }',

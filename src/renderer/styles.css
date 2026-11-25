@@ -1295,6 +1295,10 @@ dialog p { margin: 0 0 12px; }
 /* ---------- Images (version 2.5) : déplacement, ancrage, centrage, superposition, encadrage ---------- */
 /* Libre au niveau du texte : accrochée au début d'une ligne, écart --dy avec le haut de cette ligne. */
 #editor .ft-image[data-wrap="gauche"], #editor .ft-image[data-wrap="droite"] { margin-top: var(--dy, 0.3em); }
+/* Écart avec le texte à côté (le centrage, data-align, ne le retire pas : avant la 2.5.11, « gauche » et « droite »
+   le mettaient à 0, le texte touchait l'image). */
+#editor .ft-image[data-wrap="gauche"] { margin-left: var(--mx, 0px); margin-right: 1.6em; }
+#editor .ft-image[data-wrap="droite"] { margin-left: 1.6em; margin-right: var(--mx, 0px); }
 #editor .ft-image[data-wrap="gauche"]:not([data-caption]), #editor .ft-image[data-wrap="droite"]:not([data-caption]) { margin-bottom: 0.5em; }
 /* Ligne vide créée pour une image posée dans un bas de page laissé blanc : elle contient toute l'image (le
    texte qui suit, sur la page suivante, ne passe pas à côté d'elle). */

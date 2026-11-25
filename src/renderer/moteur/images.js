@@ -659,7 +659,7 @@
     if (!h.inside) {
       // (Bas de page laissé blanc, ou tableau, objet… sans paragraphe après lui sur cette page : une ligne
       // vide est créée sur la page visée, sinon l'image partirait à la page suivante.)
-      const gap = gapAt(h, y, l.top);
+      const gap = gapAt(h, y, l.top, tb);
       if (gap) {
         const col = textColumn();
         const sd = side(x, w, col);
@@ -670,17 +670,21 @@
     const sd = side(x, w, col);
     return { kind: 'line', pos: l.pos, top: l.top, side: sd.side, mx: sd.mx, dy: Math.max(0, (y - l.top) / zoom()), tb, col };
   }
-  // Interface avancée : hauteur y sur une page dont le texte s'arrête avant (la suite commence à la page
-  // suivante, à la hauteur at). Renvoie { pos (après le dernier bloc de la page de y), top (son bas) } ou null.
-  function gapAt(h, y, at) {
-    if (!paged()) return null;
-    const p = frameAt(y).page;
-    if (frameAt(at).page <= p) return null;
+  // Hauteur y où il n'y a rien : bas de page laissé blanc (la suite commence à la page suivante, à la hauteur
+  // at), ou espace vide entre deux blocs, plus haut qu'une ligne et demie. Une ligne vide y sera créée pour
+  // l'image. Renvoie { pos (après le bloc d'avant), top (son bas) } ou null.
+  function gapAt(h, y, at, tb) {
     const list = shownTops();
     const prev = h.before === true ? list[list.indexOf(h.top) - 1] : h.top;
     if (!prev || !prev.pmViewDesc) return null;
     const pb = prev.getBoundingClientRect().bottom;
-    if (frameAt(pb - 1).page !== p) return null;
+    if (paged()) {
+      const p = frameAt(y).page;
+      if (frameAt(at).page > p) return frameAt(pb - 1).page === p ? { pos: prev.pmViewDesc.posAfter, top: pb } : null;
+      if (frameAt(pb - 1).page !== p) return null;
+    }
+    // (Même page : seulement dans un espace vide entre deux blocs, pas sur un tableau ou un objet.)
+    if (h.before !== true || at - y <= 1.5 * lineHeight(tb)) return null;
     return { pos: prev.pmViewDesc.posAfter, top: pb };
   }
   function side(x, w, col) {
