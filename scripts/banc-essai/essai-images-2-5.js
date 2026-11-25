@@ -483,6 +483,46 @@ module.exports = async ({ page }) => {
   assert(Math.abs(i1.t - (gapTop + 120)) < 25, 'à la hauteur visée (' + (i1.t - gapTop - 120) + ')');
   ok('libre : lâchée dans un espace vide entre deux paragraphes, une ligne est créée pour elle');
 
+  // Pages : une image sous une autre image (fixe) dont le bas de page est vide ; la seconde, seule sur sa
+  // ligne en haut de la page 2, glissée sous la première : elle passe sur la page 1, à sa taille (sa ligne
+  // passe sous la première image au lieu de se rétrécir à côté d'elle). Poignées à leur place au zoom 60 %.
+  await page.setViewportSize({ width: 1300, height: 1400 });
+  await page.evaluate(([L]) => {
+    const img = (w, h, c) => { const k = document.createElement('canvas'); k.width = w; k.height = h; const g = k.getContext('2d'); g.fillStyle = c; g.fillRect(0, 0, w, h); return k.toDataURL('image/png'); };
+    const html = '<p>' + L.repeat(3) + '</p>'
+      + `<p><span class="ft-image" contenteditable="false" style="width: 64.5%; --mx: 17.8%; --dy: 14px; --fx: 115px; --fy: 170px;" data-wrap="gauche" data-caption="bas" data-align="centre" data-anchor="page" data-page="1"><img src="${img(500, 330, '#7fa7c9')}" alt=""><span class="ft-caption" contenteditable="true">Figure A</span></span></p>`
+      + '<p><br></p>'.repeat(6)
+      + `<p data-ligne-image="seule"><span class="ft-image" contenteditable="false" style="width: 67.2%; --dy: 284px; --mx: 15.5%;" data-wrap="droite" data-caption="bas"><img src="${img(520, 380, '#c97f7f')}" alt=""><span class="ft-caption" contenteditable="true">Figure B</span></span></p>`
+      + '<p><br></p>'.repeat(40) + '<p>' + L.repeat(4) + '</p>';
+    window.FTEditor.load({ content: { html }, settings: { mode: 'avance' } });
+    document.getElementById('page').hidden = false;
+  }, [LOREM]);
+  await frames(6);
+  await page.evaluate(() => window.FTZoom.set(60));
+  await page.waitForTimeout(800);
+  const figure = (cap) => page.evaluate((cap) => {
+    const el = [...document.querySelectorAll('#editor .ft-image')].find((e) => e.textContent.includes(cap));
+    const m = document.getElementById('editor');
+    const k = m.currentCSSZoom || 1;
+    const r = el.getBoundingClientRect();
+    return { t: r.top, b: r.bottom, l: r.left, r: r.right, w: r.width, page: window.FTVisibles.pageOfY((r.top - m.getBoundingClientRect().top) / k + 3) };
+  }, cap);
+  const fa = await figure('Figure A');
+  let fb = await figure('Figure B');
+  assert(fa.page === 0 && fb.page === 1, 'A en page 1, B en page 2 : ' + JSON.stringify([fa, fb]));
+  const wb = fb.w;
+  await drag(fb.l + 30, fb.t + 20, 0, fa.b + 50 - (fb.t + 20), 15);
+  await frames(6);
+  fb = await figure('Figure B');
+  assert(fb.page === 0 && fb.t > fa.b, 'B passée sous A, en page 1 : ' + JSON.stringify([fa, fb]));
+  assert(Math.abs(fb.w - wb) < 2, 'B garde sa taille (' + fb.w + ' / ' + wb + ')');
+  const grip = await page.evaluate(() => { const r = document.querySelector('.ft-img-rz.ft-rz-se').getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; });
+  assert(Math.abs(grip.x - fb.r) < 4 && Math.abs(grip.y - fb.b) < 4, 'poignée au coin de l\'image au zoom 60 % : ' + JSON.stringify([grip, fb]));
+  ok('pages : image glissée sous une autre image dont le bas de page est vide, à sa taille ; poignées à leur place au zoom');
+  await page.evaluate(() => window.FTZoom.set(100));
+  await page.setViewportSize({ width: 1300, height: 850 });
+  await frames(4);
+
   // Anciens documents (versions 1.6 à 2.4) : ouverts sans rien perdre.
   const IMG = (attrs) => `<span class="ft-image" contenteditable="false" ${attrs}><img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt=""></span>`;
   await reset('<p>Un.</p>' + IMG('data-wrap="gauche" data-pos="fixe" style="width: 30%;"') + '<p>Deux deux deux.</p>'

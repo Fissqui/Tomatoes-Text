@@ -1487,13 +1487,15 @@
       bar.style.top = top + 'px';
       bar.style.left = Math.max(0, Math.min(page.clientWidth * z - bar.offsetWidth, R.left + R.width - bar.offsetWidth + 5)) + 'px';
     }
+    const gk = grips[0] && grips[0].currentCSSZoom ? k / grips[0].currentCSSZoom : 1;
     const xs = { w: R.left, e: R.left + R.width, '': R.left + R.width / 2 };
     const ys = { n: R.top, s: R.top + R.height, '': R.top + R.height / 2 };
     for (const g of grips) {
       const d = g.dataset.dir;
       g.hidden = !!(gesture && gesture.kind === 'move');
-      g.style.left = xs[d.replace(/[ns]/, '')] + 'px';
-      g.style.top = ys[d.replace(/[ew]/, '')] + 'px';
+      // (Les poignées gardent leur taille à tout zoom : zoom inverse de la page, styles.css ; leur place en tient compte.)
+      g.style.left = xs[d.replace(/[ns]/, '')] * gk + 'px';
+      g.style.top = ys[d.replace(/[ew]/, '')] * gk + 'px';
     }
   }
 
@@ -2093,7 +2095,7 @@
       dom.style.display = 'none';
       try { return fn(); } finally {
         dom.style.display = was;
-        if (home) home.style.minHeight = mh;
+        if (home) { home.style.minHeight = mh; if (!home.getAttribute('style')) home.removeAttribute('style'); }
         view.domObserver.start();
       }
     });

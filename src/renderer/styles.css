@@ -1300,9 +1300,10 @@ dialog p { margin: 0 0 12px; }
 #editor .ft-image[data-wrap="gauche"] { margin-left: var(--mx, 0px); margin-right: 1.6em; }
 #editor .ft-image[data-wrap="droite"] { margin-left: 1.6em; margin-right: var(--mx, 0px); }
 #editor .ft-image[data-wrap="gauche"]:not([data-caption]), #editor .ft-image[data-wrap="droite"]:not([data-caption]) { margin-bottom: 0.5em; }
-/* Ligne vide créée pour une image posée dans un bas de page laissé blanc : elle contient toute l'image (le
-   texte qui suit, sur la page suivante, ne passe pas à côté d'elle). */
-#editor p[data-ligne-image="seule"] { display: flow-root; }
+/* Ligne vide créée pour une image posée là où il n'y a pas de texte : elle contient toute l'image (le texte
+   qui suit, sur la page suivante, ne passe pas à côté d'elle) et passe sous les images d'avant (sinon, rétrécie
+   à côté d'elles, l'image se réduirait). */
+#editor p[data-ligne-image="seule"] { display: flow-root; clear: both; }
 /* Légende à gauche ou à droite de l'image. */
 #editor .ft-image:is([data-caption="gauche"], [data-caption="droite"]) { display: flex; align-items: center; gap: 0.8em; line-height: normal; }
 #editor .ft-image[data-wrap="ligne"]:is([data-caption="gauche"], [data-caption="droite"]) { display: inline-flex; }

@@ -37,6 +37,8 @@ nom. Le détail de chaque version publiée figure sur la
 - Image libre lâchée là où il n'y a pas de texte (bas laissé blanc d'une page, après un tableau, grand espace
   entre deux paragraphes) : elle reste à cet endroit, dans une ligne vide créée pour elle, retirée si l'image
   repart.
+- Image glissée sous une autre image dans un bas de page vide : elle y va, à sa taille (sa ligne passe sous
+  l'image d'avant au lieu de se rétrécir à côté d'elle). Poignées de taille à leur place à tout zoom.
 - Texte à côté d'une image écarté d'elle (1,6 em), aussi après « Gauche » ou « Droite » ; de même en PDF, Word
   et EPUB.
 
