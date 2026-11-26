@@ -29,7 +29,7 @@ module.exports = async ({ page }) => {
   const thumb = 'data:image/png;base64,' + png(150, 90, [40, 40, 200]).toString('base64');
   const vml = (id, src, style) => `<!--[if gte vml 1]><v:shapetype id="_x0000_t75" coordsize="21600,21600" o:spt="75" o:preferrelative="t" filled="f" stroked="f"><v:stroke joinstyle="miter"/></v:shapetype><v:shape id="${id}" o:spid="_x0000_s1026" type="#_x0000_t75"\r\n style='${style}'>\r\n <v:imagedata src="${src}"\r\n  o:title=""/>\r\n</v:shape><![endif]-->`;
   const word = (frag) => `<html xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns="http://www.w3.org/TR/REC-html40"><head><meta name=ProgId content=Word.Document></head><body lang=FR>\r\n<!--StartFragment-->${frag}<!--EndFragment-->\r\n</body></html>`;
-  const paste = async (html, text) => {
+  const paste = async (html, text, before) => {
     await page.evaluate(() => { const ed = document.getElementById('editor'); ed.innerHTML = '<p id="here">Début</p>'; ed.focus(); });
     await page.click('#editor p');
     await page.keyboard.press('End');
@@ -40,7 +40,10 @@ module.exports = async ({ page }) => {
       document.getElementById('editor').dispatchEvent(new ClipboardEvent('paste', { clipboardData: dt, bubbles: true, cancelable: true }));
     }, [html, text]);
     await page.waitForFunction(() => document.getElementById('paste-dialog').open || document.querySelector('#editor .ft-image img'), null, { timeout: 5000 }).catch(() => {});
-    if (await page.evaluate(() => document.getElementById('paste-dialog').open)) await page.click('#ps-ok');
+    if (await page.evaluate(() => document.getElementById('paste-dialog').open)) {
+      if (before) await before();
+      await page.click('#ps-ok');
+    }
     await page.waitForTimeout(400);
     return page.evaluate(async () => {
       const imgs = [...document.querySelectorAll('#editor .ft-image img')];
@@ -104,13 +107,27 @@ module.exports = async ({ page }) => {
   //    dans la page (ni commentaire, ni <img>) ; légende dans une zone de texte, avec une équation dont
   //    l'image de secours est aussi en VML.
   const rely = `<p class=MsoNormal style='text-align:justify;text-indent:35.4pt'><v:shapetype\r\n id="_x0000_t75" coordsize="21600,21600" o:spt="75" o:preferrelative="t" filled="f" stroked="f">\r\n <v:stroke joinstyle="miter"/>\r\n</v:shapetype><v:shape id="Image_x0020_106" o:spid="_x0000_s1027" type="#_x0000_t75"\r\n style='position:absolute;left:0;text-align:left;margin-left:0;margin-top:62.6pt;\r\n width:371.5pt;height:252.25pt;z-index:251922432;visibility:visible;\r\n mso-wrap-style:square;mso-position-horizontal:center;\r\n mso-position-horizontal-relative:margin;mso-position-vertical:absolute' stroked="t" strokeweight="1.5pt">\r\n <v:imagedata src="${url('clip_image001.png')}"\r\n  o:title=""/>\r\n <w:wrap type="square" anchorx="margin"/>\r\n</v:shape><span style='mso-bidi-font-style:italic'>Les deux figures comparent\r\nles courbes obtenues. <o:p></o:p></span></p>\r\n\r\n<p class=MsoNormal style='text-align:justify;text-indent:35.4pt'><v:shape id="Zone_x0020_de_x0020_texte_x0020_43" o:spid="_x0000_s1026"\r\n type="#_x0000_t202" style='position:absolute;left:0;margin-left:40.55pt;margin-top:255.05pt;width:372.2pt;height:38.05pt'\r\n fillcolor="white [3201]" stroked="f" strokeweight=".5pt">\r\n <v:textbox>\r\n  <![if !mso]>\r\n  <table cellpadding=0 cellspacing=0 width="100%">\r\n   <tr>\r\n    <td><![endif]>\r\n    <div>\r\n    <p class=MsoNormal style='text-align:justify'><b>Figure 1. </b>Courbes\r\n    de demande <!--[if gte msEquation 12]><m:oMath><m:sSub><m:e><i><m:r>x</m:r></i></m:e><m:sub><i><m:r>1</m:r></i></m:sub></m:sSub></m:oMath><![endif]--><![if !msEquation]><span\r\n    style='position:relative;top:3.0pt'><v:shape id="_x0000_i1025"\r\n     type="#_x0000_t75" style='width:10.5pt;height:14.25pt'>\r\n     <v:imagedata src="${url('clip_image002.png')}"\r\n      o:title="" chromakey="white"/>\r\n    </v:shape></span><![endif]>, quatre modèles.<o:p></o:p></p>\r\n    </div>\r\n    <![if !mso]></td>\r\n   </tr>\r\n  </table>\r\n  <![endif]></v:textbox>\r\n <w:wrap anchorx="margin"/>\r\n</v:shape><span><o:p>&nbsp;</o:p></span></p>`;
-  const r7 = await paste(word(rely), 'Les deux figures comparent les courbes obtenues.\r\nFigure 1. Courbes de demande x1, quatre modèles.\r\n');
+  let original = 0;
+  const r7 = await paste(word(rely), 'Les deux figures comparent les courbes obtenues.\r\nFigure 1. Courbes de demande x1, quatre modèles.\r\n', async () => {
+    await page.click('#ps-tab-original');
+    original = await page.evaluate(() => [...document.querySelectorAll('#ps-preview img')].filter((i) => i.naturalWidth).length);
+    await page.click('#ps-tab-clean');
+  });
+  assert.strictEqual(original, 1, 'photo visible dans l\'onglet Original');
   assert.strictEqual(r7.imgs.length, 1, 'photo gardée (l\'image de l\'équation non) : ' + r7.html);
   assert.strictEqual(r7.imgs[0].w, 1200, 'photo en pleine taille');
   assert(!r7.imgs[0].align && !r7.imgs[0].wrap, 'centrée, entre deux paragraphes : ' + r7.html);
   assert(!/<table/.test(r7.html), 'légende sans tableau : ' + r7.html);
   assert(/Figure 1\./.test(r7.html) && /class="ft-math/.test(r7.html), 'légende et équation gardées : ' + r7.html);
   assert(/comparent les courbes/.test(r7.html), 'texte gardé');
-  ok('Word « s\'appuyer sur VML » : photo gardée, centrée ; légende en zone de texte avec son équation');
+  assert(r7.html.indexOf('comparent les courbes') < r7.html.indexOf('ft-image') && r7.html.indexOf('ft-image') < r7.html.indexOf('Figure 1.'), 'ordre de Word : paragraphe, photo (descendue sous lui), légende : ' + r7.html);
+  ok('Word « s\'appuyer sur VML » : photo gardée, centrée, sous son paragraphe ; légende en zone de texte avec son équation ; visible dans « Original »');
+
+  // 8. Petite image habillée « carré » à droite, au début de son paragraphe : à côté du texte.
+  const side = `<p class=MsoNormal><v:shape id="Image_x0020_7" type="#_x0000_t75" style='position:absolute;margin-left:300pt;margin-top:2pt;width:150pt;height:90pt;mso-position-horizontal:right;mso-position-vertical-relative:text'><v:imagedata src="${url('clip_image001.png')}" o:title=""/><w:wrap type="square"/></v:shape>Texte à côté de l'image, assez long pour l'entourer.</p>\r\n<p class=MsoNormal>Suite.</p>`;
+  const r8 = await paste(word(side), "Texte à côté de l'image, assez long pour l'entourer.\r\nSuite.\r\n");
+  assert.strictEqual(r8.imgs.length, 1, 'image gardée : ' + r8.html);
+  assert.strictEqual(r8.imgs[0].wrap, 'droite', 'à droite du texte : ' + r8.html);
+  ok('Word « s\'appuyer sur VML » : petite image habillée à droite, texte à côté');
   fs.rmSync(dir, { recursive: true, force: true });
 };

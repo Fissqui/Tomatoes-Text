@@ -1341,6 +1341,7 @@ body.ft-img-gesture #object-frame { display: none; }
 #ps-preview .ft-image[data-wrap="ligne"] { display: inline-block; vertical-align: bottom; margin: 0 0.15em; }
 #ps-preview p { clear: none; }
 #ps-preview::after { content: ""; display: block; clear: both; }
+#ps-preview.original img { max-width: 100%; height: auto; }
 #object-tools[hidden], #image-tools[hidden], .ft-rz[hidden], #zone-outline[hidden] { display: none; }
 #image-tools { position: absolute; z-index: 6; display: flex; align-items: center; gap: 1px; height: 32px; padding: 0 3px; background: var(--panel); border: 1px solid var(--border); border-radius: calc(7px * var(--round)); box-shadow: 0 2px 8px rgba(0, 0, 0, 0.14); white-space: nowrap; }
 #image-tools button { width: 28px; height: 26px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border: none; border-radius: calc(5px * var(--round)); }

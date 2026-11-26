@@ -49,6 +49,9 @@ nom. Le détail de chaque version publiée figure sur la
 - Texte copié dans Word : images gardées aussi quand elles sont dans une zone de texte (qui ne devient plus un
   tableau) et quand le document est réglé pour « utiliser VML pour afficher les graphismes » (Word n'y joint
   alors aucune image ordinaire) ; image marquée EMF qui est en fait un PNG ou un JPEG gardée.
+- Texte copié dans Word : une image descendue sous le début de son paragraphe est collée après lui, dans l'ordre
+  de Word ; centrée si elle l'est, à côté du texte si elle est habillée sur un côté et en laisse la place.
+  Photos visibles dans l'onglet « Original » de la fenêtre de collage.
 
 ## 2.4 « Corbarino » — novembre 2026
 

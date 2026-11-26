@@ -692,10 +692,12 @@
     const showOriginal = $('ps-tab-original').classList.contains('on');
     const box = $('ps-preview');
     if (showOriginal) {
-      // L'original tel quel, avec sa mise en forme (sans scripts ni images distantes).
+      // L'original tel quel, avec sa mise en forme (sans scripts ni images distantes ; images déjà lues,
+      // celles de Word comprises, affichées).
       if (pending.html) {
         const doc = new DOMParser().parseFromString(pending.html, 'text/html');
-        doc.querySelectorAll('script, style, link, meta, iframe, object, embed, img').forEach((n) => n.remove());
+        doc.querySelectorAll('script, style, link, meta, iframe, object, embed').forEach((n) => n.remove());
+        doc.querySelectorAll('img').forEach((n) => { if (!/^data:image\//.test(n.getAttribute('src') || '')) n.remove(); });
         box.innerHTML = doc.body.innerHTML;
       } else {
         box.innerHTML = '';
@@ -876,12 +878,23 @@
       const pt = (k) => { const v = new RegExp('(?:^|;)\\s*' + k + ':\\s*([\\d.]+)pt', 'i').exec(style); return v ? Math.round(Number(v[1]) * 4 / 3) : 0; };
       if (pt('width')) img.setAttribute('width', String(pt('width')));
       if (pt('height')) img.setAttribute('height', String(pt('height')));
+      let after = false;
       if (/position:\s*absolute/i.test(style)) {
-        const h = (/mso-position-horizontal:\s*(\w+)/i.exec(style) || [])[1];
-        img.setAttribute('align', h === 'center' ? 'center' : h === 'right' ? 'right' : 'left');
+        // Image posée sur la page : à côté du texte (habillage carré, étroit ou traversant, sur un côté, s'il reste
+        // de la place), sinon seule sur sa ligne, centrée si elle l'est dans Word. Descendue sous le début de
+        // son paragraphe (marge du haut d'une ligne au moins) : placée après ce paragraphe, comme dans Word.
+        const h = (/mso-position-horizontal:\s*(\w+)/i.exec(style) || [])[1] || '';
+        const wrap = shape.querySelector('w\\:wrap');
+        const room = !pt('width') || pt('width') <= 360;
+        const beside = room && h !== 'center' && /^(square|tight|through)$/i.test((wrap && wrap.getAttribute('type')) || '');
+        img.setAttribute('align', beside ? (h === 'right' || h === 'outside' ? 'right' : 'left') : h === 'center' ? 'center' : h === 'right' ? 'right' : 'left');
+        const top = /(?:^|;)\s*margin-top:\s*([\d.]+)pt/i.exec(style);
+        const rel = (/mso-position-vertical-relative:\s*([\w-]+)/i.exec(style) || [])[1] || 'text';
+        after = !beside && top && Number(top[1]) >= 14 && /^(text|paragraph|line)$/i.test(rel);
       }
       if (name) img.setAttribute('v:shapes', name);
-      shape.replaceWith(img);
+      const para = after && shape.closest('p, li, h1, h2, h3, h4, h5, h6');
+      if (para) { shape.remove(); para.after(img); } else shape.replaceWith(img);
     }
     return originals;
   }
