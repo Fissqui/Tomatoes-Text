@@ -1,6 +1,8 @@
 // Images d'un texte copié dans Word (presse-papiers relevé sur Word 16, novembre 2026) : l'image du VML
 // (<v:imagedata>, fichier d'origine en pleine taille) est préférée à la copie réduite de l'<img> de secours ;
-// original illisible → copie de secours ; forme VML sans <img> de secours → image ajoutée quand même.
+// original illisible → copie de secours ; forme VML sans <img> de secours → image ajoutée quand même ;
+// image dans une zone de texte (tableaux de mise en page retirés) ; image marquée EMF qui est un PNG ;
+// document réglé pour « s'appuyer sur VML » (formes écrites dans la page, sans <img>).
 const assert = require('assert');
 const fs = require('fs');
 const os = require('os');
@@ -70,5 +72,45 @@ module.exports = async ({ page }) => {
   assert.strictEqual(r3.imgs[0].wrap, 'gauche', 'flottante');
   assert.strictEqual(r3.imgs[0].width, r1.imgs[0].width, 'taille du VML (150 pt = 200 px)');
   ok('Word : forme VML sans image de secours → image ajoutée');
+
+  // 4. Photo dans une zone de texte (posée à côté du texte) : Word l'entoure de tableaux de mise en page.
+  const box = `<p class=MsoNormal><!--[if gte vml 1]><v:shape id="Zone_x0020_de_x0020_texte_x0020_1" o:spid="_x0000_s1027" type="#_x0000_t202"\r\n style='position:absolute;margin-left:0;margin-top:14.2pt;width:180pt;height:110pt;z-index:251660288'>\r\n <v:textbox>\r\n  <![if !mso]>\r\n  <table cellpadding=0 cellspacing=0 width="100%">\r\n   <tr>\r\n    <td><![endif]>\r\n    <div>\r\n    <p class=MsoNormal><span style='mso-no-proof:yes'><img width=200 height=120 src="${thumb}" v:shapes="Image_x0020_4"></span></p>\r\n    </div>\r\n    <![if !mso]></td>\r\n   </tr>\r\n  </table>\r\n  <![endif]></v:textbox>\r\n</v:shape><![endif]--><![if !vml]><span style='mso-ignore:vglayout;\r\nposition:absolute;z-index:251660288;left:0px;margin-left:-1px;margin-top:18px;\r\nwidth:242px;height:148px'>\r\n\r\n<table cellpadding=0 cellspacing=0>\r\n <tr>\r\n  <td width=242 height=148 style='vertical-align:top'><![endif]><![if !mso]><span\r\n  style='position:absolute;mso-ignore:vglayout;z-index:251660288'>\r\n  <table cellpadding=0 cellspacing=0 width="100%">\r\n   <tr>\r\n    <td><![endif]>\r\n    <div v:shape="Zone_x0020_de_x0020_texte_x0020_1" style='padding:3.6pt 7.2pt 3.6pt 7.2pt'\r\n    class=shape>\r\n    <p class=MsoNormal><span style='mso-no-proof:yes'><!--[if gte vml 1]><v:shape\r\n     id="Image_x0020_4" o:spid="_x0000_i1025" type="#_x0000_t75" style='width:150pt;height:90pt'>\r\n     <v:imagedata src="${url('clip_image001.png')}" o:title=""/>\r\n    </v:shape><![endif]--><![if !vml]><img width=200 height=120\r\n    src="${thumb}" v:shapes="Image_x0020_4"><![endif]></span><o:p></o:p></p>\r\n    </div>\r\n    <![if !mso]></td>\r\n   </tr>\r\n  </table>\r\n  </span><![endif]><![if !mso & !vml]>&nbsp;<![endif]><![if !vml]></td>\r\n </tr>\r\n</table>\r\n\r\n</span><![endif]>Texte avant.<o:p></o:p></p>\r\n\r\n<p class=MsoNormal><o:p>&nbsp;</o:p></p>\r\n\r\n<p class=MsoNormal>Texte après.<o:p></o:p></p>`;
+  const r4 = await paste(word(box), 'Texte avant.\r\n\r\nTexte après.\r\n');
+  assert.strictEqual(r4.imgs.length, 1, 'photo de la zone de texte gardée : ' + r4.html);
+  assert(!/<table/.test(r4.html), 'pas de tableau : ' + r4.html);
+  assert(/Texte avant\./.test(r4.html) && /Texte après\./.test(r4.html), 'texte gardé');
+  ok('Word : photo dans une zone de texte gardée, sans tableau');
+
+  // 4 bis. Zone de texte telle que Word 16 l'écrit (relevé réel : boîte relative, puis absolue, deux tableaux).
+  const r4b = await paste(word(`\r\n\r\n<p class=MsoNormal>Texte avant.<o:p></o:p></p>\r\n\r\n<p class=MsoNormal><!--[if gte vml 1]><v:shapetype id="_x0000_t202"\r\n coordsize="21600,21600" o:spt="202" path="m,l,21600r21600,l21600,xe">\r\n <v:stroke joinstyle="miter"/>\r\n <v:path gradientshapeok="t" o:connecttype="rect"/>\r\n</v:shapetype><v:shape id="Zone_x0020_de_x0020_texte_x0020_1" o:spid="_x0000_s1026"\r\n type="#_x0000_t202" style='position:absolute;margin-left:-70.85pt;\r\n margin-top:-93.05pt;width:220pt;height:160pt;z-index:251659264;visibility:visible;\r\n mso-wrap-style:square;mso-position-horizontal:absolute;mso-position-horizontal-relative:text;\r\n mso-position-vertical:absolute;mso-position-vertical-relative:text;\r\n v-text-anchor:top' filled="f" strokeweight=".5pt">\r\n <v:fill o:detectmouseclick="t"/>\r\n</v:shape><![endif]--><![if !vml]><span style='mso-ignore:vglayout;position:\r\nrelative;z-index:251659264'><span style='position:absolute;left:-95px;\r\ntop:-125px;width:299px;height:219px'>\r\n\r\n<table cellpadding=0 cellspacing=0>\r\n <tr>\r\n  <td width=300 height=219 style='border:.5pt solid black;vertical-align:top'><![endif]><![if !mso]><span\r\n  style='position:absolute;mso-ignore:vglayout;z-index:251659264'>\r\n  <table cellpadding=0 cellspacing=0 width="100%">\r\n   <tr>\r\n    <td><![endif]>\r\n    <div v:shape="Zone_x0020_de_x0020_texte_x0020_1" style='padding:4.1pt 7.7pt 4.1pt 7.7pt'\r\n    class=shape>\r\n    <p class=MsoNormal><span style='mso-no-proof:yes'><!--[if gte vml 1]><v:shapetype\r\n     id="_x0000_t75" coordsize="21600,21600" o:spt="75" o:preferrelative="t"\r\n     path="m@4@5l@4@11@9@11@9@5xe" filled="f" stroked="f">\r\n     <v:stroke joinstyle="miter"/>\r\n    </v:shapetype><v:shape id="Image_x0020_2" o:spid="_x0000_i1025" type="#_x0000_t75"\r\n     style='width:205.5pt;height:136.5pt;visibility:visible;mso-wrap-style:square'>\r\n     <v:imagedata src="${url('clip_image001.png')}"\r\n      o:title=""/>\r\n    </v:shape><![endif]--><![if !vml]><img width=274 height=182\r\n    src="${thumb}"\r\n    v:shapes="Image_x0020_2"><![endif]></span><o:p></o:p></p>\r\n    </div>\r\n    <![if !mso]></td>\r\n   </tr>\r\n  </table>\r\n  </span><![endif]><![if !mso & !vml]>&nbsp;<![endif]><![if !vml]></td>\r\n </tr>\r\n</table>\r\n\r\n</span></span><![endif]><o:p>&nbsp;</o:p></p>\r\n\r\n<br style='mso-ignore:vglayout' clear=ALL>\r\n\r\n<p class=MsoNormal>Texte après.<o:p></o:p></p>\r\n\r\n`), 'Texte avant.\r\n\r\nTexte après.\r\n');
+  assert.strictEqual(r4b.imgs.length, 1, 'image de la zone de texte gardée : ' + r4b.html);
+  assert.strictEqual(r4b.imgs[0].w, 1200, 'en pleine taille');
+  assert(!/<table/.test(r4b.html), 'pas de tableau : ' + r4b.html);
+  ok('Word : zone de texte relevée sur Word 16, image gardée');
+
+  // 5. Image marquée « image/emf » qui est en fait un PNG : type rectifié, image gardée.
+  const emf = 'data:image/emf;base64,' + png(150, 90, [40, 200, 40]).toString('base64');
+  const r5 = await paste(word(`<p class=MsoNormal>Avant.</p>\r\n<p class=MsoNormal><img width=200 height=120 src="${emf}"></p>\r\n<p class=MsoNormal>Après.</p>`), 'Avant.\r\n\r\nAprès.\r\n');
+  assert.strictEqual(r5.imgs.length, 1, 'image gardée : ' + r5.html);
+  assert(/data:image\/png;B64/.test(r5.html), 'type PNG : ' + r5.html);
+  ok('Word : image marquée EMF mais en PNG gardée, type rectifié');
+
+  // 6. Vrai tableau de Word avec une image dans une case : reste un tableau.
+  const r6 = await paste(word(`<p class=MsoNormal>Avant.</p>\r\n<table class=MsoTableGrid border=1 cellspacing=0 cellpadding=0><tr><td><p class=MsoNormal>Case un</p></td><td><p class=MsoNormal>Case deux</p></td></tr></table>\r\n<p class=MsoNormal>Après.</p>`), 'Avant.\r\nCase un\tCase deux\r\nAprès.\r\n');
+  assert(/<table/.test(r6.html) && /Case deux/.test(r6.html), 'tableau gardé : ' + r6.html);
+  ok('Word : vrai tableau inchangé');
+
+  // 7. Document réglé pour « s'appuyer sur VML » (<o:RelyOnVML/>) : la photo n'existe qu'en <v:shape> écrit
+  //    dans la page (ni commentaire, ni <img>) ; légende dans une zone de texte, avec une équation dont
+  //    l'image de secours est aussi en VML.
+  const rely = `<p class=MsoNormal style='text-align:justify;text-indent:35.4pt'><v:shapetype\r\n id="_x0000_t75" coordsize="21600,21600" o:spt="75" o:preferrelative="t" filled="f" stroked="f">\r\n <v:stroke joinstyle="miter"/>\r\n</v:shapetype><v:shape id="Image_x0020_106" o:spid="_x0000_s1027" type="#_x0000_t75"\r\n style='position:absolute;left:0;text-align:left;margin-left:0;margin-top:62.6pt;\r\n width:371.5pt;height:252.25pt;z-index:251922432;visibility:visible;\r\n mso-wrap-style:square;mso-position-horizontal:center;\r\n mso-position-horizontal-relative:margin;mso-position-vertical:absolute' stroked="t" strokeweight="1.5pt">\r\n <v:imagedata src="${url('clip_image001.png')}"\r\n  o:title=""/>\r\n <w:wrap type="square" anchorx="margin"/>\r\n</v:shape><span style='mso-bidi-font-style:italic'>Les deux figures comparent\r\nles courbes obtenues. <o:p></o:p></span></p>\r\n\r\n<p class=MsoNormal style='text-align:justify;text-indent:35.4pt'><v:shape id="Zone_x0020_de_x0020_texte_x0020_43" o:spid="_x0000_s1026"\r\n type="#_x0000_t202" style='position:absolute;left:0;margin-left:40.55pt;margin-top:255.05pt;width:372.2pt;height:38.05pt'\r\n fillcolor="white [3201]" stroked="f" strokeweight=".5pt">\r\n <v:textbox>\r\n  <![if !mso]>\r\n  <table cellpadding=0 cellspacing=0 width="100%">\r\n   <tr>\r\n    <td><![endif]>\r\n    <div>\r\n    <p class=MsoNormal style='text-align:justify'><b>Figure 1. </b>Courbes\r\n    de demande <!--[if gte msEquation 12]><m:oMath><m:sSub><m:e><i><m:r>x</m:r></i></m:e><m:sub><i><m:r>1</m:r></i></m:sub></m:sSub></m:oMath><![endif]--><![if !msEquation]><span\r\n    style='position:relative;top:3.0pt'><v:shape id="_x0000_i1025"\r\n     type="#_x0000_t75" style='width:10.5pt;height:14.25pt'>\r\n     <v:imagedata src="${url('clip_image002.png')}"\r\n      o:title="" chromakey="white"/>\r\n    </v:shape></span><![endif]>, quatre modèles.<o:p></o:p></p>\r\n    </div>\r\n    <![if !mso]></td>\r\n   </tr>\r\n  </table>\r\n  <![endif]></v:textbox>\r\n <w:wrap anchorx="margin"/>\r\n</v:shape><span><o:p>&nbsp;</o:p></span></p>`;
+  const r7 = await paste(word(rely), 'Les deux figures comparent les courbes obtenues.\r\nFigure 1. Courbes de demande x1, quatre modèles.\r\n');
+  assert.strictEqual(r7.imgs.length, 1, 'photo gardée (l\'image de l\'équation non) : ' + r7.html);
+  assert.strictEqual(r7.imgs[0].w, 1200, 'photo en pleine taille');
+  assert(!r7.imgs[0].align && !r7.imgs[0].wrap, 'centrée, entre deux paragraphes : ' + r7.html);
+  assert(!/<table/.test(r7.html), 'légende sans tableau : ' + r7.html);
+  assert(/Figure 1\./.test(r7.html) && /class="ft-math/.test(r7.html), 'légende et équation gardées : ' + r7.html);
+  assert(/comparent les courbes/.test(r7.html), 'texte gardé');
+  ok('Word « s\'appuyer sur VML » : photo gardée, centrée ; légende en zone de texte avec son équation');
   fs.rmSync(dir, { recursive: true, force: true });
 };

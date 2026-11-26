@@ -155,8 +155,35 @@
     .map((h) => tidySpaces(h || '').replace(TOKEN, (m, i) => (isBlockToken(i) ? inlineToken(i) : m)).trim()).filter((h) => h.replace(/<[^>]+>/g, '').trim() || h.includes('\uE000'))
     .map((h) => '<p>' + h.replace(/\n/g, '<br>') + '</p>').join('');
 
+  // Zone de texte de Word : son contenu (texte, image) est posé dans des tableaux de mise en page
+  // (<span position:absolute><table><tr><td>…<table>…<div v:shape class=shape>), qui en feraient un tableau
+  // et perdraient l'image. Ces tableaux sont retirés, le contenu de la zone reste à sa place ; une zone
+  // posée à côté du texte garde ses images à côté du texte.
+  function unwrapTextBoxes(doc) {
+    const boxes = [...doc.querySelectorAll('div.shape, div[v\\:shape], v\\:textbox td > div')].filter((d) => d.closest('table'));
+    for (const box of boxes) {
+      if (!box.isConnected) continue;
+      let top = null;
+      let floating = false;
+      for (let a = box.parentElement; a && a !== doc.body; a = a.parentElement) {
+        if (a.tagName === 'TABLE') { top = a; continue; }
+        if (/^(TD|TH|TR|TBODY|THEAD)$/.test(a.tagName)) continue;
+        // (Word en emboîte deux : une boîte placée qui contient une autre boîte placée.)
+        if (top && a.tagName === 'SPAN' && /position:\s*absolute/i.test(a.getAttribute('style') || '')) { top = a; floating = true; continue; }
+        break;
+      }
+      if (!top) continue;
+      // (Seulement des tableaux vides autour de la zone : un vrai tableau qui contient une zone reste un tableau.)
+      const bare = (t) => t.replace(/[\s\u00a0]/g, '');
+      if (bare(top.textContent) !== bare(box.textContent) || [...top.querySelectorAll('img')].some((i) => !box.contains(i))) continue;
+      if (floating) box.querySelectorAll('img:not([align])').forEach((img) => img.setAttribute('align', 'left'));
+      top.replaceWith(...box.childNodes);
+    }
+  }
+
   function blocksFromHtml(html, opts) {
     const doc = typeof html === 'string' ? new DOMParser().parseFromString(html, 'text/html') : html;
+    unwrapTextBoxes(doc);
     // Équations (Word, pages web) : avant le nettoyage, qui en retirerait les morceaux.
     if (FC()) FC().markMath(doc);
     // Notes de bas de page : appels remplacés par un repère, notes mises de côté.
@@ -826,6 +853,36 @@
         c.after(img);
       }
     }
+    // Document Word réglé pour « s'appuyer sur VML » (<o:RelyOnVML/>) : les formes sont écrites telles quelles
+    // dans la page, sans commentaire ni <img> de secours. Chaque image devient une <img> à sa place (sauf
+    // l'image de secours d'une équation, reprise par formules-collage.js).
+    const eq = [];
+    const cw = doc.createTreeWalker(doc.body || doc, NodeFilter.SHOW_COMMENT);
+    for (let c = cw.nextNode(), open = null; c; c = cw.nextNode()) {
+      if (/^\[if !msEquation\]/.test(c.data)) open = c;
+      else if (open && /^\[endif\]/.test(c.data)) { eq.push([open, c]); open = null; }
+    }
+    const inEquation = (n) => eq.some(([a, b]) => (a.compareDocumentPosition(n) & Node.DOCUMENT_POSITION_FOLLOWING) && (n.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING));
+    for (const data of [...doc.querySelectorAll('v\\:imagedata')]) {
+      const shape = data.closest('v\\:shape');
+      const src = data.getAttribute('src');
+      if (!shape || !src || inEquation(shape)) continue;
+      const name = shape.getAttribute('id') || '';
+      if (name) originals.set(name, src);
+      if (name && doc.querySelector(`img[v\\:shapes~="${CSS.escape(name)}"]`)) { shape.remove(); continue; }
+      const style = shape.getAttribute('style') || '';
+      const img = doc.createElement('img');
+      img.setAttribute('src', src);
+      const pt = (k) => { const v = new RegExp('(?:^|;)\\s*' + k + ':\\s*([\\d.]+)pt', 'i').exec(style); return v ? Math.round(Number(v[1]) * 4 / 3) : 0; };
+      if (pt('width')) img.setAttribute('width', String(pt('width')));
+      if (pt('height')) img.setAttribute('height', String(pt('height')));
+      if (/position:\s*absolute/i.test(style)) {
+        const h = (/mso-position-horizontal:\s*(\w+)/i.exec(style) || [])[1];
+        img.setAttribute('align', h === 'center' ? 'center' : h === 'right' ? 'right' : 'left');
+      }
+      if (name) img.setAttribute('v:shapes', name);
+      shape.replaceWith(img);
+    }
     return originals;
   }
 
@@ -842,6 +899,9 @@
       if (img.matches(MATH_IMG) && /[\\^_{}=]/.test(img.getAttribute('alt') || '')) return;
       const read = async (s) => {
         if (!/^data:image\//.test(s)) s = /^(https?|file):/i.test(s) && api && api.pasteImage ? await api.pasteImage(s).catch(() => null) : null;
+        // (Word marque parfois « image/emf » une image qui est en fait un PNG ou un JPEG : type rectifié.)
+        const kind = s && /^data:image\/[^;,]+;base64,(iVBOR|\/9j\/|R0lG)/.exec(s);
+        if (kind) s = s.replace(/^data:image\/[^;,]+/, 'data:image/' + { iVBOR: 'png', '/9j/': 'jpeg', R0lG: 'gif' }[kind[1]]);
         const im = s && await load(s);
         return im && im.naturalWidth ? [s, im] : [null, null];
       };
