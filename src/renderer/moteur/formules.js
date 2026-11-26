@@ -633,10 +633,80 @@
     if (tr) M.view.dispatch(tr.setMeta('addToHistory', false));
   });
 
+  // ----- Équations prises dans une sélection de texte -----
+  // Une équation est un objet fermé : le navigateur ne la colore pas quand la sélection la traverse. Elle
+  // reçoit la couleur de la sélection (ft-math-sel, styles.css) ; une sélection à la souris lâchée sur
+  // une équation dans la ligne la prend en entier (le navigateur s'arrêtait juste avant elle).
+  const { Decoration, DecorationSet } = PM.view;
+  function selected(state) {
+    const sel = state.selection;
+    if (sel.empty || sel instanceof NodeSelection) return DecorationSet.empty;
+    const decos = [];
+    for (const r of sel.ranges) {
+      state.doc.nodesBetween(r.$from.pos, r.$to.pos, (node, pos) => {
+        if (isMath(node)) {
+          if (pos >= r.$from.pos && pos + node.nodeSize <= r.$to.pos) decos.push(Decoration.node(pos, pos + node.nodeSize, { class: 'ft-math-sel' }));
+          return false;
+        }
+        return !node.isTextblock || node.childCount > 0;
+      });
+    }
+    return decos.length ? DecorationSet.create(state.doc, decos) : DecorationSet.empty;
+  }
+  // Sélection à la souris : le pointeur sur une équation dans la ligne, la sélection (lue à l'écran) va
+  // jusqu'à son autre bord. drag : glissement en cours (et un court instant après le relâchement, le temps
+  // que le moteur relise la sélection).
+  const drag = { on: false, until: 0, x: 0, y: 0 };
+  function aroundMath(v, anchor, head) {
+    if (!drag.on && Date.now() > drag.until) return null;
+    const el = document.elementFromPoint(drag.x, drag.y);
+    const f = el && el.closest('span.ft-math');
+    const ctl = f && v.dom.contains(f) ? views.get(f) : null;
+    const at = ctl && !ctl.editing() ? ctl.at() : undefined;
+    if (at === undefined) return null;
+    const node = v.state.doc.nodeAt(at);
+    if (!isMath(node)) return null;
+    const end = at + node.nodeSize;
+    if (head > anchor && anchor <= at && head <= at) return end;
+    if (head < anchor && anchor >= end && head >= end) return at;
+    return null;
+  }
+
   M.addPlugin(new Plugin({
+    state: {
+      init: (_, state) => selected(state),
+      apply: (tr, old, oldState, state) => (tr.docChanged || tr.selectionSet ? selected(state) : old)
+    },
+    view(v) {
+      const move = (e) => { if (drag.on) { drag.x = e.clientX; drag.y = e.clientY; } };
+      const up = (e) => {
+        if (!drag.on) return;
+        move(e);
+        drag.on = false;
+        drag.until = Date.now() + 300;
+        // (Après le traitement du relâchement par le moteur, qui pose la sélection lue à l'écran.)
+        setTimeout(() => {
+          const sel = v.state.selection;
+          if (!(sel instanceof TextSelection) || sel.empty) return;
+          const head = aroundMath(v, sel.anchor, sel.head);
+          if (head !== null) v.dispatch(v.state.tr.setSelection(TextSelection.create(v.state.doc, sel.anchor, head)));
+        }, 0);
+      };
+      window.addEventListener('mousemove', move, true);
+      window.addEventListener('mouseup', up, true);
+      return { destroy: () => { window.removeEventListener('mousemove', move, true); window.removeEventListener('mouseup', up, true); } };
+    },
     props: {
       handleKeyDown: keyDown,
-      handleDOMEvents: { contextmenu: menu }
+      decorations(state) { return this.getState(state); },
+      handleDOMEvents: {
+        contextmenu: menu,
+        mousedown: (v, e) => { Object.assign(drag, { on: e.button === 0 && !e.shiftKey, until: 0, x: e.clientX, y: e.clientY }); return false; }
+      },
+      createSelectionBetween(v, $anchor, $head) {
+        const head = aroundMath(v, $anchor.pos, $head.pos);
+        return head === null ? null : TextSelection.create(v.state.doc, $anchor.pos, head);
+      }
     },
     appendTransaction(trs, oldState, newState) {
       if (!trs.some((t) => t.docChanged)) return null;

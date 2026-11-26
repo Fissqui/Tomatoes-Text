@@ -61,6 +61,8 @@ nom. Le détail de chaque version publiée figure sur la
 - Taille des équations : la taille choisie dans la barre d'outils s'applique aux équations du passage choisi,
   d'une colonne ou d'un groupe de cases, de tout le document (Ctrl+A), à l'équation en cours de modification,
   ou à une équation choisie par le clic droit (« Sélectionner l'équation »). Taille gardée dans l'export Word.
+- Sélection à la souris : les équations traversées sont colorées comme le texte choisi, et une sélection lâchée
+  sur une équation dans la ligne la prend en entier.
 
 ## 2.4 « Corbarino » — novembre 2026
 

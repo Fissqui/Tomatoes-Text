@@ -223,4 +223,38 @@ module.exports = async ({ page }) => {
   xml = unzip(Buffer.from(await v(async () => Array.from(await window.FTWord.exportWord())))).get('word/document.xml');
   assert(/<m:r>(?:(?!<\/m:r>).)*<w:sz w:val="36"\/>/.test(xml), 'taille 18 pt dans l’équation Word');
   ok('équations : taille d’une colonne de cases, de tout le document, d’une équation choisie ou en cours de modification ; annulation ; export Word');
+
+  // 6. Sélection à la souris (2.5.18) : du texte jusqu'à une équation sur sa ligne, puis jusqu'au bout d'une
+  // équation dans la ligne ; les équations prises sont colorées comme le texte choisi.
+  const eqs = await v(() => ({
+    b: window.FTFormules.html({ latex: 'y=200,\\pi=0,50', block: true, align: 'gauche' }),
+    i: window.FTFormules.html({ latex: 'x^2', block: false })
+  }));
+  await load(`<p>Note : Conditions initiales et valeurs des paramètres :</p>${eqs.b}<p>Après le texte ${eqs.i} suite.</p><p>Fin.</p>`);
+  const box = (sel) => v((q) => { const r = document.querySelector(q).getBoundingClientRect(); return { l: r.left, r: r.right, y: r.top + r.height / 2 }; }, sel);
+  const p0 = await box('#editor p');
+  const mb = await box('#editor div.ft-math');
+  const mi = await box('#editor span.ft-math');
+  const picked = () => v(() => {
+    const st = window.FTMoteur.view.state;
+    const s = st.selection;
+    return { text: st.doc.textBetween(s.from, s.to, '|', (n) => (window.FTFormuleVue.isMath(n) ? '[EQ]' : '')), shown: document.querySelectorAll('#editor .ft-math.ft-math-sel').length };
+  });
+  await page.mouse.move(p0.l + 2, p0.y);
+  await page.mouse.down();
+  await page.mouse.move(mb.r - 5, mb.y, { steps: 10 });
+  await page.mouse.up();
+  await page.waitForTimeout(250);
+  let pk = await picked();
+  assert(pk.text.endsWith('[EQ]|') && pk.shown === 1, 'équation sur sa ligne prise et colorée : ' + JSON.stringify(pk));
+  await page.mouse.click(p0.l + 5, p0.y + 300);
+  await page.mouse.move(p0.l + 2, p0.y);
+  await page.mouse.down();
+  await page.mouse.move(mi.r - 3, mi.y, { steps: 10 });
+  await page.mouse.up();
+  await page.waitForTimeout(250);
+  pk = await picked();
+  assert(pk.text.endsWith('Après le texte [EQ]') && pk.shown === 2, 'équation dans la ligne prise en entier : ' + JSON.stringify(pk));
+  assert(!(await v(() => !!document.querySelector('#editor math-field'))), 'aucune équation ouverte');
+  ok('sélection à la souris : texte et équations (sur leur ligne ou dans la ligne) pris ensemble et colorés');
 };
