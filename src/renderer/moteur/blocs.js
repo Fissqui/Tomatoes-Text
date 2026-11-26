@@ -895,8 +895,9 @@
   // Tableau qui déborde sur les marges (comme dans Word) : bords avancés de --dg et --dd au-delà du texte
   // (styles.css les limite à 0,5 cm du bord de la feuille). Seulement un tableau entre les paragraphes.
   const OVERFLOW = '1.5cm';
+  const besideOf = (a) => (/^(gauche|droite)$/.test(a['data-wrap'] || '') ? a['data-wrap'] : '');
   function canOverflow(t) {
-    if (!t || t.node.attrs.a['data-wrap'] || view.dom.hasAttribute('data-cols')) return false;
+    if (!t || (t.node.attrs.a['data-wrap'] && !besideOf(t.node.attrs.a)) || view.dom.hasAttribute('data-cols')) return false;
     const $p = view.state.doc.resolve(t.pos);
     for (let d = $p.depth; d > 0; d--) if ($p.node(d).type !== N.doc) return false;
     return true;
@@ -912,8 +913,38 @@
     } else delete x['data-deborde'];
     return x;
   }
+  // Tableau à côté du texte (déplacement libre) : seul son bord extérieur avance dans la marge, de 1,5 cm ; sa
+  // largeur grandit d'autant (le côté du texte ne bouge pas). Sans débord : il reprend sa largeur d'avant.
+  function besideOverflow(t, on) {
+    const a = t.node.attrs.a;
+    const side = besideOf(a);
+    const dom = view.nodeDOM(t.pos);
+    if (!dom || dom.nodeType !== 1) return;
+    const k = view.dom.currentCSSZoom || 1;
+    const cs = getComputedStyle(view.dom);
+    const textW = view.dom.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+    const w = dom.getBoundingClientRect().width / k;
+    const dcs = getComputedStyle(dom);
+    const now = a['data-deborde'] ? Math.max(0, -parseFloat(side === 'gauche' ? dcs.marginLeft : dcs.marginRight) || 0) : 0;
+    const add = on ? 1.5 * 96 / 2.54 : 0;
+    const pct = Math.max(10, Math.round(((w - now + add) / textW) * 1000) / 10);
+    let x = a;
+    for (const p of ['--dg', '--dd', '--mx']) x = withStyle(x, p, '');
+    x = withStyle(x, 'width', pct + '%');
+    if (on) {
+      x = withStyle(x, side === 'gauche' ? '--dg' : '--dd', OVERFLOW);
+      x = { ...x, 'data-deborde': 'oui' };
+      delete x['data-width'];
+    } else {
+      x = { ...x };
+      delete x['data-deborde'];
+    }
+    apply(view.state.tr.setNodeMarkup(t.pos, null, { ...t.node.attrs, a: x }));
+  }
   // Toute la largeur du texte, ou ajusté au contenu ; un tableau qui déborde revient à la largeur du texte.
   function toggleFullWidth() {
+    const t = currentTable(view.state);
+    if (t && t.node.attrs.a['data-deborde'] && besideOf(t.node.attrs.a)) { besideOverflow(t, false); return; }
     setTableAttrs((x) => {
       if (x['data-deborde']) {
         const out = overflowAttrs(x, false);
@@ -924,6 +955,8 @@
     });
   }
   function setOverflow(on) {
+    const t = currentTable(view.state);
+    if (t && besideOf(t.node.attrs.a)) { besideOverflow(t, on); return; }
     setTableAttrs((x) => {
       const out = overflowAttrs(x, on);
       for (const k of Object.keys(x)) delete x[k];

@@ -330,6 +330,21 @@
     const reg = (r) => { if (withNotes) ensure(r); return o.region(r); };
     // Bas du texte de la zone r : au-dessus de ses notes.
     const bot = (r) => reg(r).cb - (withNotes ? fh[r] : 0);
+    // Bloc plus haut que la place restante sur la page tournée c (long tableau…) : il en prend la largeur si
+    // les pages qu'il occupera ensuite sont tournées aussi. (Compté large : chaque page peut perdre la hauteur
+    // de son plus grand morceau, qui ne se coupe pas.)
+    const turnedRun = (m, top, c) => {
+      if (m.units.length < 2) return false;
+      let unit = 0;
+      for (const u of m.units) unit = Math.max(unit, u.b - u.y);
+      let left = top + m.height - bot(c);
+      for (let r = c + 1; left > EPS && r < c + 40; r++) {
+        const g = reg(r);
+        if (!g || !g.turned || !g.full) return false;
+        left -= Math.max(0, bot(r) - g.ct - unit);
+      }
+      return left <= EPS;
+    };
     // Place que demandent les notes de l'endroit u sur la zone r (acc : déjà demandée par les endroits
     // d'avant, sur cette zone).
     const need = (u, r, acc) => {
@@ -380,7 +395,7 @@
           // suivante, où il ne doit pas garder la largeur de la page tournée.)
           let notes = 0;
           if (a) for (const u of a.m.units) notes += need(u, c, notes);
-          if (a && Math.max(Y, g.ct) + a.m.height + notes <= bot(c) + EPS) {
+          if (a && (Math.max(Y, g.ct) + a.m.height + notes <= bot(c) + EPS || turnedRun(a.m, Math.max(Y, g.ct) + notes, c))) {
             m = a.m;
             slot = a.slot;
             alt[i] = 1;

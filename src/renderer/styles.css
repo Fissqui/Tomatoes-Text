@@ -1349,6 +1349,11 @@ dialog p { margin: 0 0 12px; }
 .ft-img-mark[hidden] { display: none; }
 .ft-img-ghost-out img { display: block; width: 100%; height: auto; }
 .ft-img-ghost-out .ft-caption { display: none; }
+/* Tableau, encadré, bloc de code déplacé (moteur/images.js, 2.5.22) : pâli à sa place, son double suit la souris. */
+#editor > .ft-img-src { opacity: 0.3; }
+.ft-box-ghost { position: absolute; z-index: 5; opacity: 0.6; outline: 2px dashed var(--accent); outline-offset: 2px; pointer-events: none !important; }
+.ft-box-ghost-plain { background: color-mix(in srgb, var(--accent) 10%, transparent); }
+body.ft-box-gesture :is(#object-tools, #object-frame, .ft-rz, #block-handle) { visibility: hidden; }
 body.ft-img-gesture #object-frame { display: none; }
 /* Aperçu d'un collage : images à leur place, comme dans le texte. */
 #ps-preview .ft-image { display: block; max-width: 100%; margin: 0.4em auto 0.9em; line-height: 0; }
@@ -3663,6 +3668,57 @@ body.tb-moving, body.tb-moving * { cursor: grabbing !important; user-select: non
   margin-left: calc(-1 * var(--dg-x)) !important;
   margin-right: calc(-1 * var(--dd-x)) !important;
 }
+
+/* Tableau à côté du texte (déplacement libre) : son bord extérieur avance dans la marge (--dg à gauche, --dd à
+   droite) ; sa largeur (width) compte cette avancée. */
+#editor > .ft-table[data-deborde][data-wrap="gauche"] {
+  --dg-x: min(var(--dg, 0cm), max(0cm, var(--pg-ml, 1.9cm) - 0.5cm));
+  max-width: none;
+  margin-left: calc(-1 * var(--dg-x)) !important;
+}
+#editor > .ft-table[data-deborde][data-wrap="droite"] {
+  --dd-x: min(var(--dd, 0cm), max(0cm, var(--pg-mr, 1.9cm) - 0.5cm));
+  max-width: none;
+  margin-right: calc(-1 * var(--dd-x)) !important;
+}
+/* (Écart avec le texte d'à côté : le même que pour les images, 2.5.11.) */
+#editor > :is(.ft-table, .ft-callout, pre.ft-code)[data-wrap="gauche"] { margin-right: 1.6em; }
+/* (Posé dans un bas de page laissé blanc, moteur/images.js : le bloc suivant, à la page suivante, passe dessous ;
+   sinon, mesuré sans les pages, il serait habillé par lui et coupé trop tôt.) */
+#editor > [data-seul][data-wrap] + * { clear: both; }
+#editor > :is(.ft-table, .ft-callout, pre.ft-code)[data-wrap="droite"] { margin-left: 1.6em; }
+
+/* ---------- Tableaux, encadrés, blocs de code sur une page tournée (paysage) ---------- */
+/* data-pm-alt (moteur/visibles.js) : bloc sur une page tournée, élargi de --pg-shift de chaque côté (moteur.css).
+   Un tableau a sa propre largeur : elle suit la zone de texte de la page tournée. La valeur de data-pm-alt est
+   la largeur choisie (% de la largeur du texte) ; vide sans largeur choisie. */
+#editor > .ft-table[data-pm-alt]:not([data-width="auto"]):not([data-deborde]):not([data-wrap]):not([style*="width"]) {
+  width: calc(100% - 2 * var(--pg-shift, 0px)) !important; max-width: none;
+}
+#editor > .ft-table[data-pm-alt][data-width="auto"]:not([data-deborde]) { max-width: calc(100% - 2 * var(--pg-shift, 0px)); }
+#editor > .ft-table[data-pm-alt][data-deborde]:not([data-wrap]) {
+  width: calc(100% - 2 * var(--pg-shift, 0px) + var(--dg-x) + var(--dd-x)) !important;
+  max-width: none;
+  margin-left: calc(var(--pg-shift, 0px) - var(--dg-x)) !important;
+  margin-right: calc(var(--pg-shift, 0px) - var(--dd-x)) !important;
+}
+#editor > :is(.ft-table, .ft-callout, pre.ft-code)[data-pm-alt]:not([data-pm-alt=""]):is(:not([data-deborde]), [data-wrap]) {
+  --alt-w: calc((100% - 2 * var(--pg-shift, 0px)) * attr(data-pm-alt type(<number>), 100) / 100);
+  width: var(--alt-w) !important;
+  max-width: none;
+}
+#editor > :is(.ft-table, .ft-callout, pre.ft-code)[data-pm-alt]:not([data-pm-alt=""]):not([data-wrap]):not([data-deborde]) {
+  margin-left: calc(var(--pg-shift, 0px) + (100% - 2 * var(--pg-shift, 0px) - var(--alt-w)) / 2) !important;
+  margin-right: auto !important;
+}
+#editor > :is(.ft-table, .ft-callout, pre.ft-code)[data-pm-alt]:not([data-pm-alt=""]):not([data-wrap])[data-align="gauche"] { margin-left: var(--pg-shift, 0px) !important; }
+#editor > :is(.ft-table, .ft-callout, pre.ft-code)[data-pm-alt]:not([data-pm-alt=""]):not([data-wrap])[data-align="droite"] { margin-left: calc(100% - var(--pg-shift, 0px) - var(--alt-w)) !important; }
+#editor > :is(.ft-table, .ft-callout, pre.ft-code)[data-pm-alt]:not([data-pm-alt=""]):not([data-wrap])[data-align="libre"] { margin-left: calc(var(--pg-shift, 0px) + var(--ml, 0%)) !important; }
+/* (À côté du texte : collé au bord de la zone de texte tournée, l'écart avec le texte gardé.) */
+#editor > [data-pm-alt][data-wrap="gauche"] { margin-left: calc(var(--pg-shift, 0px) + var(--mx, 0px)) !important; margin-right: 1.6em !important; }
+#editor > [data-pm-alt][data-wrap="droite"] { margin-right: calc(var(--pg-shift, 0px) + var(--mx, 0px)) !important; margin-left: 1.6em !important; }
+#editor > .ft-table[data-pm-alt][data-deborde][data-wrap="gauche"] { margin-left: calc(var(--pg-shift, 0px) - var(--dg-x)) !important; }
+#editor > .ft-table[data-pm-alt][data-deborde][data-wrap="droite"] { margin-right: calc(var(--pg-shift, 0px) - var(--dd-x)) !important; }
 
 /* ---------- Source PDF côte à côte (sourcepdf.js) ---------- */
 #pdfpane { position: relative; width: 0; flex-shrink: 0; overflow: hidden; background: var(--sidebar-bg); border-left: 1px solid transparent; }

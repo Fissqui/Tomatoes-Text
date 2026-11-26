@@ -689,8 +689,9 @@
     obj.style.removeProperty('--dg');
     obj.style.removeProperty('--dd');
   }
-  // Un tableau entre les paragraphes (pas dans une case, un encadré ou des colonnes) peut déborder sur les marges.
-  const canOverflow = (obj) => obj.tagName === 'TABLE' && !obj.dataset.wrap && obj.parentNode === editor && !editor.hasAttribute('data-cols');
+  // Un tableau entre les paragraphes ou à côté du texte (pas dans une case, un encadré ou des colonnes) peut
+  // déborder sur les marges.
+  const canOverflow = (obj) => obj.tagName === 'TABLE' && (!obj.dataset.wrap || isFloat(obj)) && obj.parentNode === editor && !editor.hasAttribute('data-cols');
   const CM = 96 / 2.54;
 
   function setAlign(obj, value) {
@@ -1522,8 +1523,10 @@
     // marges, jusqu'à 0,5 cm du bord de la feuille (comme dans Word).
     const over = canOverflow(obj) && !corner;
     const sheet = over ? page.getBoundingClientRect() : null;
+    // (À côté du texte : seulement son bord extérieur, dans la marge de son côté.)
+    const side = over && isFloat(obj) ? obj.dataset.wrap : '';
     const lim = over
-      ? { left: Math.min(full.left, sheet.left + 0.5 * CM * zk), right: Math.max(full.left + full.width, sheet.right - 0.5 * CM * zk) }
+      ? { left: side === 'droite' ? full.left : Math.min(full.left, sheet.left + 0.5 * CM * zk), right: side === 'gauche' ? full.left + full.width : Math.max(full.left + full.width, sheet.right - 0.5 * CM * zk) }
       : { left: full.left, right: full.left + full.width };
     const maxW = hx > 0 ? lim.right - r0.left : hx < 0 ? r0.right - lim.left : full.width;
     let moved = false;
@@ -1562,9 +1565,21 @@
         w = Math.max(minW, Math.min(maxW, r0.width + dx * hx));
       }
       const left = hx < 0 ? r0.right - w : r0.left;
-      if (hx && over && (left < full.left - 1 || left + w > full.left + full.width + 1)) {
+      const cm = (px) => Math.round((px / zk / CM) * 100) / 100 + 'cm';
+      const out = side === 'gauche' ? full.left - left : side === 'droite' ? left + w - full.left - full.width : 0;
+      if (hx && side && out > 1) {
+        // À côté du texte, dans la marge : largeur (avancée comprise) et avancée du bord extérieur.
+        obj.style.width = round1((w / full.width) * 100) + '%';
+        obj.style.removeProperty('--mx');
+        obj.style.removeProperty(side === 'gauche' ? '--dd' : '--dg');
+        obj.style.setProperty(side === 'gauche' ? '--dg' : '--dd', cm(out));
+        obj.dataset.deborde = 'oui';
+        delete obj.dataset.width;
+      } else if (hx && side) {
+        dropOverflow(obj);
+        applyWidth(obj, left, w, full);
+      } else if (hx && over && (left < full.left - 1 || left + w > full.left + full.width + 1)) {
         // Dans les marges : avancée de chaque bord au-delà du texte, en cm.
-        const cm = (px) => Math.round((px / zk / CM) * 100) / 100 + 'cm';
         obj.style.removeProperty('width');
         obj.style.removeProperty('--ml');
         delete obj.dataset.align;

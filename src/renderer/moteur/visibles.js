@@ -39,6 +39,13 @@
   // Les marges sont écrites en deux parties (pixels entiers, puis le reste) : une seule longueur lue
   // dans un attribut est arrondie à 6 chiffres, soit au pixel près au-delà de 100 000 px.
   const MARKS = [FAR, SP, SP + 'f', SB, SB + 'f', CS, BRK, ALT];
+  // Valeur de la marque ALT : largeur choisie (% de la largeur du texte) d'un tableau, d'un encadré ou d'un bloc
+  // de code, reprise à la largeur de la page tournée (styles.css) ; vide sinon.
+  const altValue = (el) => {
+    if (!el.matches('.ft-table, .ft-callout, pre.ft-code')) return '';
+    const m = /^([\d.]+)%$/.exec(el.style.width || '');
+    return m ? m[1] : '';
+  };
   const MARKED = [FAR, SP, SB, CS, BRK, ALT].map((at) => `:scope > [${at}]`).join(', ');
   const setLen = (el, at, v) => {
     v = Math.max(0, v);
@@ -948,7 +955,7 @@
       mutate(() => {
         const copy = el.cloneNode(true);
         for (const at of MARKS) copy.removeAttribute(at);
-        if (wide) copy.setAttribute(ALT, '');
+        if (wide) copy.setAttribute(ALT, altValue(el));
         copy.querySelectorAll('.ft-pg-gap').forEach((g) => g.remove());
         const a = [...el.querySelectorAll('*')].filter((x) => !x.closest('.ft-pg-gap'));
         const b = [...copy.querySelectorAll('*')];
@@ -1121,7 +1128,7 @@
       const alt = new Set();
       if (paged && lay.alt) for (const i of list) if (lay.alt[i]) alt.add(els[i]);
       for (const el of altEls) if (!alt.has(el)) el.removeAttribute(ALT);
-      for (const el of alt) if (!el.hasAttribute(ALT)) el.setAttribute(ALT, '');
+      for (const el of alt) { const v = altValue(el); if (el.getAttribute(ALT) !== v) el.setAttribute(ALT, v); }
       altEls = alt;
     });
     shownBefore = now;

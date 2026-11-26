@@ -770,6 +770,8 @@
     if (e.button !== 0 || !hoverObj) return;
     e.preventDefault();
     const obj = hoverObj;
+    // Tableau, encadré, bloc de code : déplacés comme les images (moteur/images.js).
+    if (window.FTImages && window.FTImages.moveBox && window.FTImages.moveBox(obj, e)) return;
     if (!(L() && L().startDrag(obj, e))) startBlockDrag(obj, e);
   });
 
@@ -1036,7 +1038,8 @@
   const bagOf = (n) => (n && n.attrs && n.attrs.a) || {};
   const has = (n, name) => n && bagOf(n)[name] !== undefined;
   // (Image en déplacement par ligne posée entre deux lignes du paragraphe : moteur/images.js.)
-  const besideNode = (n) => !!n && (/^(gauche|droite)$/.test(bagOf(n)['data-wrap'] || '') || (n.type.name === 'image' && !bagOf(n)['data-wrap']));
+  // (Tableau, encadré, bloc de code par ligne aussi, depuis la 2.5.22.)
+  const besideNode = (n) => !!n && (/^(gauche|droite)$/.test(bagOf(n)['data-wrap'] || '') || (/^(image|table|blockquote|code_block)$/.test(n.type.name) && !bagOf(n)['data-wrap']));
   const without = (a, name) => {
     const out = { ...a };
     delete out[name];

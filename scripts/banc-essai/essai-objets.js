@@ -159,12 +159,16 @@ module.exports = async ({ page }) => {
   const hy = h.y + h.height / 2;
   await page.mouse.move(hx, hy);
   await page.mouse.down();
+  // (Depuis la 2.5.22, comme une image : le tableau reste à sa place pendant le geste, son double suit la souris.)
   const seen = new Set();
+  const still = new Set();
   for (let i = 1; i <= 16; i++) {
     await page.mouse.move(hx + 6 * i, hy + 9 * i);
     await page.waitForTimeout(25);
-    seen.add(Math.round((await rect('#editor table')).t));
+    seen.add(Math.round((await rect('.ft-box-ghost')).t));
+    still.add(Math.round((await rect('#editor table')).t));
   }
+  assert.strictEqual(still.size, 1, 'texte immobile pendant le geste : ' + [...still].join(','));
   await page.mouse.up();
   await page.waitForTimeout(150);
   const f1 = await page.evaluate(() => {
@@ -173,13 +177,13 @@ module.exports = async ({ page }) => {
     const b = t.nextElementSibling;
     return { cut: a.hasAttribute('data-coupe'), suite: b.hasAttribute('data-suite'), text: a.textContent.length + b.textContent.length, gap: b.getBoundingClientRect().top - a.getBoundingClientRect().bottom };
   });
-  assert(seen.size >= 4, 'le tableau descend ligne par ligne : ' + [...seen].join(','));
+  assert(seen.size >= 4, 'le double suit la souris : ' + [...seen].join(','));
   assert(f1.cut && f1.suite && f1.text === LOREM.repeat(8).length && Math.abs(f1.gap) < 2, JSON.stringify(f1));
   await page.click('#editor table td');
   await pickTool('Position rigide');
   const f2 = await page.evaluate(() => ({ cuts: document.querySelectorAll('#editor [data-coupe], #editor [data-suite]').length, long: document.getElementById('long').textContent.length }));
   assert.deepStrictEqual(f2, { cuts: 0, long: LOREM.repeat(8).length });
-  ok(`tableau en texte mouvant : descend au fil des lignes (${seen.size} positions), le paragraphe coupé autour de lui se recolle ensuite`);
+  ok(`tableau en texte mouvant : double qui suit la souris (${seen.size} positions), posé dans le paragraphe coupé autour de lui, qui se recolle ensuite`);
 
   // 9. Encadré : coin = largeur et hauteur ensemble.
   await reset(`<p>${LOREM}</p><blockquote class="ft-callout"><p>Un encadré</p></blockquote><p>${LOREM}</p>`);

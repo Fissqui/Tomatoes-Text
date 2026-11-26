@@ -47,6 +47,8 @@
   // ----- Lecture des attributs -----
 
   const isImg = (n) => !!n && (n.type === N.image || n.type === N.image_inline);
+  // Tableau, encadré, bloc de code (déplacés comme les images, plus bas).
+  const isBoxNode = (n) => !!n && (n.type === N.table || n.type === N.blockquote || n.type === N.code_block);
   const bagOf = (n) => (n && n.attrs && n.attrs.a) || {};
   const sv = (a, prop) => M.styleValue(a.style, prop);
   const withStyle = (a, prop, value) => M.withStyleAttr(a, prop, value);
@@ -111,7 +113,7 @@
     const decos = [];
     if (hidden !== null) {
       const n = doc.nodeAt(hidden);
-      if (isImg(n)) decos.push(Decoration.node(hidden, hidden + n.nodeSize, { class: 'ft-img-src' }));
+      if (n && !n.isText) decos.push(Decoration.node(hidden, hidden + n.nodeSize, { class: 'ft-img-src' }));
     }
     if (ghostSpec) {
       decos.push(Decoration.widget(ghostSpec.pos, () => ghostEl, {
@@ -892,7 +894,7 @@
     let last = 0; // dernier changement : +1 lignes ajoutées, -1 retirées
     for (let pass = 0; pass < 8; pass++) {
       const node = view.state.doc.nodeAt(pos);
-      if (!isImg(node)) return pos;
+      if (!isImg(node) && !isBoxNode(node)) return pos;
       const $p = view.state.doc.resolve(pos);
       // Ligne d'accroche (libre) ou bloc de l'image (par ligne), et les lignes vides qui la précèdent.
       const inPara = $p.parent.isTextblock && $p.depth === 1;
@@ -925,7 +927,7 @@
         last = -1;
       }
       const np = tr.mapping.map(pos);
-      if (isImg(tr.doc.nodeAt(np))) tr.setSelection(NodeSelection.create(tr.doc, np));
+      if (isImg(tr.doc.nodeAt(np)) || isBoxNode(tr.doc.nodeAt(np))) tr.setSelection(NodeSelection.create(tr.doc, np));
       view.dispatch(joined(tr));
       pos = np;
     }
@@ -2162,12 +2164,318 @@
   }
   window.FTSchema.onPrepare(migrate);
 
+  // ----- Tableaux, encadrés, blocs de code : déplacés comme les images (2.5.22) -----
+  // Saisis par leur poignée (moteur/objets.js). Par ligne (sans data-wrap) : entre deux blocs, ou entre deux
+  // lignes d'un paragraphe (coupé en deux morceaux qui se recollent quand l'objet s'en va) ; un tableau trop
+  // long pour le bas de la page s'y coupe, comme dans Word. Libre (data-wrap gauche / droite) : au début de la
+  // ligne du haut visé, le texte passe à côté ; remonté s'il ne tient pas en bas de sa page ; sous la fin du
+  // texte, des lignes vides jusque-là. Pendant le geste, le texte ne bouge pas : l'objet reste pâli à sa place,
+  // un double suit la souris et, par ligne, un trait montre où il ira. Une seule étape d'annulation.
+  // (Devant ou derrière le texte, fixé, dans des colonnes : layout.js, comme avant.)
+  const BOXES = 'table.ft-table, blockquote.ft-callout, pre.ft-code';
+  let boxMove = null;
+  const boxGhost = document.createElement('div');
+  boxGhost.className = 'ft-box-ghost';
+  const boxInner = document.createElement('div');
+  boxGhost.append(boxInner);
+
+  function boxOf(dom) {
+    if (!active || !dom || dom.nodeType !== 1 || !dom.matches(BOXES) || dom.parentNode !== mount || mount.hasAttribute('data-cols')) return null;
+    const w = dom.dataset.wrap || '';
+    if ((w && !/^(gauche|droite)$/.test(w)) || dom.dataset.pos === 'fixe') return null;
+    const pos = posOfDom(dom);
+    if (pos === null) return null;
+    const node = view.state.doc.nodeAt(pos);
+    if (!isBoxNode(node) || view.state.doc.resolve(pos).depth !== 0) return null;
+    return { pos, node, a: bagOf(node), dom, move: w ? 'libre' : 'ligne' };
+  }
+
+  // Double de l'objet : copie dont l'apparence est recopiée (hors de la zone d'écriture, ses styles ne
+  // s'appliquent plus). Très grand objet : un simple cadre de sa taille.
+  const LOOK = ['display', 'box-sizing', 'width', 'height', 'table-layout', 'border-collapse', 'border-spacing',
+    'border-top-width', 'border-top-style', 'border-top-color', 'border-right-width', 'border-right-style', 'border-right-color',
+    'border-bottom-width', 'border-bottom-style', 'border-bottom-color', 'border-left-width', 'border-left-style', 'border-left-color',
+    'border-radius', 'background-color', 'color', 'font-family', 'font-size', 'font-weight', 'font-style', 'line-height',
+    'text-align', 'vertical-align', 'white-space', 'padding-top', 'padding-right', 'padding-bottom', 'padding-left',
+    'margin-top', 'margin-bottom', 'text-decoration-line', 'text-indent', 'overflow-wrap'];
+  function buildBoxGhost(dom) {
+    boxInner.textContent = '';
+    const k = zoom();
+    const pk = page.currentCSSZoom || 1;
+    boxInner.style.zoom = String(k / pk);
+    const all = dom.getElementsByTagName('*');
+    if (all.length > 1500) {
+      const r = dom.getBoundingClientRect();
+      const box = document.createElement('div');
+      box.className = 'ft-box-ghost-plain';
+      box.style.width = r.width / k + 'px';
+      box.style.height = r.height / k + 'px';
+      boxInner.append(box);
+      return;
+    }
+    const copy = dom.cloneNode(true);
+    const from = [dom, ...all];
+    const to = [copy, ...copy.getElementsByTagName('*')];
+    for (let i = 0; i < from.length; i++) {
+      const cs = getComputedStyle(from[i]);
+      const st = to[i].style;
+      for (const p of LOOK) st.setProperty(p, cs.getPropertyValue(p));
+    }
+    copy.removeAttribute('id');
+    copy.querySelectorAll('[id]').forEach((x) => x.removeAttribute('id'));
+    copy.querySelectorAll('[contenteditable]').forEach((x) => x.removeAttribute('contenteditable'));
+    // (Intercalaires de pages et en-têtes répétés : pas dans le double.)
+    copy.querySelectorAll('.ft-pg-gap').forEach((x) => x.remove());
+    copy.style.margin = '0';
+    copy.style.float = 'none';
+    copy.style.position = 'static';
+    boxInner.append(copy);
+  }
+  function placeBoxGhost(x, y) {
+    const pr = page.getBoundingClientRect();
+    const pk = page.currentCSSZoom || 1;
+    boxGhost.style.left = (x - pr.left) / pk + 'px';
+    boxGhost.style.top = (y - pr.top) / pk + 'px';
+    if (boxGhost.parentNode !== page) page.append(boxGhost);
+  }
+
+  // Saisie par la poignée : faux si l'objet n'est pas déplacé ici.
+  function moveBox(dom, e) {
+    const cur = boxOf(dom);
+    if (!cur) return false;
+    const r0 = dom.getBoundingClientRect();
+    const cs = getComputedStyle(dom);
+    const k = zoom();
+    boxMove = {
+      ...cur, r0, x0: e.clientX, y0: e.clientY, gx: e.clientX - r0.left, gy: e.clientY - r0.top, w: r0.width, h: r0.height,
+      H: r0.height + ((parseFloat(cs.marginTop) || 0) + (parseFloat(cs.marginBottom) || 0)) * k,
+      started: false, last: e, raf: 0, target: null, scroll: 0
+    };
+    if (window.FTObjets) window.FTObjets.selectObject(dom);
+    window.addEventListener('mousemove', onBoxMove, true);
+    window.addEventListener('mouseup', onBoxUp, true);
+    return true;
+  }
+  function onBoxMove(e) {
+    const g = boxMove;
+    if (!g) return;
+    g.last = e;
+    if (!g.started) {
+      if (Math.abs(e.clientX - g.x0) < 4 && Math.abs(e.clientY - g.y0) < 4) return;
+      g.started = true;
+      document.body.classList.add('ft-dragging', 'ft-box-gesture');
+      buildBoxGhost(g.dom);
+      hidden = g.pos;
+      setDecos();
+      if (mark.parentNode !== page) page.append(mark);
+    }
+    if (!g.raf) g.raf = requestAnimationFrame(() => { g.raf = 0; boxFrame(g); });
+  }
+  function boxScroll(g, e) {
+    const r = workspace.getBoundingClientRect();
+    const edge = 40;
+    let d = 0;
+    if (e.clientY < r.top + edge) d = -Math.ceil((r.top + edge - e.clientY) / 3);
+    else if (e.clientY > r.bottom - edge) d = Math.ceil((e.clientY - (r.bottom - edge)) / 3);
+    if (!d) { if (g.scroll) { clearInterval(g.scroll); g.scroll = 0; } return; }
+    g.scrollSpeed = d;
+    if (!g.scroll) g.scroll = setInterval(() => {
+      workspace.scrollTop += g.scrollSpeed;
+      if (!g.raf) g.raf = requestAnimationFrame(() => { g.raf = 0; boxFrame(g); });
+    }, 16);
+  }
+  // Par ligne : place visée ramenée au premier niveau du texte (pas dans une liste, un encadré…).
+  function topTarget(t, y) {
+    if (!t) return null;
+    const doc = view.state.doc;
+    const $p = doc.resolve(Math.min(t.pos, doc.content.size));
+    if (t.kind === 'split' ? $p.depth === 1 : $p.depth === 0) return t;
+    const top = $p.before(1);
+    const el = view.nodeDOM(top);
+    if (!el || el.nodeType !== 1) return null;
+    const r = el.getBoundingClientRect();
+    const up = y < r.top + r.height / 2;
+    return { pos: up ? top : top + doc.nodeAt(top).nodeSize, kind: 'block', y: up ? r.top : r.bottom };
+  }
+  const sameBox = (g, t) => !t || (t.kind === 'block' && (t.pos === g.pos || t.pos === g.pos + g.node.nodeSize));
+  function boxFrame(g) {
+    if (boxMove !== g) return;
+    const e = g.last;
+    boxScroll(g, e);
+    const x = e.clientX - g.gx;
+    const y = e.clientY - g.gy;
+    if (g.move === 'ligne') {
+      let t = aimLine(e.clientY, e.clientX);
+      if (t && t.kind === 'fill') t.y = Math.max(y, t.y - g.gy);
+      t = topTarget(t, e.clientY);
+      // (Interface avancée : un objet qui tient sur une page n'est pas coupé en bas de celle visée ; il
+      // remonte à la dernière place de cette page où il tient, comme une image. Plus long qu'une page : il se
+      // coupe là, comme dans Word.)
+      if (t && paged()) {
+        const f = frameAt(t.y);
+        if (g.H <= f.cb - f.ct) {
+          const t2 = fitLine(g, { ...t, x: e.clientX });
+          if (t2 !== t) t = topTarget(t2, t2.y + 1);
+        }
+      }
+      g.target = t;
+      placeBoxGhost(x, y);
+      if (sameBox(g, t)) mark.hidden = true;
+      else {
+        const pr = page.getBoundingClientRect();
+        const pk = page.currentCSSZoom || 1;
+        const col = textColumn();
+        mark.style.left = (col.left - pr.left) / pk + 'px';
+        mark.style.width = col.width / pk + 'px';
+        mark.style.top = (t.y - pr.top) / pk - 1 + 'px';
+        mark.hidden = false;
+      }
+      return;
+    }
+    // Libre : le double suit la souris (remonté s'il ne tient pas en bas de sa page).
+    const top = fitTop(y, g.H);
+    placeBoxGhost(x, top);
+    g.target = { left: x, top, width: g.w, height: g.h };
+  }
+  function onBoxUp() {
+    const g = boxMove;
+    window.removeEventListener('mousemove', onBoxMove, true);
+    window.removeEventListener('mouseup', onBoxUp, true);
+    if (!g) return;
+    if (g.raf) { cancelAnimationFrame(g.raf); g.raf = 0; if (g.started) boxFrame(g); }
+    if (g.scroll) clearInterval(g.scroll);
+    boxMove = null;
+    document.body.classList.remove('ft-dragging', 'ft-box-gesture');
+    if (!g.started) return;
+    hidden = null;
+    if (boxGhost.parentNode) boxGhost.remove();
+    boxInner.textContent = '';
+    mark.hidden = true;
+    setDecos();
+    if (g.target) dropBox(g, g.target);
+    else selectBox(g.pos);
+  }
+  function selectBox(pos) {
+    const n = view.state.doc.nodeAt(pos);
+    if (!isBoxNode(n)) return;
+    view.dispatch(view.state.tr.setSelection(NodeSelection.create(view.state.doc, pos)));
+    view.focus();
+  }
+
+  // Libre : attributs à la place visée (côté, écart avec le bord). Un tableau qui déborde sur la marge
+  // déborde de l'autre côté s'il change de côté.
+  function besideAttrs(a, spot) {
+    let o = put(a, 'data-wrap', spot.side);
+    o = put(o, 'data-align', null);
+    // (Bas de page laissé blanc : rien à côté de lui, le bloc suivant passe dessous — data-seul, styles.css.)
+    o = put(o, 'data-seul', spot.kind === 'gap' ? true : null);
+    o = styles(o, { '--mx': spot.mx ? spot.mx + '%' : null, '--x': null, '--y': null, '--ml': null });
+    if (a['data-deborde'] !== undefined && a['data-wrap'] !== spot.side) {
+      const was = a['data-wrap'] === 'droite' ? sv(a, '--dd') : sv(a, '--dg');
+      o = styles(o, { '--dg': spot.side === 'gauche' ? was : null, '--dd': spot.side === 'droite' ? was : null });
+    }
+    return o;
+  }
+  // Libre : l'objet posé dans tr à la place spot (mesurée sans lui). Renvoie sa position et la hauteur visée
+  // (sous la fin du texte), ou null.
+  function placeBeside(tr, g, node, spot) {
+    const box = node.type.create({ ...node.attrs, a: besideAttrs(bagOf(node), spot) }, node.content, node.marks);
+    if (spot.kind === 'end') {
+      // Sous la fin du texte : des lignes vides jusqu'à la hauteur visée ; l'objet avant la dernière.
+      const at = fillTo(tr, spot) - 1;
+      tr.insert(at, box);
+      return { at, fill: spot.top };
+    }
+    if (spot.kind === 'gap') {
+      const at = tr.mapping.map(spot.pos);
+      tr.insert(at, box);
+      return { at };
+    }
+    const m = tr.mapping.map(spot.pos, -1);
+    const $m = tr.doc.resolve(m);
+    if ($m.depth > 1) return { at: insertAt(tr, $m.before(1), box) };
+    return { at: placeBlock(tr, m, box, justified(spot.tb)) };
+  }
+  function dropBox(g, t) {
+    const doc = view.state.doc;
+    const node = doc.nodeAt(g.pos);
+    if (!isBoxNode(node)) return;
+    const tr = view.state.tr;
+    let at;
+    let fill = null;
+    let page0 = null;
+    if (g.move === 'ligne') {
+      if (sameBox(g, t)) { selectBox(g.pos); return; }
+      tr.delete(g.pos, g.pos + node.nodeSize);
+      if (t.kind === 'fill') {
+        let end = fillTo(tr, { y: t.y }) - 1;
+        tr.delete(end, end + 2);
+        end = Math.min(end, tr.doc.content.size);
+        at = insertAt(tr, end, node);
+        fill = t.y;
+      } else {
+        const mapped = tr.mapping.map(t.pos, t.kind === 'block' ? -1 : 1);
+        at = t.kind === 'split' ? placeBlock(tr, mapped, node, justified(t.el)) : insertAt(tr, mapped, node);
+      }
+      dropAutoLinesAround(tr);
+      at = Math.min(at, tr.doc.content.size);
+      lineAfterIfLast(tr, at);
+    } else {
+      const spot = withHidden(g.dom, () => aimFree(t.left, t.top, t.left + 2, t.top + 2, { w: t.width, h: t.height }));
+      if (!spot) { selectBox(g.pos); return; }
+      if (paged()) page0 = frameAt(t.top).page;
+      tr.delete(g.pos, g.pos + node.nodeSize);
+      const p = placeBeside(tr, g, node, spot);
+      at = p.at;
+      if (p.fill !== undefined) fill = p.fill;
+      dropAutoLinesAround(tr);
+      at = Math.min(at, tr.doc.content.size);
+      lineAfterIfLast(tr, at);
+    }
+    if (isBoxNode(tr.doc.nodeAt(at))) tr.setSelection(NodeSelection.create(tr.doc, at));
+    view.dispatch(step(tr));
+    if (fill !== null) at = fixFill(at, fill);
+    view.focus();
+    if (page0 !== null) requestAnimationFrame(() => requestAnimationFrame(() => keepBoxOnPage(page0, 2)));
+  }
+  // Libre : objet déposé sur la page visée mais reporté à la suivante (il ne tenait pas) : remonté à la
+  // dernière place de cette page où il tient. Fondu dans l'étape du dépôt.
+  function keepBoxOnPage(page0, tries) {
+    if (boxMove || !paged()) return;
+    const sel = view.state.selection;
+    if (!(sel instanceof NodeSelection) || !isBoxNode(sel.node)) return;
+    const pos = sel.from;
+    const node = sel.node;
+    const dom = view.nodeDOM(pos);
+    if (!dom || dom.nodeType !== 1 || isFar(dom) || !/^(gauche|droite)$/.test(bagOf(node)['data-wrap'] || '')) return;
+    const r = dom.getBoundingClientRect();
+    if (!r.height || frameAt(r.top).page <= page0) return;
+    const f = V().pageFrame(page0);
+    const ct = toScreen(f.ct);
+    const cs = getComputedStyle(dom);
+    const H = r.height + ((parseFloat(cs.marginTop) || 0) + (parseFloat(cs.marginBottom) || 0)) * zoom();
+    const limit = toScreen(f.cb) - SAFE - H;
+    if (limit < ct + 1) return;
+    const spot = withHidden(dom, () => aimFree(r.left, limit, r.left + 2, limit + 2, { w: r.width, h: r.height }));
+    if (!spot || (spot.kind !== 'line' && spot.kind !== 'gap')) return;
+    const tr = view.state.tr;
+    tr.delete(pos, pos + node.nodeSize);
+    let at = placeBeside(tr, null, node, spot).at;
+    dropAutoLinesAround(tr);
+    at = Math.min(at, tr.doc.content.size);
+    if (isBoxNode(tr.doc.nodeAt(at))) tr.setSelection(NodeSelection.create(tr.doc, at));
+    view.dispatch(joined(tr));
+    if (tries > 1) requestAnimationFrame(() => requestAnimationFrame(() => keepBoxOnPage(page0, tries - 1)));
+  }
+
   // ----- Mise en route -----
 
   let active = false;
   window.FTImages = {
     insert,
     menuItems,
+    // Tableau, encadré, bloc de code saisi par sa poignée (moteur/objets.js) : faux s'il n'est pas déplacé ici.
+    moveBox,
     placeTools,
     hideTools,
     active: () => active,

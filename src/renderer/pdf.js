@@ -135,7 +135,7 @@
 ${info.mode === 'avance' ? '' : '  #editor .ft-cover { display: none !important; }\n'}${info.mode === 'avance' && c.keep ? '  #editor > [data-pg-start] { break-before: page; }\n' : ''}${info.mode === 'avance' && c.chapters ? `  #editor > :is(h1${c.chapters > 1 ? ', h2' : ''}):not(.ft-title) { break-before: page; }\n` : ''}${typo || notes ? `  .ft-print { width: ${(w - m.left - m.right).toFixed(2)}mm; }\n  html.ft-cover-bleed .ft-print { width: auto; }\n` : ''}`;
     // Tableau qui déborde sur les marges : Chromium n'imprime rien hors de la zone de texte ; les marges de
     // gauche et de droite de l'impression passent à 5 mm et le texte reprend sa place par un retrait.
-    const wide = !!box.querySelector(':scope > table.ft-table[data-deborde]:not([data-wrap])') && !editor.hasAttribute('data-cols');
+    const wide = !!box.querySelector(':scope > table.ft-table[data-deborde]:not([data-wrap="devant"]):not([data-wrap="derriere"])') && !editor.hasAttribute('data-cols');
     const pm = wide ? { ...m, left: Math.min(m.left, 5), right: Math.min(m.right, 5) } : m;
     const wideCss = wide ? `  .ft-print { box-sizing: content-box; padding: 0 ${m.right - pm.right}mm 0 ${m.left - pm.left}mm; }\n  html.ft-cover-bleed .ft-print { padding: 0; }\n` : '';
     const html = pageHtml({ box, cls, css: css + wideCss, scripts: (typo ? composeScripts() : '') + (notes ? NOTES_SCRIPTS : '') });

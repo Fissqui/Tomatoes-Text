@@ -71,6 +71,15 @@ nom. Le détail de chaque version publiée figure sur la
   se place juste après elle ; une équation sur sa propre ligne porte son appel de note après la formule
   (numéro de l'équation gardé au bord), au pied de sa page et dans l'export Word. Une équation copiée avec sa
   note la garde au collage, y compris une équation sur sa ligne collée depuis Word.
+- Tableaux, encadrés et blocs de code déplacés comme les images : le texte reste immobile pendant le geste
+  (double qui suit la souris, trait à la place visée) ; par ligne, place possible entre deux lignes d'un
+  paragraphe ; glissés en bas d'une page où ils ne tiennent pas, ils remontent au lieu d'être coupés ou
+  reportés (un tableau plus long qu'une page se coupe toujours) ; lâchés dans le bas blanc d'une page, ils y
+  restent ; sous la fin du texte, lignes créées jusqu'à l'endroit visé. Un déplacement s'annule en une fois.
+- Tableau à côté du texte : il peut déborder sur la marge de son côté (bouton « Déborder sur les marges » ou
+  poignée tirée dans la marge).
+- Pages en paysage : les tableaux en prennent toute la largeur (largeur choisie et débord sur les marges
+  compris), aussi un long tableau qui continue sur d'autres pages en paysage.
 
 ## 2.4 « Corbarino » — novembre 2026
 
