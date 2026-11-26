@@ -44,6 +44,8 @@ nom. Le détail de chaque version publiée figure sur la
 - Mode avancé, Retour arrière au début d'un texte resté en haut de sa page après un blanc (texte d'avant
   raccourci, lignes vides, image) : le texte remonte dès le premier appui, puis chaque appui efface une ligne
   vide d'au-dessus et le fait remonter d'autant (auparavant, rien ne bougeait avant un saut d'un coup).
+- Texte copié dans Word : ses images sont collées en pleine qualité (Word n'y joint souvent qu'une copie
+  réduite), y compris celles qu'il ne décrit qu'en dessin vectoriel (VML) sans image de secours.
 
 ## 2.4 « Corbarino » — novembre 2026
 

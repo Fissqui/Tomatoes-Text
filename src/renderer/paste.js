@@ -795,8 +795,43 @@
   // Images d'un texte collé (version 2.5) : chaque source (fichier temporaire de Word, adresse d'une page web)
   // est lue en données, pour que l'image reste dans le document ; taille d'origine notée (data-nw, data-nh),
   // très grandes images réduites. Les images illisibles sont retirées.
+  // Word : chaque image y est décrite deux fois, en VML (<v:imagedata src> : le fichier d'origine, en pleine
+  // taille) puis par une <img> de secours (copie réduite, parfois une simple vignette), reliées par le nom de
+  // la forme (v:shapes). L'original est lu d'abord ; une forme sans <img> de secours en reçoit une.
+  function wordOriginals(doc) {
+    const originals = new Map();
+    const walker = doc.createTreeWalker(doc.body || doc, NodeFilter.SHOW_COMMENT);
+    const vml = [];
+    for (let c = walker.nextNode(); c; c = walker.nextNode()) if (/^\[if gte vml 1\]>/.test(c.data) && /<v:imagedata\b/i.test(c.data)) vml.push(c);
+    for (const c of vml) {
+      for (const m of c.data.matchAll(/<v:shape\b([^>]*)>([\s\S]*?)<\/v:shape>/gi)) {
+        const id = /\bid="([^"]+)"/i.exec(m[1]);
+        const src = /<v:imagedata\b[^>]*?\bsrc="([^"]+)"/i.exec(m[2]);
+        if (!src) continue;
+        const style = (/\bstyle='([^']*)'|\bstyle="([^"]*)"/i.exec(m[1]) || []).slice(1).join('');
+        const name = id ? id[1] : '';
+        if (name) originals.set(name, src[1]);
+        // (Forme sans <img> de secours après elle : image ajoutée à sa place, à sa taille.)
+        let n = c.nextSibling;
+        while (n && n.nodeType === 3 && !n.data.trim()) n = n.nextSibling;
+        const fallback = n && n.nodeType === 8 && /^\[if !vml\]/.test(n.data);
+        if (fallback || (name && doc.querySelector(`img[v\\:shapes~="${CSS.escape(name)}"]`))) continue;
+        const img = doc.createElement('img');
+        img.setAttribute('src', src[1]);
+        const pt = (k) => { const v = new RegExp('(?:^|;)\\s*' + k + ':\\s*([\\d.]+)pt', 'i').exec(style); return v ? Math.round(Number(v[1]) * 4 / 3) : 0; };
+        if (pt('width')) img.setAttribute('width', String(pt('width')));
+        if (pt('height')) img.setAttribute('height', String(pt('height')));
+        if (/position:\s*absolute/i.test(style)) img.setAttribute('align', /mso-position-horizontal:\s*right/i.test(style) ? 'right' : 'left');
+        if (name) img.setAttribute('v:shapes', name);
+        c.after(img);
+      }
+    }
+    return originals;
+  }
+
   async function resolveImages(html) {
     const doc = new DOMParser().parseFromString(html, 'text/html');
+    const originals = /urn:schemas-microsoft-com:vml|<v:imagedata/i.test(html) ? wordOriginals(doc) : new Map();
     const imgs = [...doc.querySelectorAll('img')];
     imgs.slice(60).forEach((img) => img.remove());
     const api = window.frameText;
@@ -805,9 +840,15 @@
     const MATH_IMG = 'img.tex, img.latex, img[src*="latex"], img[src*="codecogs"], img.mwe-math-fallback-image-inline, img.mwe-math-fallback-image-display';
     await Promise.all(imgs.slice(0, 60).map(async (img) => {
       if (img.matches(MATH_IMG) && /[\\^_{}=]/.test(img.getAttribute('alt') || '')) return;
-      let src = img.getAttribute('src') || '';
-      if (!/^data:image\//.test(src)) src = /^(https?|file):/i.test(src) && api && api.pasteImage ? await api.pasteImage(src).catch(() => null) : null;
-      const im = src && await load(src);
+      const read = async (s) => {
+        if (!/^data:image\//.test(s)) s = /^(https?|file):/i.test(s) && api && api.pasteImage ? await api.pasteImage(s).catch(() => null) : null;
+        const im = s && await load(s);
+        return im && im.naturalWidth ? [s, im] : [null, null];
+      };
+      const own = img.getAttribute('src') || '';
+      const first = originals.get((img.getAttribute('v:shapes') || '').split(/\s+/)[0]);
+      let [src, im] = first && first !== own ? await read(first) : [null, null];
+      if (!im) [src, im] = await read(own);
       if (!im || !im.naturalWidth) { img.remove(); return; }
       let w = im.naturalWidth;
       let h = im.naturalHeight;

@@ -1031,8 +1031,9 @@
     // Fragment HTML sans balise utile (simple texte) : traité comme du texte.
     if (html && !/<(p|div|br|li|h[1-6]|table|b|strong|i|em|u|a|span|font|img)\b/i.test(html) && !(FC && FC.hasMath(html))) html = '';
     const range = { from: view.state.selection.from, to: view.state.selection.to };
-    // Images dans le texte collé (version 2.5) : lues d'abord (fichiers de Word, adresses d'une page web).
-    if (html && /<img\b/i.test(html) && P.resolveImages) {
+    // Images dans le texte collé (version 2.5) : lues d'abord (fichiers de Word, adresses d'une page web ;
+    // Word : aussi les images décrites seulement en VML).
+    if (html && /<img\b|<v:imagedata\b/i.test(html) && P.resolveImages) {
       const status = document.getElementById('status-save');
       if (status) status.textContent = 'Lecture des images collées…';
       P.resolveImages(html).then((h) => pasteSource(P, { html: h, text }, range, plain), () => pasteSource(P, { html, text }, range, plain));
