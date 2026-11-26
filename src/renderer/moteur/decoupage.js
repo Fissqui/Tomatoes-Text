@@ -258,7 +258,8 @@
 
   // Le découpage. o : {
   //   n, head (haut du premier bloc dans la zone d'écriture), slot(i) (du haut du bloc i au haut du
-  //   suivant), meas(i) ({ height, units }), keep(i) (le bloc ouvre une page), legend(i) (légende d'un
+  //   suivant), meas(i) ({ height, units }), keep(i) (le bloc ouvre une page), keptPage(i) (facultatif :
+  //   page d'un bloc gardé au découpage d'avant ; s'il y est rejoint par le texte d'avant, il le suit), legend(i) (légende d'un
   //   tableau, qui le suit), withNext(i) (facultatif : titre, qui reste avec le bloc suivant), repeat(i) (hauteur de l'en-tête répété du tableau i, ou 0),
   //   region(r) (zone de texte n° r : { page, ct, cb, full, turned }, depuis le haut de la zone d'écriture),
   //   alt(i) (facultatif : { m, slot } du bloc i à la largeur d'une page tournée),
@@ -421,7 +422,8 @@
       const tied = i + 1 < n && (o.legend(i) || (o.withNext && o.withNext(i)));
       if (o.keep(i) || tied) {
         while (bot(cur) < Y + EPS) cur++;
-        let move = o.keep(i) && Y > reg(cur).ct + EPS;
+        // (Bloc gardé rejoint sur sa page par le texte d'au-dessus, qui a grandi : il reste à sa suite.)
+        let move = o.keep(i) && Y > reg(cur).ct + EPS && !(o.keptPage && o.keptPage(i) === reg(cur).page);
         if (!move && tied) {
           let ny = t + slot + D;
           let j = i + 1;

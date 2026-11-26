@@ -125,4 +125,30 @@ module.exports = async ({ page }) => {
   b1 = await back();
   assert(b1.n === b.n - 1 && b1.page < b.page && !b1.kept, `ligne vide effacée, B remonte au bas de la page d'avant (${JSON.stringify([b, b1])})`);
   ok(`${n} lignes vides jusqu'au bas de la page : B remonte dès le premier Retour arrière`);
+
+  // 5. Texte d'avant qui grandit et déborde sur la page de B gardé : B reste à sa suite sur cette page
+  // (il ne passe pas seul à la page d'après en y laissant la ligne débordée).
+  await load(para(6) + '<p></p>'.repeat(n - 1) + '<p>Fin du texte A.</p>' + '<p data-pg-start="z2">Texte B, une ligne.</p>' + para(10));
+  b = await infoB();
+  assert(b.kept, 'B gardé : ' + JSON.stringify(b));
+  const pageB = b.page;
+  await page.evaluate(() => {
+    const v = window.FTMoteur.view;
+    const doc = v.state.doc;
+    let pos = 0;
+    for (let i = 0; i < doc.childCount; pos += doc.child(i).nodeSize, i++) if (doc.child(i).textContent.startsWith('Fin du texte A')) break;
+    v.focus();
+    v.dispatch(v.state.tr.setSelection(PM.state.TextSelection.create(doc, pos + 1)));
+  });
+  let spilled = null;
+  for (let k = 0; k < 8 && !spilled; k++) {
+    await page.keyboard.press('Enter');
+    await frames(4);
+    b = await infoB();
+    const prev = await page.evaluate((i) => window.FTVisibles.pageOfBlock(i - 1), b.i);
+    if (prev === pageB || b.page !== pageB) spilled = { k: k + 1, prev, b };
+  }
+  assert(spilled, 'texte A débordé sur la page de B');
+  assert.strictEqual(spilled.b.page, pageB, 'B reste sur sa page, à la suite du texte débordé : ' + JSON.stringify(spilled));
+  ok(`texte d'avant débordé sur la page de B gardé (${spilled.k} Entrée) : B reste à sa suite sur la même page`);
 };

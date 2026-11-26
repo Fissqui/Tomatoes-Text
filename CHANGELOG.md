@@ -82,6 +82,8 @@ nom. Le détail de chaque version publiée figure sur la
   compris), aussi un long tableau qui continue sur d'autres pages en paysage.
 - Page en paysage : un tableau à peine plus haut que la page en garde la largeur et avance un peu sur la marge
   du bas, au lieu de reprendre la largeur d'une page en portrait.
+- Pages qui restent en place : quand le texte d'au-dessus grandit et déborde sur la page d'un bloc gardé en
+  haut de page, ce bloc reste à sa suite s'il y tient, au lieu de passer seul à la page suivante.
 
 ## 2.4 « Corbarino » — novembre 2026
 

@@ -440,6 +440,9 @@
     return !!c && node.type.name === 'heading' && node.attrs.level <= c && !/\bft-title\b/.test(node.attrs.a.class || '');
   };
 
+  // Page de chaque bloc gardé au découpage d'avant : un bloc gardé que le texte d'au-dessus rejoint sur sa
+  // page (texte qui grandit et déborde) y reste à la suite s'il y tient, au lieu de passer à la page d'après.
+  const keptAt = new WeakMap();
   let relayouts = 0;
   let reused = 0;
   function relayout() {
@@ -494,6 +497,7 @@
       slot: (i) => sl[i],
       meas: (i) => ms[i],
       keep: (i) => (keepOn && !!(fl[i] & 1)) || !!(fl[i] & 32),
+      keptPage: (i) => (fl[i] & 32 ? undefined : keptAt.get(nodes[i])),
       legend: (i) => (fl[i] & 10) === 10,
       withNext: (i) => !!(fl[i] & 16),
       repeat: (i) => {
@@ -514,6 +518,7 @@
       for (const br of result.breaks.get(i) || []) inner[i] += br.add;
     }
     lay = { ...result, push, inner, region };
+    for (let i = 0; i < n; i++) if (fl[i] & 1) keptAt.set(nodes[i], result.pageOf[i]);
     memo = { gen, n, head, off, keepOn, cover, sl, ms, fl, lay, nSig };
     for (const fn of layoutFns) fn();
     // Nombre de pages donné à pages.js à la fin du passage (un découpage intermédiaire, fait avec la
@@ -1357,8 +1362,8 @@
   // ----- Pages qui restent en place (mode avancé) -----
   // Comme dans les versions 1.x : après une modification, chaque page qui suit et qui commence par un
   // bloc entier garde ce bloc en haut (data-pg-start, enregistré avec le texte). Si le texte d'avant
-  // grandit et déborde, ce bloc passe en haut de la page suivante avec toute la suite ; s'il raccourcit,
-  // la page garde son début. Une page qui vient de se former parce que le texte d'au-dessus a débordé
+  // grandit et déborde sur sa page, ce bloc suit ce texte (et passe à la page suivante s'il n'y tient
+  // plus) ; s'il raccourcit, la page garde son début. Une page qui vient de se former parce que le texte d'au-dessus a débordé
   // (« flowing ») suit le texte, sinon chaque touche ajouterait une page.
   const KEEP = 'data-pg-start';
   const keepKey = new PluginKey('ft-keep');
