@@ -365,8 +365,23 @@
 
   // La mise en forme est-elle active au début de la sélection ? Lue dans les marques du texte, et pour le
   // gras et l'italique, aussi dans le style du bloc (un titre est en gras par son style).
+  // Équations : gras (b), italique (i), souligné (u), barré (s) dans leurs réglages (formules.js).
+  const MATH_KEY = { bold: 'b', italic: 'i', underline: 'u', strike: 's' };
+  // Passage choisi fait seulement d'équations (équation choisie, cases avec des équations) : leurs réglages.
+  function mathOnly(state) {
+    const V = window.FTFormuleVue;
+    if (!V || !V.inSelection) return null;
+    const info = V.inSelection(state);
+    return !info.text && info.maths.length ? info.maths : null;
+  }
+
   function isActive(kind, state = view.state) {
     const k = KINDS[kind];
+    const V = window.FTFormuleVue;
+    const editing = V && V.editingInfo ? V.editingInfo() : null;
+    if (editing) return !!editing[MATH_KEY[kind]];
+    const maths = mathOnly(state);
+    if (maths) return maths.every((m) => m[MATH_KEY[kind]]);
     const marks = marksAtSelection(state);
     if (markOn(marks, kind)) return true;
     if (!k.off) return false;
@@ -380,6 +395,9 @@
     const state = view.state;
     const k = KINDS[kind];
     const on = isActive(kind, state);
+    // Équation en cours de modification : toute l'équation ; équations du passage choisi : comme le texte.
+    const V = window.FTFormuleVue;
+    if (V && V.setInfo && V.setInfo({ [MATH_KEY[kind]]: !on })) return;
     const bd = blockDom(state);
     // Retiré d'un titre (gras par son style) : le texte est remis en normal par-dessus.
     const fromBlock = on && k.off && bd && computedOn(kind, bd);
@@ -391,9 +409,15 @@
       tr.setStoredMarks(add(state.storedMarks || state.selection.$from.marks()));
     } else {
       for (const r of state.selection.ranges) rewriteMarks(tr, r.$from.pos, r.$to.pos, add);
+      if (V && V.changeIn) keepChosen(tr, state, V.changeIn(tr, state.selection.ranges, { [MATH_KEY[kind]]: !on }));
     }
     view.dispatch(tr);
     view.focus();
+  }
+
+  // (Équation choisie dont les réglages changent : elle reste choisie.)
+  function keepChosen(tr, state, changed) {
+    if (changed && state.selection.node) tr.setSelection(PM.state.NodeSelection.create(tr.doc, state.selection.from));
   }
 
   // Police, taille, couleur, surlignage, petites capitales : une propriété de style sur le passage.
@@ -402,7 +426,10 @@
     // Taille : une équation en cours de modification la prend en entier ; les équations du passage choisi
     // aussi (texte, cases d'un tableau, équation choisie, tout le document).
     const pt = prop === 'font-size' ? parseFloat(value) || 0 : null;
-    if (pt !== null && V && V.setSize && V.setSize(pt)) return;
+    // Couleur du texte et surlignage : aussi sur les équations.
+    const MATH_PROP = { 'font-size': () => ({ size: pt }), color: () => ({ tc: value || '' }), 'background-color': () => ({ hl: value || '' }) };
+    const changes = V && MATH_PROP[prop] ? MATH_PROP[prop]() : null;
+    if (changes && V.setInfo && V.setInfo(changes)) return;
     const state = view.state;
     const tr = state.tr;
     const fn = (marks) => marksWithStyle(marks, prop, value);
@@ -410,10 +437,7 @@
       tr.setStoredMarks(fn(state.storedMarks || state.selection.$from.marks()));
     } else {
       for (const r of state.selection.ranges) rewriteMarks(tr, r.$from.pos, r.$to.pos, fn);
-      if (pt !== null && V && V.sizeIn && V.sizeIn(tr, state.selection.ranges, pt) && state.selection.node) {
-        // (Équation choisie : elle le reste.)
-        tr.setSelection(PM.state.NodeSelection.create(tr.doc, state.selection.from));
-      }
+      if (changes && V.changeIn) keepChosen(tr, state, V.changeIn(tr, state.selection.ranges, changes));
     }
     view.dispatch(tr);
     view.focus();
@@ -689,7 +713,8 @@
 
   function highlight(value) {
     hlPop.hidden = true;
-    if (view.state.selection.empty) return;
+    const V = window.FTFormuleVue;
+    if (view.state.selection.empty && !(V && V.editingInfo && V.editingInfo())) return;
     setStyle('background-color', value || '');
   }
 

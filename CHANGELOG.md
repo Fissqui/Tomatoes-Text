@@ -63,6 +63,10 @@ nom. Le détail de chaque version publiée figure sur la
   ou à une équation choisie par le clic droit (« Sélectionner l'équation »). Taille gardée dans l'export Word.
 - Sélection à la souris : les équations traversées sont colorées comme le texte choisi, et une sélection lâchée
   sur une équation dans la ligne la prend en entier.
+- Équations : gras, italique, souligné, barré, couleur et surlignage de la barre d'outils s'appliquent aux
+  équations choisies (avec du texte, dans des cases ou seules) et à l'équation en cours de modification
+  (Ctrl+G, Ctrl+I, Ctrl+U compris) ; gardés dans l'export Word. Un glissé commencé sur une équation choisit
+  le texte ou les cases parcourues (une colonne de tableau, par exemple) ; un simple clic l'ouvre toujours.
 
 ## 2.4 « Corbarino » — novembre 2026
 

@@ -257,4 +257,55 @@ module.exports = async ({ page }) => {
   assert(pk.text.endsWith('Après le texte [EQ]') && pk.shown === 2, 'équation dans la ligne prise en entier : ' + JSON.stringify(pk));
   assert(!(await v(() => !!document.querySelector('#editor math-field'))), 'aucune équation ouverte');
   ok('sélection à la souris : texte et équations (sur leur ligne ou dans la ligne) pris ensemble et colorés');
+
+  // 7. Glisser depuis une équation d'un tableau (2.5.19) : les cases parcourues sont choisies (l'équation
+  // ne s'ouvre pas) ; un simple clic l'ouvre toujours.
+  await load('<p>X</p>');
+  await paste(WORD(-42.5));
+  const mpos = () => v(() => [...document.querySelectorAll('#editor .ft-math')].map((m) => { const r = m.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; }));
+  let mp = await mpos();
+  await page.mouse.move(mp[0].x, mp[0].y);
+  await page.mouse.down();
+  await page.mouse.move(mp[1].x, mp[1].y, { steps: 10 });
+  await page.mouse.up();
+  await page.waitForTimeout(250);
+  const cellSel = await v(() => { const s = window.FTMoteur.view.state.selection; let n = 0; if (s.forEachCell) s.forEachCell(() => n++); return { kind: s.constructor.name, n, open: !!document.querySelector('#editor math-field') }; });
+  assert(cellSel.n === 2 && !cellSel.open, 'cases choisies depuis une équation : ' + JSON.stringify(cellSel));
+  await setSize(13);
+  assert.deepStrictEqual(await sizes(), [13, 13], 'taille de la colonne choisie au glissé');
+
+  // 8. Gras, italique, souligné, barré, couleur, surlignage sur les équations choisies, et pendant la modification.
+  await v(() => window.FTMoteur.view.focus());
+  await page.click('[data-cmd="bold"]');
+  await page.waitForTimeout(200);
+  const looks = () => v(() => [...document.querySelectorAll('#editor .ft-math')].map((m) => ({ b: m.hasAttribute('data-gras'), i: m.hasAttribute('data-italique'), w: getComputedStyle(m.querySelector('.ML__latex *') || m).fontWeight, c: m.dataset.couleur || '' })));
+  let lk = await looks();
+  assert(lk.every((x) => x.b && Number(x.w) >= 700), 'gras sur les équations des cases : ' + JSON.stringify(lk));
+  assert(await v(() => document.querySelector('[data-cmd="bold"]').classList.contains('on')), 'bouton Gras allumé');
+  await page.click('[data-cmd="bold"]');
+  await page.waitForTimeout(200);
+  assert((await looks()).every((x) => !x.b), 'gras retiré');
+  await page.click('#color-btn');
+  await page.waitForTimeout(200);
+  lk = await looks();
+  assert(lk.every((x) => x.c), 'couleur : ' + JSON.stringify(lk));
+  // Pendant la modification : Ctrl+I met toute l'équation en italique.
+  mp = await mpos();
+  await page.mouse.click(mp[0].x, mp[0].y);
+  await page.waitForTimeout(300);
+  assert(await v(() => !!document.querySelector('#editor math-field')), 'équation ouverte par un clic');
+  await page.keyboard.press('Control+i');
+  await page.waitForTimeout(150);
+  await page.keyboard.press('Control+u');
+  await page.waitForTimeout(150);
+  assert(await v(() => !!document.querySelector('#editor math-field')), 'toujours en modification');
+  await page.keyboard.press('Escape');
+  await page.waitForTimeout(200);
+  lk = await looks();
+  assert(lk[0].i && !lk[1].i, 'italique de l’équation modifiée : ' + JSON.stringify(lk));
+  const saved2 = await v(() => window.FTSchema.serialize(window.FTMoteur.view.state.doc));
+  assert(/data-italique/.test(saved2) && /data-souligne/.test(saved2) && /data-couleur=/.test(saved2), 'enregistré');
+  xml = unzip(Buffer.from(await v(async () => Array.from(await window.FTWord.exportWord())))).get('word/document.xml');
+  assert(/<m:r>(?:(?!<\/m:r>).)*<w:i\/>(?:(?!<\/m:r>).)*<w:color w:val="[0-9A-F]{6}"\/>(?:(?!<\/m:r>).)*<w:u w:val="single"\/>/.test(xml), 'mise en forme dans l’équation Word');
+  ok('glisser depuis une équation : cases choisies ; gras, couleur sur les équations choisies, italique et souligné pendant la modification ; export Word');
 };

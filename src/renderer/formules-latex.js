@@ -623,10 +623,16 @@
   // opts.sz : taille en demi-points (celle de l'équation à l'écran).
   function toOmml(latex, opts = {}) {
     let body = om(parse(latex));
-    if (opts.sz > 0) {
-      const sz = Math.round(opts.sz);
-      body = body.split('<w:rFonts w:ascii="Cambria Math" w:hAnsi="Cambria Math"/></w:rPr>').join(`<w:rFonts w:ascii="Cambria Math" w:hAnsi="Cambria Math"/><w:sz w:val="${sz}"/><w:szCs w:val="${sz}"/></w:rPr>`);
-    }
+    // Mise en forme de l'équation (opts.b, i, u, s ; color, fill : couleurs RRGGBB) et taille.
+    const pr = [];
+    if (opts.b) pr.push('<w:b/>');
+    if (opts.i) pr.push('<w:i/>');
+    if (opts.s) pr.push('<w:strike/>');
+    if (opts.color) pr.push(`<w:color w:val="${opts.color}"/>`);
+    if (opts.sz > 0) pr.push(`<w:sz w:val="${Math.round(opts.sz)}"/><w:szCs w:val="${Math.round(opts.sz)}"/>`);
+    if (opts.u) pr.push('<w:u w:val="single"/>');
+    if (opts.fill) pr.push(`<w:shd w:val="clear" w:color="auto" w:fill="${opts.fill}"/>`);
+    if (pr.length) body = body.split('<w:rFonts w:ascii="Cambria Math" w:hAnsi="Cambria Math"/></w:rPr>').join(`<w:rFonts w:ascii="Cambria Math" w:hAnsi="Cambria Math"/>${pr.join('')}</w:rPr>`);
     const math = `<m:oMath>${body}</m:oMath>`;
     if (!opts.block) return math;
     return `<m:oMathPara><m:oMathParaPr><m:jc m:val="${opts.align === 'gauche' ? 'left' : 'center'}"/></m:oMathParaPr>${math}</m:oMathPara>`;

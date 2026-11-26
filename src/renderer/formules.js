@@ -54,7 +54,14 @@
       color: el.dataset.color || '',
       xid: el.dataset.xid || '',
       // Taille choisie (points) ; 0 : celle du texte autour.
-      size: Number(el.dataset.size) || 0
+      size: Number(el.dataset.size) || 0,
+      // Mise en forme posée par la barre d'outils : gras, italique, souligné, barré, couleur, surlignage.
+      b: el.hasAttribute('data-gras'),
+      i: el.hasAttribute('data-italique'),
+      u: el.hasAttribute('data-souligne'),
+      s: el.hasAttribute('data-barre'),
+      tc: el.dataset.couleur || '',
+      hl: el.dataset.surligne || ''
     };
   }
 
@@ -76,6 +83,15 @@
     if (o.size > 0) {
       el.dataset.size = String(o.size);
       el.style.fontSize = o.size + 'pt';
+    }
+    for (const [k, name] of [['b', 'gras'], ['i', 'italique'], ['u', 'souligne'], ['s', 'barre']]) if (o[k]) el.setAttribute('data-' + name, '');
+    if (o.tc) {
+      el.dataset.couleur = o.tc;
+      el.style.color = o.tc;
+    }
+    if (o.hl) {
+      el.dataset.surligne = o.hl;
+      el.style.setProperty('--hl', o.hl);
     }
     el.innerHTML = render(o.latex, o.block);
     return el;
@@ -637,7 +653,7 @@
       return;
     }
     const info = editing ? infoOf(editing) : {};
-    const el = element({ ...o, latex, eq: o.numbered ? info.eq : '', xid: info.xid, size: info.size });
+    const el = element({ ...info, ...o, latex, eq: o.numbered ? info.eq : '', xid: info.xid });
     if (editing && editing.isConnected) EM.replace(editing, el);
     else EM.insert(el, savedRange);
     if (o.numbered && window.FTFormuleVue && window.FTFormuleVue.chapters() !== o.chap) window.FTFormuleVue.setChapters(o.chap);

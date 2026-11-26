@@ -1164,11 +1164,19 @@ dialog p { margin: 0 0 12px; }
 #editor div.ft-math[data-numero]:not(.ft-math-edit):hover { background: none; box-shadow: none; }
 #editor div.ft-math[data-numero]:not(.ft-math-edit):hover > .ML__latex { background: color-mix(in srgb, var(--accent) 8%, transparent); box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 30%, transparent); border-radius: 4px; }
 #editor .ft-math[data-latex=""]:not(.ft-math-edit)::before { content: '□'; color: var(--text-muted); }
+/* Mise en forme d'une équation (barre d'outils, formules.js) : gras, italique, souligné, barré, surlignage.
+   (Le dessin de l'équation est fait de blocs : soulignement et barre tracés sous et à travers le bloc entier.) */
+#editor .ft-math[data-gras] > :is(.ML__latex, math-field), #editor .ft-math[data-gras] .ML__latex * { font-weight: 700 !important; }
+#editor .ft-math[data-italique] .ML__latex * { font-style: italic !important; }
+#editor .ft-math[data-surligne] > .ML__latex { background-color: var(--hl); }
+#editor .ft-math:is([data-souligne], [data-barre]) > .ML__latex { background-repeat: no-repeat; background-image: var(--ft-u, none), var(--ft-s, none); background-size: 100% 0.07em, 100% 0.07em; background-position: 0 100%, 0 52%; }
+#editor .ft-math[data-souligne] > .ML__latex { --ft-u: linear-gradient(currentColor, currentColor); padding-bottom: 0.08em; }
+#editor .ft-math[data-barre] > .ML__latex { --ft-s: linear-gradient(currentColor, currentColor); }
 /* Équation prise dans une sélection de texte (moteur/formules.js) : couleur de la sélection. */
-#editor .ft-math.ft-math-sel > .ML__latex { background: Highlight; color: HighlightText; border-radius: 2px; }
-:where(:root[data-ui-selection="theme"]) #editor .ft-math.ft-math-sel > .ML__latex { background: color-mix(in srgb, var(--accent) 30%, transparent); color: inherit; }
-:where(:root[data-ui-selection="surligneur"]) #editor .ft-math.ft-math-sel > .ML__latex { background: rgba(255, 217, 40, 0.55); color: inherit; }
-:where(:root[data-theme="dark"][data-ui-selection="surligneur"]) #editor .ft-math.ft-math-sel > .ML__latex { background: rgba(255, 210, 20, 0.35); }
+#editor .ft-math.ft-math-sel > .ML__latex { background-color: Highlight; color: HighlightText; border-radius: 2px; }
+:where(:root[data-ui-selection="theme"]) #editor .ft-math.ft-math-sel > .ML__latex { background-color: color-mix(in srgb, var(--accent) 30%, transparent); color: inherit; }
+:where(:root[data-ui-selection="surligneur"]) #editor .ft-math.ft-math-sel > .ML__latex { background-color: rgba(255, 217, 40, 0.55); color: inherit; }
+:where(:root[data-theme="dark"][data-ui-selection="surligneur"]) #editor .ft-math.ft-math-sel > .ML__latex { background-color: rgba(255, 210, 20, 0.35); }
 /* Équation modifiée dans le texte (moteur/formules.js). */
 #editor .ft-math-edit > math-field { display: inline-block; font-size: inherit; color: inherit; background: color-mix(in srgb, var(--accent) 7%, transparent); border: none; border-radius: 4px; outline: 1.5px solid color-mix(in srgb, var(--accent) 55%, transparent); outline-offset: 1px; padding: 0 2px; min-width: 1.2em; --caret-color: var(--accent); --selection-background-color: color-mix(in srgb, var(--accent) 25%, transparent); --placeholder-color: var(--text-muted); --contains-highlight-background-color: transparent; --smart-fence-color: var(--text-muted); }
 #editor span.ft-math-edit > math-field { vertical-align: middle; }

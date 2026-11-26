@@ -172,7 +172,7 @@
       return;
     }
     if (el.classList.contains('ft-math')) {
-      out.push({ node: equation(el.dataset.latex || '', { block: false, sz: halfPoints(el) }) });
+      out.push({ node: equation(el.dataset.latex || '', { block: false, ...mathLook(el) }) });
       return;
     }
     // Passage commenté : début et fin du commentaire Word autour du texte.
@@ -976,10 +976,20 @@
 
   // Taille d'une équation à l'écran, en demi-points (comme le texte, runProps).
   const halfPoints = (el) => Math.max(2, Math.round(parseFloat(getComputedStyle(el).fontSize) * 1.5));
+  // Taille et mise en forme d'une équation (gras, italique, souligné, barré, couleur, surlignage).
+  const mathLook = (el) => ({
+    sz: halfPoints(el),
+    b: el.hasAttribute('data-gras'),
+    i: el.hasAttribute('data-italique'),
+    u: el.hasAttribute('data-souligne'),
+    s: el.hasAttribute('data-barre'),
+    color: el.dataset.couleur ? hex(getComputedStyle(el).color) : null,
+    fill: el.dataset.surligne ? hex(el.dataset.surligne) : null
+  });
 
   function mathBlock(el, ctx) {
     const cs = getComputedStyle(el);
-    const sz = halfPoints(el);
+    const look = mathLook(el);
     const latex = el.dataset.latex || '';
     const align = el.dataset.align === 'gauche' ? 'gauche' : '';
     const spacing = { before: tw(cs.marginTop), after: tw(cs.marginBottom) };
@@ -1002,7 +1012,7 @@
       const props = runProps(el);
       const cells = [];
       if (sideW) cells.push(cell([new D.Paragraph({ children: [] })], sideW));
-      cells.push(cell([new D.Paragraph({ children: [equation(latex, { block: true, align, sz })], alignment: align ? D.AlignmentType.LEFT : D.AlignmentType.CENTER })], mainW));
+      cells.push(cell([new D.Paragraph({ children: [equation(latex, { block: true, align, ...look })], alignment: align ? D.AlignmentType.LEFT : D.AlignmentType.CENTER })], mainW));
       cells.push(cell([new D.Paragraph({ children: [new D.TextRun({ ...props, bold: false, italics: false, text: num })], alignment: D.AlignmentType.RIGHT })], numW));
       const table = new D.Table({
         rows: [new D.TableRow({ children: cells, cantSplit: true })],
@@ -1019,7 +1029,7 @@
       ];
     }
     const options = {
-      children: [equation(latex, { block: true, align, sz })],
+      children: [equation(latex, { block: true, align, ...look })],
       alignment: align ? D.AlignmentType.LEFT : D.AlignmentType.CENTER,
       spacing
     };

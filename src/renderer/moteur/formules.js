@@ -157,6 +157,15 @@
         finish('before');
         return;
       }
+      // Ctrl+G / Ctrl+B, Ctrl+I, Ctrl+U : gras, italique, souligné de toute l'équation (barre d'outils).
+      const cmd = (e.ctrlKey || e.metaKey) && !e.altKey && !e.shiftKey ? { g: 'bold', b: 'bold', i: 'italic', u: 'underline' }[e.key.toLowerCase()] : null;
+      if (cmd) {
+        e.preventDefault();
+        e.stopPropagation();
+        const btn = document.querySelector(`[data-cmd="${cmd === 'underline' ? 'underline' : cmd}"]`);
+        if (btn) btn.click();
+        return;
+      }
       // Tab hors d'une case à remplir : la sortie se fait par « move-out ».
       if (e.key === 'F2' || (e.altKey && (e.key === '=' || e.code === 'Equal'))) {
         e.preventDefault();
@@ -203,10 +212,58 @@
       v.focus();
     }
 
+    // Clic : l'équation s'ouvre au relâchement. Glissé : sélection, comme depuis du texte (cases d'un
+    // tableau d'une case à l'autre, texte et équations ailleurs).
     function onDown(e) {
       if (ed || e.button !== 0 || e.ctrlKey || e.metaKey || e.altKey || e.shiftKey || closed()) return;
       e.preventDefault();
-      begin({ x: e.clientX, y: e.clientY });
+      const x0 = e.clientX;
+      const y0 = e.clientY;
+      let moved = false;
+      const move = (ev) => {
+        if (!moved && Math.abs(ev.clientX - x0) + Math.abs(ev.clientY - y0) < 5) return;
+        moved = true;
+        dragSelect(ev);
+      };
+      const up = () => {
+        window.removeEventListener('mousemove', move, true);
+        window.removeEventListener('mouseup', up, true);
+        if (!moved) begin({ x: x0, y: y0 });
+        else if (!v.hasFocus()) v.focus();
+      };
+      window.addEventListener('mousemove', move, true);
+      window.addEventListener('mouseup', up, true);
+    }
+
+    function dragSelect(ev) {
+      const at = pos();
+      const hit = v.posAtCoords({ left: ev.clientX, top: ev.clientY });
+      if (at === undefined || !hit) return;
+      const doc = v.state.doc;
+      const end = at + cur.nodeSize;
+      const T = PM.tables;
+      const cellOf = (p) => {
+        const $p = doc.resolve(p);
+        for (let d = $p.depth; d > 0; d--) if (/cell/.test($p.node(d).type.spec.tableRole || '')) return $p.before(d);
+        return null;
+      };
+      const ca = cellOf(at);
+      const cb = cellOf(hit.pos);
+      let sel = null;
+      if (ca !== null && cb !== null && ca !== cb && T && T.CellSelection) {
+        try { sel = T.CellSelection.create(doc, ca, cb); } catch { sel = null; }
+      }
+      if (!sel) {
+        // Équation comprise : l'ancre est de l'autre côté de l'équation que le pointeur.
+        const down = hit.pos >= end;
+        let anchor = down ? at : end;
+        if (block()) {
+          const near = PM.state.Selection.findFrom(doc.resolve(down ? at : end), down ? -1 : 1, true);
+          if (near) anchor = near.from;
+        }
+        try { sel = TextSelection.between(doc.resolve(anchor), doc.resolve(hit.pos)); } catch { return; }
+      }
+      if (!sel.eq(v.state.selection)) v.dispatch(v.state.tr.setSelection(sel));
     }
     dom.addEventListener('mousedown', onDown);
 
@@ -499,20 +556,37 @@
     v.focus();
   }
 
-  // Taille (points, 0 : celle du texte) des équations du passage choisi ; tr : transaction à compléter.
-  function sizeIn(tr, ranges, pt) {
+  // Réglages des équations du passage choisi (taille, gras, couleur…) ; tr : transaction à compléter.
+  function changeIn(tr, ranges, changes) {
     let changed = false;
     for (const r of ranges) {
       tr.doc.nodesBetween(r.$from.pos, r.$to.pos, (node, pos) => {
         if (!isMath(node)) return true;
         const info = F().infoOf(node.attrs.html);
-        if ((info.size || 0) === pt) return false;
-        tr.setNodeMarkup(pos, null, { html: F().html({ ...info, size: pt }) });
-        changed = true;
+        const html = F().html({ ...info, ...changes });
+        if (html !== node.attrs.html) {
+          tr.setNodeMarkup(pos, null, { html });
+          changed = true;
+        }
         return false;
       });
     }
     return changed;
+  }
+  const sizeIn = (tr, ranges, pt) => changeIn(tr, ranges, { size: pt });
+  // Équations du passage choisi (leurs réglages) et présence de texte à côté d'elles.
+  function inSelection(state) {
+    const out = { text: false, maths: [] };
+    const sel = state.selection;
+    if (sel.empty) return out;
+    for (const r of sel.ranges) {
+      state.doc.nodesBetween(r.$from.pos, r.$to.pos, (node) => {
+        if (isMath(node)) { out.maths.push(F().infoOf(node.attrs.html)); return false; }
+        if (node.isText && node.text.trim()) out.text = true;
+        return true;
+      });
+    }
+    return out;
   }
 
   function copyLatex(latex) {
@@ -753,14 +827,19 @@
     copyLatex,
     selectedLatex,
     sizeIn,
-    // Taille choisie pendant la modification d'une équation : elle s'applique à toute l'équation.
-    setSize(pt) {
+    changeIn,
+    inSelection,
+    // Équation en cours de modification : ses réglages (null : aucune).
+    editingInfo: () => (active && active.editing() ? F().infoOf(active.dom) : null),
+    // Réglages choisis pendant la modification d'une équation (taille, gras…) : toute l'équation les prend.
+    setInfo(changes) {
       if (!active || !active.editing()) return false;
-      active.set({ size: pt });
+      active.set(changes);
       const field = active.field();
       if (field) field.focus({ preventScroll: true });
       return true;
     },
+    setSize(pt) { return this.setInfo({ size: pt }); },
     refreshBar() { if (barFor && bar && !bar.hidden) fillBar(barFor); },
     numbering,
     chapters: () => chaptersOn(M.view.state.doc),
