@@ -3629,6 +3629,19 @@ body.tb-moving, body.tb-moving * { cursor: grabbing !important; user-select: non
 #editor .ft-table td, #editor .ft-table th { overflow-wrap: anywhere; }
 #editor .ft-table img { max-width: 100%; height: auto; }
 
+/* ---------- Tableau qui déborde sur les marges (2.5.17), comme dans Word ---------- */
+/* --dg / --dd : avancée du bord gauche / droit au-delà du texte ; jamais à moins de 0,5 cm du bord de la
+   feuille (--pg-ml / --pg-mr : marges de la page, pages.js). Pas dans une case, un encadré ou des colonnes. */
+#editor .ft-table[data-deborde]:not([data-wrap]):not(:is(td, th, .ft-callout, .ft-cols, [data-cols]) *) {
+  --dg-x: min(var(--dg, 0cm), max(0cm, var(--pg-ml, 1.9cm) - 0.5cm));
+  --dd-x: min(var(--dd, 0cm), max(0cm, var(--pg-mr, 1.9cm) - 0.5cm));
+  width: calc(100% + var(--dg-x) + var(--dd-x)) !important;
+  max-width: none;
+  table-layout: fixed;
+  margin-left: calc(-1 * var(--dg-x)) !important;
+  margin-right: calc(-1 * var(--dd-x)) !important;
+}
+
 /* ---------- Source PDF côte à côte (sourcepdf.js) ---------- */
 #pdfpane { position: relative; width: 0; flex-shrink: 0; overflow: hidden; background: var(--sidebar-bg); border-left: 1px solid transparent; }
 #pdfpane.open { width: var(--pdf-w, 520px); border-left-color: var(--border); }

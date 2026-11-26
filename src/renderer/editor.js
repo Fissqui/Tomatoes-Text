@@ -398,6 +398,11 @@
 
   // Police, taille, couleur, surlignage, petites capitales : une propriété de style sur le passage.
   function setStyle(prop, value) {
+    const V = window.FTFormuleVue;
+    // Taille : une équation en cours de modification la prend en entier ; les équations du passage choisi
+    // aussi (texte, cases d'un tableau, équation choisie, tout le document).
+    const pt = prop === 'font-size' ? parseFloat(value) || 0 : null;
+    if (pt !== null && V && V.setSize && V.setSize(pt)) return;
     const state = view.state;
     const tr = state.tr;
     const fn = (marks) => marksWithStyle(marks, prop, value);
@@ -405,6 +410,10 @@
       tr.setStoredMarks(fn(state.storedMarks || state.selection.$from.marks()));
     } else {
       for (const r of state.selection.ranges) rewriteMarks(tr, r.$from.pos, r.$to.pos, fn);
+      if (pt !== null && V && V.sizeIn && V.sizeIn(tr, state.selection.ranges, pt) && state.selection.node) {
+        // (Équation choisie : elle le reste.)
+        tr.setSelection(PM.state.NodeSelection.create(tr.doc, state.selection.from));
+      }
     }
     view.dispatch(tr);
     view.focus();
@@ -574,7 +583,11 @@
     }
     fontSelect.value = family;
     const marked = markedStyle('font-size', state);
-    const pt = marked && /pt$/.test(marked) ? parseFloat(marked) : Math.round(parseFloat(style.fontSize) * 0.75 * 4) / 4;
+    let pt = marked && /pt$/.test(marked) ? parseFloat(marked) : Math.round(parseFloat(style.fontSize) * 0.75 * 4) / 4;
+    // Équation choisie : sa taille.
+    const V = window.FTFormuleVue;
+    const chosen = state.selection.node && V && V.isMath(state.selection.node) ? view.nodeDOM(state.selection.from) : null;
+    if (chosen && chosen.nodeType === 1) pt = Math.round(parseFloat(getComputedStyle(chosen).fontSize) * 0.75 * 4) / 4;
     if (!SIZES.includes(pt) && !sizeSelect.querySelector(`option[value="${pt}"]`)) {
       sizeSelect.querySelectorAll('option.custom').forEach((o) => o.remove());
       const o = document.createElement('option');

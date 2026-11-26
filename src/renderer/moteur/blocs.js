@@ -892,6 +892,45 @@
     apply(view.state.tr.setNodeMarkup(t.pos, null, { ...t.node.attrs, a }));
   }
 
+  // Tableau qui déborde sur les marges (comme dans Word) : bords avancés de --dg et --dd au-delà du texte
+  // (styles.css les limite à 0,5 cm du bord de la feuille). Seulement un tableau entre les paragraphes.
+  const OVERFLOW = '1.5cm';
+  function canOverflow(t) {
+    if (!t || t.node.attrs.a['data-wrap'] || view.dom.hasAttribute('data-cols')) return false;
+    const $p = view.state.doc.resolve(t.pos);
+    for (let d = $p.depth; d > 0; d--) if ($p.node(d).type !== N.doc) return false;
+    return true;
+  }
+  function overflowAttrs(a, on, left = OVERFLOW, right = OVERFLOW) {
+    let x = a;
+    for (const p of ['--dg', '--dd', 'width', '--ml']) x = withStyle(x, p, '');
+    if (on) {
+      x = withStyle(withStyle(x, '--dg', left), '--dd', right);
+      x['data-deborde'] = 'oui';
+      delete x['data-width'];
+      delete x['data-align'];
+    } else delete x['data-deborde'];
+    return x;
+  }
+  // Toute la largeur du texte, ou ajusté au contenu ; un tableau qui déborde revient à la largeur du texte.
+  function toggleFullWidth() {
+    setTableAttrs((x) => {
+      if (x['data-deborde']) {
+        const out = overflowAttrs(x, false);
+        for (const k of Object.keys(x)) delete x[k];
+        Object.assign(x, out);
+      } else if (x['data-width'] === 'auto') delete x['data-width'];
+      else x['data-width'] = 'auto';
+    });
+  }
+  function setOverflow(on) {
+    setTableAttrs((x) => {
+      const out = overflowAttrs(x, on);
+      for (const k of Object.keys(x)) delete x[k];
+      Object.assign(x, out);
+    });
+  }
+
   // ----- Outils façon Word : couleur des cases, répartition, sélection -----
 
   // Propriété CSS d'un attribut style (couleur de fond d'une case, hauteur d'une ligne).
@@ -1030,6 +1069,7 @@
     },
     spread: tsvg('<rect x="1.5" y="3" width="13" height="10"/><path d="M5.8 3v10M10.2 3v10M2.6 8h2.1M6.9 8h2.2M11.3 8h2.1"/>'),
     width: tsvg('<path d="M1.5 2.5v11M14.5 2.5v11"/><rect class="fill" x="3.3" y="5" width="9.4" height="6"/><path d="M4.2 8h7.6M5.6 6.6 4.2 8l1.4 1.4M10.4 6.6 11.8 8l-1.4 1.4"/>'),
+    overflow: tsvg('<path d="M4.3 2v12M11.7 2v12" stroke-dasharray="1.2 1.2"/><rect class="fill" x="1.5" y="5" width="13" height="6"/><path d="M3 8h10M4.4 6.6 3 8l1.4 1.4M11.6 6.6 13 8l-1.4 1.4"/>'),
     header: tsvg('<rect x="1.5" y="2.5" width="13" height="11"/><rect class="fill" x="1.5" y="2.5" width="13" height="3.7"/><path d="M1.5 6.2h13M1.5 9.9h13M8 2.5v11"/>'),
     style: tsvg('<rect x="1.5" y="1.5" width="10" height="9"/><path d="M1.5 4.6h10M1.5 7.6h10M5 1.5v9"/><path class="fill" d="M9.4 14.6c.2-1.3.7-2 1.6-2.3l3-3.2 1 1-3.2 3c-.3.9-1 1.4-2.4 1.5z"/>')
   };
@@ -1052,7 +1092,7 @@
     if (!t) return '';
     const a = t.node.attrs.a;
     const c = cellsOf(view.state)[0];
-    return [!!T.mergeCells(view.state), !!T.splitCell(view.state), cellFill(), c ? c.node.attrs.a['data-valign'] || '' : '', a['data-header'] || '', a['data-width'] || ''].join('|');
+    return [!!T.mergeCells(view.state), !!T.splitCell(view.state), cellFill(), c ? c.node.attrs.a['data-valign'] || '' : '', a['data-header'] || '', a['data-width'] || '', a['data-deborde'] || ''].join('|');
   }
 
   // Groupes d'icônes : [{ html, title, on, disabled, action(bouton) }].
@@ -1094,9 +1134,8 @@
           { text: 'Colonnes de même largeur', action: distributeColumns },
           { text: 'Lignes de même hauteur', action: distributeRows }
         ]) },
-        { html: TICONS.width, title: 'Toute la largeur de la page (sinon : ajusté au contenu)', on: a['data-width'] !== 'auto', action: () => setTableAttrs((x) => {
-          if (x['data-width'] === 'auto') delete x['data-width']; else x['data-width'] = 'auto';
-        }) },
+        { html: TICONS.width, title: 'Toute la largeur de la page (sinon : ajusté au contenu)', on: a['data-width'] !== 'auto' && !a['data-deborde'], action: toggleFullWidth },
+        ...(canOverflow(t) ? [{ html: TICONS.overflow, title: 'Déborder sur les marges (tableau plus large que le texte)', on: !!a['data-deborde'], action: () => setOverflow(!a['data-deborde']) }] : []),
         { html: TICONS.header, title: "Ligne d'en-tête", on: !!a['data-header'], action: () => setTableData('data-header') },
         { html: TICONS.style, title: 'Style du tableau…', action: () => window.FTStyles.open('tableaux', view.nodeDOM(tableAt(view.state.selection.$from).pos)) }
       ]
@@ -1143,9 +1182,8 @@
         else { x['data-header'] = 'oui'; x['data-repeat'] = 'oui'; }
       }) },
       { text: check(!!a['data-bands'], 'Lignes à bandes'), action: () => setTableData('data-bands') },
-      { text: check(a['data-width'] !== 'auto', 'Toute la largeur de la page'), action: () => setTableAttrs((x) => {
-        if (x['data-width'] === 'auto') delete x['data-width']; else x['data-width'] = 'auto';
-      }) },
+      { text: check(a['data-width'] !== 'auto' && !a['data-deborde'], 'Toute la largeur de la page'), action: toggleFullWidth },
+      ...(canOverflow(t) ? [{ text: check(!!a['data-deborde'], 'Déborder sur les marges'), action: () => setOverflow(!a['data-deborde']) }] : []),
       ...(wrap.length ? ['-', ...wrap] : []),
       '-',
       { text: 'Supprimer le tableau', danger: true, action: tcmd(T.deleteTable) });

@@ -52,7 +52,9 @@
       align: el.dataset.align || '',
       box: el.dataset.box || '',
       color: el.dataset.color || '',
-      xid: el.dataset.xid || ''
+      xid: el.dataset.xid || '',
+      // Taille choisie (points) ; 0 : celle du texte autour.
+      size: Number(el.dataset.size) || 0
     };
   }
 
@@ -71,6 +73,10 @@
     if (o.box) el.dataset.box = o.box;
     if (o.box === 'colore' && o.color) el.dataset.color = o.color;
     if (o.xid) el.dataset.xid = o.xid;
+    if (o.size > 0) {
+      el.dataset.size = String(o.size);
+      el.style.fontSize = o.size + 'pt';
+    }
     el.innerHTML = render(o.latex, o.block);
     return el;
   }
@@ -631,7 +637,7 @@
       return;
     }
     const info = editing ? infoOf(editing) : {};
-    const el = element({ ...o, latex, eq: o.numbered ? info.eq : '', xid: info.xid });
+    const el = element({ ...o, latex, eq: o.numbered ? info.eq : '', xid: info.xid, size: info.size });
     if (editing && editing.isConnected) EM.replace(editing, el);
     else EM.insert(el, savedRange);
     if (o.numbered && window.FTFormuleVue && window.FTFormuleVue.chapters() !== o.chap) window.FTFormuleVue.setChapters(o.chap);

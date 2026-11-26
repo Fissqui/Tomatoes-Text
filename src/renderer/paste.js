@@ -344,7 +344,19 @@
         for (let q = 0; q < r; q++) for (const c of data[q]) if (q + c.rs - 1 >= r) c.rs--;
         data.splice(r, 1);
       }
-      if (data.some((r) => r.length)) blocks.push({ type: 'table', rows: data });
+      if (data.some((r) => r.length)) blocks.push({ type: 'table', rows: data, geo: wordGeometry(el) });
+    }
+
+    // Tableau de Word avancé dans la marge de gauche (retrait négatif) : sa largeur et ce retrait, en points.
+    // (Word pose un retrait de -5,4 pt sur tout tableau ordinaire, pour aligner le texte des cases.)
+    function wordGeometry(el) {
+      const pt = (v) => {
+        const m = /^(-?[\d.]+)(pt|px|cm|mm|in)$/.exec(String(v || '').trim());
+        return m ? Number(m[1]) * { pt: 1, px: 0.75, cm: 72 / 2.54, mm: 7.2 / 2.54, in: 72 }[m[2]] : null;
+      };
+      const left = pt(el.style.marginLeft);
+      const width = pt(el.style.width) || (Number(el.getAttribute('width')) * 0.75 || null);
+      return left !== null && left < -8 && width ? { left, width } : null;
     }
 
     // Une cellule : son texte avec la mise en forme gardée, paragraphes séparés par des retours à la ligne.
@@ -421,7 +433,7 @@
   // Word) : chaque colonne reçoit au moins la place de son mot le plus long, puis le reste selon la
   // longueur de ses lignes. Sans cela, toutes les colonnes ont la même largeur et les mots se coupent.
   let measure = null;
-  function columnWidths(rows) {
+  function columnWidths(rows, extra = 0) {
     // Colonne de chaque case (cases fusionnées comprises).
     const taken = [];
     let count = 0;
@@ -431,29 +443,32 @@
       for (const c of row) {
         while (taken[r] && taken[r][col]) col++;
         for (let i = 0; i < (c.rs || 1); i++) for (let j = 0; j < (c.cs || 1); j++) (taken[r + i] = taken[r + i] || [])[col + j] = true;
-        placed.push([c, col]);
+        placed.push([c, col, r]);
         col += c.cs || 1;
         count = Math.max(count, col);
       }
     });
     if (count < 2) return null;
     if (!measure) measure = document.createElement('canvas').getContext('2d');
-    const sample = editor.querySelector('p') || editor;
+    // (Zone d'écriture affichée : celle du moteur, pas l'ancienne zone cachée.)
+    const host = document.getElementById('editor') || editor;
+    const sample = host.querySelector(':scope > p') || host;
     const cs = getComputedStyle(sample);
     const font = (bold) => `${bold ? 700 : 400} ${cs.fontSize} ${cs.fontFamily}`;
     // Place du texte seul (sans les marges des cases).
     const min = new Array(count).fill(24);
     const max = new Array(count).fill(24);
-    for (const [c, col] of placed) {
+    // (Première ligne mesurée en gras : c'est la ligne d'en-tête du style des tableaux.)
+    for (const [c, col, r] of placed) {
       if ((c.cs || 1) > 1) continue;
-      measure.font = font(c.head || /^<b>[\s\S]*<\/b>$/.test(c.html));
+      measure.font = font(c.head || r === 0 || /^<b>[\s\S]*<\/b>$/.test(c.html));
       const text = c.html.replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>');
       for (const line of text.split('\n')) {
         max[col] = Math.max(max[col], Math.min(400, measure.measureText(line.trim()).width));
         for (const w of line.split(/\s+/)) if (w) min[col] = Math.max(min[col], measure.measureText(w).width);
       }
     }
-    const width = Math.max(300, (sample.clientWidth || editor.clientWidth) - 4);
+    const width = Math.max(300, (sample.clientWidth || host.clientWidth) - 4 + extra);
     const sum = (a) => a.reduce((x, y) => x + y, 0);
     // Trop de colonnes pour la page : marges des cases réduites, puis texte plus petit (5 pt au moins)
     // pour que chaque mot tienne sur sa ligne.
@@ -479,6 +494,24 @@
     const total = sum(w);
     const widths = w.map((x) => Math.round((x / total) * 10000) / 100);
     return { widths, tight: pad < 20, size };
+  }
+
+  // Tableau de Word qui débordait sur les marges : il déborde aussi dans le document (styles.css), de
+  // l'avancée de Word dans la marge de gauche, et à droite du reste de sa largeur ; px : place gagnée à l'écran
+  // (limitée aux marges de la page moins 0,5 cm).
+  function overflowOf(geo) {
+    if (!geo) return null;
+    const text = (document.getElementById('editor') || editor).clientWidth * 0.75;
+    const extra = geo.width - text;
+    const left = Math.min(-geo.left, Math.max(0, extra));
+    const right = Math.max(0, extra - left);
+    if (left < 6 && right < 6) return null;
+    const page = document.getElementById('page');
+    const cs = page ? getComputedStyle(page) : null;
+    const room = (pad) => Math.max(0, (parseFloat(pad) || 72) * 0.75 - 72 * 0.5 / 2.54);
+    const cm = (v) => Math.round((v / 72) * 2.54 * 100) / 100 + 'cm';
+    const px = (Math.min(left, room(cs && cs.paddingLeft)) + Math.min(right, room(cs && cs.paddingRight))) / 0.75;
+    return { dg: cm(left), dd: cm(right), px };
   }
 
   // Les blocs en HTML du document.
@@ -508,8 +541,9 @@
       } else if (b.type === 'table') {
         const head = b.rows[0].length && b.rows[0].every((c) => c.head);
         const spans = (c) => (c.rs > 1 ? ` rowspan="${c.rs}"` : '') + (c.cs > 1 ? ` colspan="${c.cs}"` : '');
-        const fit = columnWidths(b.rows);
-        out += `<table class="ft-table" data-paste="1"${head ? ' data-header="oui"' : ''}${fit && fit.tight ? ' data-fit-pad="serre"' : ''}${fit && fit.size ? ` data-fit-size="${fit.size}"` : ''}>`
+        const over = overflowOf(b.geo);
+        const fit = columnWidths(b.rows, over ? over.px : 0);
+        out += `<table class="ft-table" data-paste="1"${over ? ` data-deborde="oui" style="--dg: ${over.dg}; --dd: ${over.dd}"` : ''}${head ? ' data-header="oui"' : ''}${fit && fit.tight ? ' data-fit-pad="serre"' : ''}${fit && fit.size ? ` data-fit-size="${fit.size}"` : ''}>`
           + (fit ? '<colgroup>' + fit.widths.map((w) => `<col style="width: ${w}%">`).join('') + '</colgroup>' : '')
           + '<tbody>'
           + b.rows.map((r) => '<tr>' + r.map((c) => `<td${spans(c)}>${br(c.html) || '<br>'}</td>`).join('') + '</tr>').join('')

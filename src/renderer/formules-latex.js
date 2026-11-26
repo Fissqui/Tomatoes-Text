@@ -620,8 +620,13 @@
   }
 
   // Équation Word : m:oMath (dans la ligne) ou m:oMathPara (sur sa ligne, centrée ou à gauche).
+  // opts.sz : taille en demi-points (celle de l'équation à l'écran).
   function toOmml(latex, opts = {}) {
-    const body = om(parse(latex));
+    let body = om(parse(latex));
+    if (opts.sz > 0) {
+      const sz = Math.round(opts.sz);
+      body = body.split('<w:rFonts w:ascii="Cambria Math" w:hAnsi="Cambria Math"/></w:rPr>').join(`<w:rFonts w:ascii="Cambria Math" w:hAnsi="Cambria Math"/><w:sz w:val="${sz}"/><w:szCs w:val="${sz}"/></w:rPr>`);
+    }
     const math = `<m:oMath>${body}</m:oMath>`;
     if (!opts.block) return math;
     return `<m:oMathPara><m:oMathParaPr><m:jc m:val="${opts.align === 'gauche' ? 'left' : 'center'}"/></m:oMathParaPr>${math}</m:oMathPara>`;

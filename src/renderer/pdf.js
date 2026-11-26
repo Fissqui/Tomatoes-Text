@@ -129,15 +129,21 @@
     // Mode avancé : chaque note de bas de page au pied de sa page (notes-pied.js).
     const notes = info.mode === 'avance' && hasFootnotes(box);
     const css = PRINT_CSS + `
+  .ft-print { --pg-ml: ${m.left}mm; --pg-mr: ${m.right}mm; }
   #editor .ft-cover { aspect-ratio: auto !important; height: ${(h - m.top - m.bottom - 1).toFixed(1)}mm !important; margin: 0 !important; break-after: page; }
   html.ft-cover-bleed #editor .ft-cover { height: ${(h - 0.5).toFixed(1)}mm !important; }
 ${info.mode === 'avance' ? '' : '  #editor .ft-cover { display: none !important; }\n'}${info.mode === 'avance' && c.keep ? '  #editor > [data-pg-start] { break-before: page; }\n' : ''}${info.mode === 'avance' && c.chapters ? `  #editor > :is(h1${c.chapters > 1 ? ', h2' : ''}):not(.ft-title) { break-before: page; }\n` : ''}${typo || notes ? `  .ft-print { width: ${(w - m.left - m.right).toFixed(2)}mm; }\n  html.ft-cover-bleed .ft-print { width: auto; }\n` : ''}`;
-    const html = pageHtml({ box, cls, css, scripts: (typo ? composeScripts() : '') + (notes ? NOTES_SCRIPTS : '') });
+    // Tableau qui déborde sur les marges : Chromium n'imprime rien hors de la zone de texte ; les marges de
+    // gauche et de droite de l'impression passent à 5 mm et le texte reprend sa place par un retrait.
+    const wide = !!box.querySelector(':scope > table.ft-table[data-deborde]:not([data-wrap])') && !editor.hasAttribute('data-cols');
+    const pm = wide ? { ...m, left: Math.min(m.left, 5), right: Math.min(m.right, 5) } : m;
+    const wideCss = wide ? `  .ft-print { box-sizing: content-box; padding: 0 ${m.right - pm.right}mm 0 ${m.left - pm.left}mm; }\n  html.ft-cover-bleed .ft-print { padding: 0; }\n` : '';
+    const html = pageHtml({ box, cls, css: css + wideCss, scripts: (typo ? composeScripts() : '') + (notes ? NOTES_SCRIPTS : '') });
     const header = c.header.on && c.header.html ? c.header.html : '';
     const footer = c.footer.on && c.footer.html ? c.footer.html : '';
     return {
       html,
-      page: { width: w, height: h, margins: m },
+      page: { width: w, height: h, margins: pm },
       header: band(header, c.numbers, true, m),
       footer: band(footer, c.numbers, false, m),
       firstDifferent: !!c.firstDifferent,

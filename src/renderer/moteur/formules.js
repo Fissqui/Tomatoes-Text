@@ -104,7 +104,17 @@
       });
       field.addEventListener('focusout', () => {
         // (Clic dans la petite barre : le clavier revient dans l'équation.)
-        setTimeout(() => { if (ed && ed.field === field && !field.hasFocus() && !barHolds) finish(null); }, 0);
+        setTimeout(() => {
+          if (!ed || ed.field !== field || field.hasFocus() || barHolds) return;
+          // Liste des tailles de la barre d'outils : la taille choisie va à cette équation (FTFormuleVue.setSize).
+          const a = document.activeElement;
+          const box = a && a.closest && a.closest('.ft-num');
+          if (a && (a.id === 'font-size' || (box && box.querySelector('#font-size')))) {
+            a.addEventListener('blur', () => setTimeout(() => { if (ed && ed.field === field && !field.hasFocus()) finish(null); }, 0), { once: true });
+            return;
+          }
+          finish(null);
+        }, 0);
       });
       requestAnimationFrame(() => {
         if (!ed || ed.field !== field) return;
@@ -121,8 +131,16 @@
           sync();
         }
         showBar(ctl);
+        showSize();
       });
       return true;
+    }
+
+    // Taille de l'équation dans la liste des tailles de la barre d'outils.
+    function showSize() {
+      const select = document.getElementById('font-size');
+      const pt = Math.round(parseFloat(getComputedStyle(dom).fontSize) * 0.75 * 4) / 4;
+      if (select && pt > 0 && select.querySelector(`option[value="${pt}"]`)) select.value = String(pt);
     }
 
     function keys(e) {
@@ -197,11 +215,22 @@
       begin,
       finish,
       editing: () => !!ed,
+      at: () => pos(),
       field: () => (ed ? ed.field : null),
       block,
       // Réglage changé depuis la petite barre (numérotation) sans quitter l'équation.
       set(extra) {
         if (!ed) return;
+        if ('size' in extra) {
+          if (extra.size > 0) {
+            dom.dataset.size = String(extra.size);
+            dom.style.fontSize = extra.size + 'pt';
+          } else {
+            delete dom.dataset.size;
+            dom.style.removeProperty('font-size');
+            if (!dom.getAttribute('style')) dom.removeAttribute('style');
+          }
+        }
         if ('numbered' in extra) {
           if (extra.numbered) {
             dom.setAttribute('data-numero', '');
@@ -450,12 +479,40 @@
       },
       { text: 'Copier le code LaTeX', action: () => copyLatex(info.latex) },
       ...(window.FTModeMaths && window.FTModeMaths.on() ? [{ text: 'Ajouter aux morceaux', action: () => window.FTModeMaths.save(info.latex) }] : []),
-      ...(info.block ? [{ text: 'Sélectionner (pour la déplacer)', action: () => window.FTObjets.selectObject(f) }] : []),
+      { text: 'Sélectionner l’équation', action: () => selectMath(v, f) },
       '-',
       { text: 'Supprimer l’équation', danger: true, action: () => F().remove(f) }
     ];
     window.FTSidebar.showMenu(e.clientX, e.clientY, items);
     return true;
+  }
+
+  // L'équation entière choisie, comme un objet : la taille du texte (barre d'outils) s'y applique ; une
+  // équation sur sa ligne peut ensuite se déplacer.
+  function selectMath(v, f) {
+    if (f.tagName === 'DIV' && window.FTObjets && window.FTObjets.selectObject) { window.FTObjets.selectObject(f); return; }
+    const ctl = views.get(f);
+    const at = ctl ? ctl.at() : undefined;
+    const node = at !== undefined ? v.state.doc.nodeAt(at) : null;
+    if (!isMath(node)) return;
+    v.dispatch(v.state.tr.setSelection(NodeSelection.create(v.state.doc, at)));
+    v.focus();
+  }
+
+  // Taille (points, 0 : celle du texte) des équations du passage choisi ; tr : transaction à compléter.
+  function sizeIn(tr, ranges, pt) {
+    let changed = false;
+    for (const r of ranges) {
+      tr.doc.nodesBetween(r.$from.pos, r.$to.pos, (node, pos) => {
+        if (!isMath(node)) return true;
+        const info = F().infoOf(node.attrs.html);
+        if ((info.size || 0) === pt) return false;
+        tr.setNodeMarkup(pos, null, { html: F().html({ ...info, size: pt }) });
+        changed = true;
+        return false;
+      });
+    }
+    return changed;
   }
 
   function copyLatex(latex) {
@@ -625,6 +682,15 @@
     },
     copyLatex,
     selectedLatex,
+    sizeIn,
+    // Taille choisie pendant la modification d'une équation : elle s'applique à toute l'équation.
+    setSize(pt) {
+      if (!active || !active.editing()) return false;
+      active.set({ size: pt });
+      const field = active.field();
+      if (field) field.focus({ preventScroll: true });
+      return true;
+    },
     refreshBar() { if (barFor && bar && !bar.hidden) fillBar(barFor); },
     numbering,
     chapters: () => chaptersOn(M.view.state.doc),

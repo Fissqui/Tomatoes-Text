@@ -172,7 +172,7 @@
       return;
     }
     if (el.classList.contains('ft-math')) {
-      out.push({ node: equation(el.dataset.latex || '', { block: false }) });
+      out.push({ node: equation(el.dataset.latex || '', { block: false, sz: halfPoints(el) }) });
       return;
     }
     // Passage commenté : début et fin du commentaire Word autour du texte.
@@ -851,7 +851,8 @@
       width: { size: tw(box.width * k), type: D.WidthType.DXA },
       layout: D.TableLayoutType.FIXED,
       alignment: centered ? D.AlignmentType.CENTER : undefined,
-      indent: !centered && left > 1 ? { size: tw(left * k), type: D.WidthType.DXA } : undefined,
+      // (Retrait négatif : tableau qui déborde sur la marge de gauche.)
+      indent: !centered && Math.abs(left) > 1 ? { size: tw(left * k), type: D.WidthType.DXA } : undefined,
       borders: {
         top: border(tcs, 'Top', false) || none, bottom: border(tcs, 'Bottom', false) || none,
         left: border(tcs, 'Left', false) || none, right: border(tcs, 'Right', false) || none,
@@ -973,8 +974,12 @@
     return new D.TextRun({ text: latex });
   }
 
+  // Taille d'une équation à l'écran, en demi-points (comme le texte, runProps).
+  const halfPoints = (el) => Math.max(2, Math.round(parseFloat(getComputedStyle(el).fontSize) * 1.5));
+
   function mathBlock(el, ctx) {
     const cs = getComputedStyle(el);
+    const sz = halfPoints(el);
     const latex = el.dataset.latex || '';
     const align = el.dataset.align === 'gauche' ? 'gauche' : '';
     const spacing = { before: tw(cs.marginTop), after: tw(cs.marginBottom) };
@@ -997,7 +1002,7 @@
       const props = runProps(el);
       const cells = [];
       if (sideW) cells.push(cell([new D.Paragraph({ children: [] })], sideW));
-      cells.push(cell([new D.Paragraph({ children: [equation(latex, { block: true, align })], alignment: align ? D.AlignmentType.LEFT : D.AlignmentType.CENTER })], mainW));
+      cells.push(cell([new D.Paragraph({ children: [equation(latex, { block: true, align, sz })], alignment: align ? D.AlignmentType.LEFT : D.AlignmentType.CENTER })], mainW));
       cells.push(cell([new D.Paragraph({ children: [new D.TextRun({ ...props, bold: false, italics: false, text: num })], alignment: D.AlignmentType.RIGHT })], numW));
       const table = new D.Table({
         rows: [new D.TableRow({ children: cells, cantSplit: true })],
@@ -1014,7 +1019,7 @@
       ];
     }
     const options = {
-      children: [equation(latex, { block: true, align })],
+      children: [equation(latex, { block: true, align, sz })],
       alignment: align ? D.AlignmentType.LEFT : D.AlignmentType.CENTER,
       spacing
     };

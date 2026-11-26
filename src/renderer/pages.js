@@ -776,6 +776,7 @@
       page.style.paddingTop = first.ct + 'px';
       page.style.paddingLeft = cfg.margins.left * MM + 'px';
       page.style.paddingRight = cfg.margins.right * MM + 'px';
+      marginVars(cfg.margins);
       // Page de titre : le reste de la zone de texte de la première page (sous les tags du document).
       coverSize(first);
       // Les pages tournées sont plus larges ou plus étroites que les autres.
@@ -831,6 +832,7 @@
     page.style.paddingTop = first.ct + 'px';
     page.style.paddingLeft = cfg.margins.left * MM + 'px';
     page.style.paddingRight = cfg.margins.right * MM + 'px';
+    marginVars(cfg.margins);
     coverSize(first);
     const [tw] = dims(cfg.orient === 'paysage' ? 'portrait' : 'paysage');
     page.style.setProperty('--pg-shift', (w - tw * MM) / 2 + 'px');
@@ -1439,6 +1441,7 @@
       page.classList.remove('pg-tags-later', 'pg-cover');
       for (const k of ['top', 'left', 'right']) docTags.style[k] = '';
       page.style.removeProperty('--pg-shift');
+      marginVars(null);
       sync(parts.sheet, sheetsLayer, 0);
       sync(parts.head, overLayer, 0);
       sync(parts.foot, overLayer, 0);
@@ -1478,15 +1481,28 @@
     else noteFormat();
   }
 
+  // Marges de la page pour les tableaux qui débordent sur les marges (styles.css) ; null : marges du thème.
+  function marginVars(m) {
+    if (m) {
+      page.style.setProperty('--pg-ml', m.left * MM + 'px');
+      page.style.setProperty('--pg-mr', m.right * MM + 'px');
+    } else {
+      page.style.removeProperty('--pg-ml');
+      page.style.removeProperty('--pg-mr');
+    }
+  }
+
   // Mode note : la page garde sa largeur habituelle, sauf si un format et des marges ont été choisis.
   function noteFormat() {
     if (mode !== 'note') return;
     const set = (k, v) => { page.style[k] = v; };
     if (!cfg.custom) {
       for (const k of ['width', 'maxWidth', 'paddingTop', 'paddingBottom', 'paddingLeft', 'paddingRight']) set(k, '');
+      marginVars(null);
       return;
     }
     const m = cfg.margins;
+    marginVars(m);
     set('width', dims('portrait')[0] * MM + 'px');
     set('maxWidth', 'none');
     set('paddingTop', m.top * MM + 'px');

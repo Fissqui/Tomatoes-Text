@@ -52,6 +52,15 @@ nom. Le détail de chaque version publiée figure sur la
 - Texte copié dans Word : une image descendue sous le début de son paragraphe est collée après lui, dans l'ordre
   de Word ; centrée si elle l'est, à côté du texte si elle est habillée sur un côté et en laisse la place.
   Photos visibles dans l'onglet « Original » de la fenêtre de collage.
+- Tableaux qui débordent sur les marges, comme dans Word : un tableau copié dans Word qui avance dans les marges
+  y avance aussi, et ses colonnes gardent leur largeur. Bouton « Déborder sur les marges » dans la barre du
+  tableau et dans son menu du clic droit ; le bord d'un tableau se tire aussi dans la marge, jusqu'à 0,5 cm du
+  bord de la feuille. Débord gardé dans les exports PDF et Word.
+- Tableau collé depuis Word ou une page web : ses colonnes se calculent sur la largeur réelle du texte (le
+  texte du tableau était souvent réduit à 5 pt).
+- Taille des équations : la taille choisie dans la barre d'outils s'applique aux équations du passage choisi,
+  d'une colonne ou d'un groupe de cases, de tout le document (Ctrl+A), à l'équation en cours de modification,
+  ou à une équation choisie par le clic droit (« Sélectionner l'équation »). Taille gardée dans l'export Word.
 
 ## 2.4 « Corbarino » — novembre 2026
 

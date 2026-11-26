@@ -682,8 +682,20 @@
   // Une image dans une ligne qui passe devant ou derrière le texte devient d'abord un objet rigide.
   const setWrap = (obj, wrap) => arrange(obj, posOf(obj) === 'ligne' ? 'rigide' : posOf(obj), wrap);
 
+  // Tableau qui déborde sur les marges (styles.css) : il revient dans la largeur du texte.
+  function dropOverflow(obj) {
+    if (!obj.hasAttribute('data-deborde')) return;
+    delete obj.dataset.deborde;
+    obj.style.removeProperty('--dg');
+    obj.style.removeProperty('--dd');
+  }
+  // Un tableau entre les paragraphes (pas dans une case, un encadré ou des colonnes) peut déborder sur les marges.
+  const canOverflow = (obj) => obj.tagName === 'TABLE' && !obj.dataset.wrap && obj.parentNode === editor && !editor.hasAttribute('data-cols');
+  const CM = 96 / 2.54;
+
   function setAlign(obj, value) {
     S().checkpoint();
+    dropOverflow(obj);
     obj.style.removeProperty('--ml');
     if (value) obj.dataset.align = value;
     else delete obj.dataset.align;
@@ -694,6 +706,7 @@
 
   function setWidth(obj, pct) {
     S().checkpoint();
+    dropOverflow(obj);
     if (isBox(obj)) setBoxWidth(obj, pct);
     else obj.style.width = pct + '%';
     // La marge de gauche choisie à la souris ne doit pas faire sortir l'objet du texte.
@@ -1427,6 +1440,8 @@
     }
     const style = obj.getAttribute('style');
     const align = obj.dataset.align;
+    const over = obj.dataset.deborde;
+    delete obj.dataset.deborde;
     obj.style.width = '100%';
     obj.style.removeProperty('--mx');
     obj.style.removeProperty('--ml');
@@ -1436,6 +1451,7 @@
     else obj.setAttribute('style', style);
     if (align) obj.dataset.align = align;
     else delete obj.dataset.align;
+    if (over) obj.dataset.deborde = over;
     return { left: r.left, width: r.width || editor.clientWidth * Z() };
   }
 
@@ -1502,8 +1518,14 @@
     const vy = dir.includes('s') ? 1 : dir.includes('n') ? -1 : 0;
     const corner = hx && vy;
     const minW = Math.max(16, full.width * (isBox(obj) ? 0.1 : 0.05));
-    // Le bord opposé ne bouge pas ; l'objet reste dans la largeur du texte.
-    const maxW = hx > 0 ? full.left + full.width - r0.left : hx < 0 ? r0.right - full.left : full.width;
+    // Le bord opposé ne bouge pas ; l'objet reste dans la largeur du texte. Un tableau peut aller dans les
+    // marges, jusqu'à 0,5 cm du bord de la feuille (comme dans Word).
+    const over = canOverflow(obj) && !corner;
+    const sheet = over ? page.getBoundingClientRect() : null;
+    const lim = over
+      ? { left: Math.min(full.left, sheet.left + 0.5 * CM * zk), right: Math.max(full.left + full.width, sheet.right - 0.5 * CM * zk) }
+      : { left: full.left, right: full.left + full.width };
+    const maxW = hx > 0 ? lim.right - r0.left : hx < 0 ? r0.right - lim.left : full.width;
     let moved = false;
     let last = null;
     let frame = 0;
@@ -1540,7 +1562,20 @@
         w = Math.max(minW, Math.min(maxW, r0.width + dx * hx));
       }
       const left = hx < 0 ? r0.right - w : r0.left;
-      if (hx) applyWidth(obj, left, w, full);
+      if (hx && over && (left < full.left - 1 || left + w > full.left + full.width + 1)) {
+        // Dans les marges : avancée de chaque bord au-delà du texte, en cm.
+        const cm = (px) => Math.round((px / zk / CM) * 100) / 100 + 'cm';
+        obj.style.removeProperty('width');
+        obj.style.removeProperty('--ml');
+        delete obj.dataset.align;
+        delete obj.dataset.width;
+        obj.dataset.deborde = 'oui';
+        obj.style.setProperty('--dg', cm(full.left - left));
+        obj.style.setProperty('--dd', cm(left + w - full.left - full.width));
+      } else if (hx) {
+        dropOverflow(obj);
+        applyWidth(obj, left, w, full);
+      }
       let h = null;
       if (corner && !img) h = h0 * k;
       else if (vy && !hx) h = Math.max(12, h0 + dy * vy);
@@ -1589,6 +1624,7 @@
   // Toute la largeur : plus de largeur propre (le tableau ou l'encadré suit les marges).
   function fullWidth(obj) {
     S().checkpoint();
+    dropOverflow(obj);
     setBoxWidth(obj, 100);
     obj.style.removeProperty('--ml');
     if (obj.dataset.align === 'libre') delete obj.dataset.align;
