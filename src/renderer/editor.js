@@ -904,10 +904,25 @@
   // (copier-coller ou couper-coller d'un passage avec ses notes, d'un document à l'autre).
   let copiedNotes = new Map(); // « fn:id » → ligne de note
   const REF = /^<sup\b[^>]*\bclass="[^"]*\bft-(fn|en)-ref\b[^>]*\bdata-(?:fn|en)="([^"]+)"/;
-  const refOf = (n) => (n.type === schema.nodes.raw_inline ? REF.exec(n.attrs.html) : null);
+  // (Équation sur sa propre ligne : son appel de note est dans le bloc, après la formule.)
+  const BLOCK_REF = /^(<div\b[^>]*\bclass="[^"]*\bft-math\b[\s\S]*)(<sup\b[^>]*\bclass="[^"]*\bft-(fn|en)-ref\b[^>]*\bdata-(?:fn|en)="([^"]+)")/;
+  const refOf = (n) => {
+    if (n.type === schema.nodes.raw_inline) return REF.exec(n.attrs.html);
+    const m = n.type === schema.nodes.raw_block ? BLOCK_REF.exec(n.attrs.html) : null;
+    return m ? [m[2], m[3], m[4]] : null;
+  };
   function rememberNotes() {
-    const sel = view.state.selection;
+    let sel = view.state.selection;
     if (sel.empty || !view.hasFocus()) return;
+    // Équation de la ligne choisie seule, suivie de son appel de note : copiée avec lui.
+    const FV = window.FTFormuleVue;
+    if (sel instanceof PM.state.NodeSelection && sel.node.isInline && FV && FV.isMath(sel.node)) {
+      const next = view.state.doc.resolve(sel.to).nodeAfter;
+      if (next && next.type === schema.nodes.raw_inline && REF.test(next.attrs.html)) {
+        view.dispatch(view.state.tr.setSelection(TextSelection.create(view.state.doc, sel.from, sel.to + next.nodeSize)));
+        sel = view.state.selection;
+      }
+    }
     const want = new Set();
     view.state.doc.nodesBetween(sel.from, sel.to, (n) => { const m = refOf(n); if (m) want.add(m[1] + ':' + m[2]); return !n.isAtom; });
     const map = new Map();
@@ -963,6 +978,16 @@
   // Insère un HTML (déjà nettoyé) à la place de la sélection.
   function insertHtml(html, range) {
     const box = window.FTSchema.prepare(html);
+    // Équation sur sa propre ligne suivie de son appel de note (Word : même paragraphe, séparé ici en une
+    // ligne qui n'a que l'appel) : l'appel entre dans l'équation.
+    for (const m of box.querySelectorAll('div.ft-math[data-display="block"]')) {
+      const p = m.nextElementSibling;
+      if (!p || p.tagName !== 'P' || m.querySelector(':scope > sup.ft-fn-ref, :scope > sup.ft-en-ref')) continue;
+      const ref = p.firstElementChild;
+      if (!ref || !ref.matches('sup.ft-fn-ref, sup.ft-en-ref') || ref.previousSibling && ref.previousSibling.textContent.trim()) continue;
+      m.append(ref);
+      if (!p.textContent.trim() && !p.querySelector('img, sup, span, a')) p.remove();
+    }
     // (Images collées : affichées depuis la mémoire, comme à l'ouverture.)
     if (box.querySelector('img')) adoptImages(box);
     const notes = takeNotes(box);

@@ -8,7 +8,7 @@
 (function () {
   const M = window.FTMoteur;
   const { view, schema } = M;
-  const { Plugin, PluginKey, TextSelection, Selection } = PM.state;
+  const { Plugin, PluginKey, TextSelection, NodeSelection, Selection } = PM.state;
   const { Fragment } = PM.model;
   const N = schema.nodes;
   const C = () => window.FTCite;
@@ -41,6 +41,24 @@
     return i;
   }
 
+  // Équation sur sa propre ligne avec un appel de note (sup.ft-fn-ref ou ft-en-ref après la formule) :
+  // { kind, el (l'appel), host (l'équation) }.
+  const blocks = new WeakMap();
+  const BLOCK_REF = /^<div\b[^>]*\bclass="[^"]*\bft-math\b[^>]*>[\s\S]*<sup\b[^>]*\bclass="[^"]*\bft-(?:fn|en)-ref\b/;
+  function blockInfo(node) {
+    if (node.type !== N.raw_block) return null;
+    let i = blocks.get(node);
+    if (i !== undefined) return i;
+    i = null;
+    if (BLOCK_REF.test(node.attrs.html)) {
+      const host = fromHtml(node.attrs.html);
+      const el = host && host.querySelector(':scope > sup.ft-fn-ref, :scope > sup.ft-en-ref');
+      if (el) i = { kind: el.classList.contains('ft-fn-ref') ? 'fn' : 'en', el, host };
+    }
+    blocks.set(node, i);
+    return i;
+  }
+
   // Bloc du haut : notes de bas de page (foot), notes de fin (end) ; bibliographie (bib), où qu'elle soit.
   function boxKind(n) {
     if (n.type === N.container) return hasClass(n.attrs.a, 'ft-footnotes') ? 'foot' : hasClass(n.attrs.a, 'ft-endnotes') ? 'end' : null;
@@ -63,10 +81,15 @@
         else if (!where) s[i.kind].push(r);
       });
     };
+    const block = (node, pos, where) => {
+      const i = blockInfo(node);
+      if (i && !where) s[i.kind].push({ node, pos, ...i });
+    };
     const walk = (node, pos, where) => {
       if (node.isTextblock) return inline(node, pos + 1, where);
       node.descendants((n, p) => {
         if (n.isTextblock) { inline(n, pos + 1 + p + 1, where); return false; }
+        if (n.type === N.raw_block) block(n, pos + 1 + p, where);
         if (n.type === N.raw_block && boxKind(n) === 'bib') s.bibs.push({ node: n, pos: pos + 1 + p });
         return !n.isAtom;
       });
@@ -77,6 +100,7 @@
       else if (k === 'foot') { s.foots.push({ node: top, pos }); walk(top, pos, 'foot'); }
       else if (k === 'end') { s.ends.push({ node: top, pos }); walk(top, pos, 'end'); }
       else if (!top.isAtom) walk(top, pos, null);
+      else if (top.type === N.raw_block) block(top, pos, null);
     });
     return s;
   }
@@ -269,6 +293,12 @@
     const edits = new Map(); // position d'un objet fermé → son élément modifié
     const edit = (r) => {
       let e = edits.get(r.pos);
+      if (!e && r.host) {
+        // (Appel dans une équation : l'équation entière est réécrite.)
+        const host = r.host.cloneNode(true);
+        e = { r, host, el: host.querySelector(':scope > sup.ft-fn-ref, :scope > sup.ft-en-ref') };
+        edits.set(r.pos, e);
+      }
       if (!e) { e = { r, el: r.el.cloneNode(true) }; edits.set(r.pos, e); }
       return e.el;
     };
@@ -319,8 +349,8 @@
       return { id, cite, r };
     });
 
-    for (const { r, el } of edits.values()) {
-      const html = el.outerHTML;
+    for (const { r, el, host } of edits.values()) {
+      const html = (host || el).outerHTML;
       if (html !== r.node.attrs.html) tr.setNodeMarkup(r.pos, null, { html });
     }
 
@@ -406,6 +436,7 @@
     doc.nodesBetween(from, to, (n) => {
       if (hit) return false;
       if (n.type === N.raw_inline) { const i = info(n); if (i && i.kind !== 'date') hit = true; return false; }
+      if (blockInfo(n)) { hit = true; return false; }
       const k = boxKind(n);
       if (k === 'bib' || (isBibHead(n) && !inLine)) { hit = true; return false; }
       if (k && !inLine) { hit = true; return false; }
@@ -499,7 +530,9 @@
   function backToRef(kind, id) {
     const ref = findRef(view.state.doc, kind, id);
     if (!ref) return false;
-    view.dispatch(view.state.tr.setSelection(TextSelection.create(view.state.doc, ref.pos + 1)));
+    // (Appel dans une équation sur sa propre ligne : l'équation est sélectionnée.)
+    const sel = ref.host ? NodeSelection.create(view.state.doc, ref.pos) : TextSelection.create(view.state.doc, ref.pos + 1);
+    view.dispatch(view.state.tr.setSelection(sel));
     view.focus();
     reveal(ref.pos + 1, kind === 'en');
     return true;
@@ -522,15 +555,44 @@
   // ----- Insertion -----
 
   // Appel de note au curseur (après la sélection), puis le curseur va dans la note.
+  // Équation choisie ou en cours de modification : l'appel se pose juste après elle (dans le bloc pour une
+  // équation sur sa propre ligne, qui n'a qu'un appel : s'il y en a déjà un, le curseur va dans sa note).
+  const isMathNode = (n) => !!n && window.FTFormuleVue && window.FTFormuleVue.isMath(n);
+  function mathTarget(state) {
+    const FV = window.FTFormuleVue;
+    const editing = FV && FV.activeAt ? FV.activeAt() : undefined;
+    if (editing !== undefined && isMathNode(state.doc.nodeAt(editing))) return editing;
+    const sel = state.selection;
+    if (sel instanceof NodeSelection && isMathNode(sel.node)) return sel.from;
+    return null;
+  }
   function insertRef(kind, replaceFrom) {
-    const state = view.state;
-    const at = state.selection.to;
-    const $p = state.doc.resolve(at);
-    if (!$p.parent.isTextblock || inNotes($p)) return false;
     const id = newId(kind === 'fn' ? 'n' : 'e');
     const html = kind === 'fn'
       ? `<sup class="ft-fn-ref" data-fn="${id}" contenteditable="false">*</sup>`
       : `<sup class="ft-en-ref" data-en="${id}" contenteditable="false">*</sup>`;
+    const mp = replaceFrom == null ? mathTarget(view.state) : null;
+    if (mp !== null) {
+      if (window.FTFormuleVue.activeAt() !== undefined) window.FTFormuleVue.finish();
+      const node = view.state.doc.nodeAt(mp);
+      if (!isMathNode(node)) return false;
+      if (node.isBlock) {
+        if (inNotes(view.state.doc.resolve(mp))) return false;
+        const had = blockInfo(node);
+        if (had) return goToNote(had.kind, had.el.getAttribute(had.kind === 'fn' ? 'data-fn' : 'data-en'));
+        const host = fromHtml(node.attrs.html);
+        host.insertAdjacentHTML('beforeend', html);
+        view.dispatch(PM.history.closeHistory(view.state.tr.setNodeMarkup(mp, null, { html: host.outerHTML })));
+        goToNote(kind, id);
+        M.closeHistory();
+        return true;
+      }
+      view.dispatch(view.state.tr.setSelection(TextSelection.create(view.state.doc, mp + node.nodeSize)));
+    }
+    const state = view.state;
+    const at = state.selection.to;
+    const $p = state.doc.resolve(at);
+    if (!$p.parent.isTextblock || inNotes($p)) return false;
     const tr = state.tr;
     if (replaceFrom != null) tr.delete(replaceFrom, at);
     tr.insert(tr.mapping.map(at), N.raw_inline.create({ html }));
@@ -652,7 +714,13 @@
         action: () => {
           const r = findRef(view.state.doc, kind, id);
           if (!r) return;
-          view.dispatch(PM.history.closeHistory(view.state.tr.delete(r.pos, r.pos + 1)));
+          const tr = view.state.tr;
+          if (r.host) {
+            const host = r.host.cloneNode(true);
+            host.querySelector(':scope > sup.ft-fn-ref, :scope > sup.ft-en-ref').remove();
+            tr.setNodeMarkup(r.pos, null, { html: host.outerHTML });
+          } else tr.delete(r.pos, r.pos + 1);
+          view.dispatch(PM.history.closeHistory(tr));
           M.closeHistory();
         }
       });

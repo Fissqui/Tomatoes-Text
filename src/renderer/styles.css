@@ -1147,6 +1147,12 @@ dialog p { margin: 0 0 12px; }
 #editor div.ft-math[data-numero][data-align="gauche"]::before { display: none; }
 #editor div.ft-math[data-numero] > :is(.ML__latex, math-field) { grid-column: 1 / span 1; justify-self: start; }
 #editor div.ft-math[data-numero]:not([data-align="gauche"]) > :is(.ML__latex, math-field) { grid-column: 2; justify-self: center; }
+/* Appel de note d'une équation sur sa propre ligne : juste après la formule, en haut (le numéro reste au bord). */
+#editor div.ft-math > :is(sup.ft-fn-ref, sup.ft-en-ref) { margin-left: 0.15em; }
+#editor div.ft-math[data-numero]:has(> :is(sup.ft-fn-ref, sup.ft-en-ref)) > :is(.ML__latex, math-field), #editor div.ft-math[data-numero]:has(> :is(sup.ft-fn-ref, sup.ft-en-ref))::after { grid-row: 1; }
+#editor div.ft-math[data-numero]:has(> :is(sup.ft-fn-ref, sup.ft-en-ref))::after { grid-column: -2 / -1; }
+#editor div.ft-math[data-numero] > :is(sup.ft-fn-ref, sup.ft-en-ref) { grid-row: 1; grid-column: 1; justify-self: end; align-self: center; transform: translate(100%, -0.8em); }
+#editor div.ft-math[data-numero]:not([data-align="gauche"]) > :is(sup.ft-fn-ref, sup.ft-en-ref) { grid-column: 2; }
 /* Équation encadrée : un cadre simple, ou coloré comme les encadrés « > ». */
 #editor .ft-math[data-box] { --callout: var(--accent); }
 #editor .ft-math[data-color="bleu"] { --callout: #2e86c1; }

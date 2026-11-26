@@ -296,7 +296,21 @@
       const tr = view.state.tr;
       const was = tr.doc.nodeAt(pos);
       const block = el.tagName === 'DIV';
-      const fresh = nodeOf(el);
+      // Appel de note de l'équation : gardé quand elle passe dans la ligne (juste après elle) ou sur sa
+      // propre ligne (l'appel qui la suit entre dans le bloc).
+      const REF = /^<sup\b[^>]*\bclass="[^"]*\bft-(?:fn|en)-ref\b/;
+      let tail = '';
+      if (was.isInline && block && !el.querySelector(':scope > sup.ft-fn-ref, :scope > sup.ft-en-ref')) {
+        const next = tr.doc.resolve(pos + was.nodeSize).nodeAfter;
+        if (next && next.type === view.state.schema.nodes.raw_inline && REF.test(next.attrs.html)) {
+          el.insertAdjacentHTML('beforeend', next.attrs.html);
+          tr.delete(pos + was.nodeSize, pos + was.nodeSize + next.nodeSize);
+        }
+      } else if (!was.isInline && !block) {
+        const old = window.FTFormules.infoOf(was.attrs.html);
+        if (old && old.ref) tail = old.ref;
+      }
+      const fresh = tail ? window.FTSchema.parse('<p>' + el.outerHTML + tail + '</p>').firstChild : nodeOf(el);
       if (was.isInline === !block) {
         const repl = block ? fresh : fresh.content;
         tr.replaceWith(pos, pos + was.nodeSize, repl);

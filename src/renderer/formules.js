@@ -36,6 +36,8 @@
   }
 
   // Réglages d'une équation affichée ou de son HTML.
+  const REF = ':scope > sup.ft-fn-ref, :scope > sup.ft-en-ref';
+  const refIn = (el) => { const r = el.tagName === 'DIV' && el.querySelector(REF); return r ? r.outerHTML : ''; };
   function infoOf(el) {
     if (typeof el === 'string') {
       const t = document.createElement('template');
@@ -61,7 +63,9 @@
       u: el.hasAttribute('data-souligne'),
       s: el.hasAttribute('data-barre'),
       tc: el.dataset.couleur || '',
-      hl: el.dataset.surligne || ''
+      hl: el.dataset.surligne || '',
+      // Appel de note posé sur une équation sur sa propre ligne (après la formule).
+      ref: refIn(el)
     };
   }
 
@@ -94,6 +98,7 @@
       el.style.setProperty('--hl', o.hl);
     }
     el.innerHTML = render(o.latex, o.block);
+    if (o.block && o.ref) el.insertAdjacentHTML('beforeend', o.ref);
     return el;
   }
   const html = (o) => element(o).outerHTML;
@@ -716,7 +721,7 @@
     },
     remove(target) { if (EM && target && target.isConnected) EM.remove(target); },
     // Copie d'une équation (mêmes réglages, sans son numéro) au curseur.
-    insertCopy(info) { if (EM) EM.insert(element({ ...info, eq: '', xid: '' }), EM.mark()); },
+    insertCopy(info) { if (EM) EM.insert(element({ ...info, eq: '', xid: '', ref: '' }), EM.mark()); },
     useEngine(bridge) { EM = bridge; },
     isOpen: () => !!(dialog && dialog.open)
   };

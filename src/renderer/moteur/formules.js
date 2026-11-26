@@ -18,6 +18,8 @@
   const MATH = /^<(span|div)\b[^>]*?\sclass="(?:[^"]*\s)?ft-math(?:\s[^"]*)?"/;
   const isMathHtml = (html) => MATH.test(html || '');
   const isMath = (node) => !!node && (node.type === N.raw_inline || node.type === N.raw_block) && isMathHtml(node.attrs.html);
+  // Appel de note d'une équation sur sa propre ligne : sup.ft-fn-ref (ou ft-en-ref) après la formule.
+  const REF = ':scope > sup.ft-fn-ref, :scope > sup.ft-en-ref';
   const closed = () => !view.editable || document.getElementById('app').classList.contains('reading-mode');
   const fromHtml = (html) => {
     const t = document.createElement('template');
@@ -36,7 +38,11 @@
     const dom = fromHtml(node.attrs.html) || document.createElement('span');
     dom.setAttribute('contenteditable', 'false');
     // Dessin absent (document importé, ancien document) : refait depuis le code.
-    if (!dom.querySelector('.ML__latex') && F()) dom.innerHTML = F().render(dom.dataset.latex || '', dom.tagName === 'DIV');
+    if (!dom.querySelector('.ML__latex') && F()) {
+      const ref = dom.querySelector(REF);
+      dom.innerHTML = F().render(dom.dataset.latex || '', dom.tagName === 'DIV');
+      if (ref) dom.append(ref);
+    }
     let ed = null;
 
     const block = () => dom.tagName === 'DIV';
@@ -215,6 +221,8 @@
     // Clic : l'équation s'ouvre au relâchement. Glissé : sélection, comme depuis du texte (cases d'un
     // tableau d'une case à l'autre, texte et équations ailleurs).
     function onDown(e) {
+      // Appel de note d'une équation sur sa propre ligne : le clic mène à la note (moteur/notes.js).
+      if (e.target.closest && e.target.closest('sup.ft-fn-ref, sup.ft-en-ref')) return;
       if (ed || e.button !== 0 || e.ctrlKey || e.metaKey || e.altKey || e.shiftKey || closed()) return;
       e.preventDefault();
       const x0 = e.clientX;
@@ -311,6 +319,10 @@
           if (nw.attrs.html !== ed.expect && fresh.dataset.latex !== F().clean(ed.field.value)) { ed.started = true; finish(null); return false; }
           for (const at of [...dom.attributes]) if (at.name !== 'class' && !fresh.hasAttribute(at.name)) dom.removeAttribute(at.name);
           for (const at of fresh.attributes) if (at.name !== 'class' && dom.getAttribute(at.name) !== at.value) dom.setAttribute(at.name, at.value);
+          // (Appel de note renuméroté, posé ou retiré pendant la modification.)
+          const was = dom.querySelector(REF);
+          const now = fresh.querySelector(REF);
+          if (!now) { if (was) was.remove(); } else if (!was) dom.append(now); else if (was.outerHTML !== now.outerHTML) was.replaceWith(now);
           cur = nw;
           return true;
         }
@@ -796,6 +808,8 @@
     // Équation affichée à cette position, entrée pour la modifier.
     edit(el, at) { const ctl = views.get(el); return ctl ? ctl.begin(at || 'end') : false; },
     active: () => (active ? active.dom : null),
+    // Position de l'équation en cours de modification (undefined sinon).
+    activeAt: () => (active ? active.at() : undefined),
     finish() { if (active) active.finish(null); },
     // Structure ou morceau inséré : dans l'équation en cours d'écriture, sinon dans une nouvelle équation au curseur.
     insert(ins, opts = {}) {

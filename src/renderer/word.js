@@ -993,6 +993,13 @@
     const latex = el.dataset.latex || '';
     const align = el.dataset.align === 'gauche' ? 'gauche' : '';
     const spacing = { before: tw(cs.marginTop), after: tw(cs.marginBottom) };
+    // Appel de note posé sur l'équation : juste après elle, dans le même paragraphe.
+    const refs = [];
+    for (const sup of el.querySelectorAll(':scope > sup.ft-fn-ref, :scope > sup.ft-en-ref')) {
+      const id = sup.matches('.ft-fn-ref') && ctx.state && ctx.state.footnoteId ? ctx.state.footnoteId(sup.dataset.fn) : null;
+      if (id) refs.push(new D.FootnoteReferenceRun(id));
+      else if (sup.textContent) refs.push(new D.TextRun({ ...runProps(sup), text: sup.textContent, superScript: true }));
+    }
     // Équation numérotée : tableau sans bordure, l'équation (centrée ou à gauche) et son numéro au bord droit.
     if (el.hasAttribute('data-numero')) {
       const none = { style: D.BorderStyle.NONE, size: 0, color: 'auto' };
@@ -1012,7 +1019,7 @@
       const props = runProps(el);
       const cells = [];
       if (sideW) cells.push(cell([new D.Paragraph({ children: [] })], sideW));
-      cells.push(cell([new D.Paragraph({ children: [equation(latex, { block: true, align, ...look })], alignment: align ? D.AlignmentType.LEFT : D.AlignmentType.CENTER })], mainW));
+      cells.push(cell([new D.Paragraph({ children: [equation(latex, { block: true, align, ...look }), ...refs], alignment: align ? D.AlignmentType.LEFT : D.AlignmentType.CENTER })], mainW));
       cells.push(cell([new D.Paragraph({ children: [new D.TextRun({ ...props, bold: false, italics: false, text: num })], alignment: D.AlignmentType.RIGHT })], numW));
       const table = new D.Table({
         rows: [new D.TableRow({ children: cells, cantSplit: true })],
@@ -1029,7 +1036,7 @@
       ];
     }
     const options = {
-      children: [equation(latex, { block: true, align, ...look })],
+      children: [equation(latex, { block: true, align, ...look }), ...refs],
       alignment: align ? D.AlignmentType.LEFT : D.AlignmentType.CENTER,
       spacing
     };

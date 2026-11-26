@@ -202,8 +202,12 @@ ${body}
         const d = new DOMParser().parseFromString(window.FTLatex.toMathML(f.dataset.latex, block), 'application/xml');
         if (!d.querySelector('parsererror')) node = doc.importNode(d.documentElement, true);
       } catch { node = null; }
+      // (Appel de note posé sur l'équation : gardé après elle.)
+      const refs = [...f.querySelectorAll(':scope > sup.ft-fn-ref, :scope > sup.ft-en-ref')];
       f.textContent = '';
       if (node) { f.append(node); math = true; } else f.textContent = f.dataset.latex;
+      if (refs.length && node && block) node.setAttribute('style', 'display: inline-block');
+      f.append(...refs);
       if (block && f.hasAttribute('data-numero') && f.dataset.eq) {
         const n = doc.createElement('span');
         n.className = 'ft-eq-num';

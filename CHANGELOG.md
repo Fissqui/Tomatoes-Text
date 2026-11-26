@@ -67,6 +67,10 @@ nom. Le détail de chaque version publiée figure sur la
   équations choisies (avec du texte, dans des cases ou seules) et à l'équation en cours de modification
   (Ctrl+G, Ctrl+I, Ctrl+U compris) ; gardés dans l'export Word. Un glissé commencé sur une équation choisit
   le texte ou les cases parcourues (une colonne de tableau, par exemple) ; un simple clic l'ouvre toujours.
+- Notes de bas de page sur les équations : une note ajoutée à une équation choisie ou en cours de modification
+  se place juste après elle ; une équation sur sa propre ligne porte son appel de note après la formule
+  (numéro de l'équation gardé au bord), au pied de sa page et dans l'export Word. Une équation copiée avec sa
+  note la garde au collage, y compris une équation sur sa ligne collée depuis Word.
 
 ## 2.4 « Corbarino » — novembre 2026
 
