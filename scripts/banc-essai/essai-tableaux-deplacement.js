@@ -267,5 +267,24 @@ module.exports = async ({ page }) => {
     assert.strictEqual(t.alt, wide, 'long tableau, pages en paysage ' + Object.keys(turned) + ' : ' + JSON.stringify(t));
     assert(wide ? t.w > t.p * 1.3 : near(t.w, t.p), 'largeur : ' + JSON.stringify(t));
   }
-  ok('pages en paysage : tableaux à la largeur de la page (pleine, 50 %, à gauche, débord), long tableau sur plusieurs pages en paysage');
+  // Tableau à peine plus haut que la page en paysage (page suivante en portrait) : il en garde la largeur,
+  // entier, et mord sur la marge du bas ; bien plus haut : largeur ordinaire, coupé.
+  const cut = await page.evaluate(() => {
+    const run = (H) => {
+      const units = [];
+      for (let r = 0; r < 10; r++) units.push({ y: r * H / 10, b: (r + 1) * H / 10, kind: r ? 'row' : 'start' });
+      const narrow = { height: 700, units: units.map((u) => ({ ...u, y: u.y * 700 / H, b: u.b * 700 / H })) };
+      const res = window.FTDecoupage.paginate({
+        n: 2, head: 0, slot: (i) => (i ? 20 : 700), meas: (i) => (i ? { height: 20, units: [{ y: 0, b: 20, kind: 'start' }] } : narrow),
+        keep: () => false, legend: () => false, repeat: () => 0,
+        region: (r) => ({ page: r, ct: r * 700, cb: r * 700 + 600, full: true, turned: r === 0 }),
+        alt: (i) => (i ? null : { m: { height: H, units }, slot: H }),
+      });
+      return { alt: res.alt[0], cut: res.breaks.has(0), next: res.pageOf[1] };
+    };
+    return { a: run(615), b: run(680) };
+  });
+  assert(cut.a.alt === 1 && !cut.a.cut && cut.a.next === 1, 'à peine plus haut : largeur de la page, entier : ' + JSON.stringify(cut));
+  assert(cut.b.alt === 0 && cut.b.cut, 'bien plus haut : largeur ordinaire, coupé : ' + JSON.stringify(cut));
+  ok('pages en paysage : tableaux à la largeur de la page (pleine, 50 %, à gauche, débord), long tableau sur plusieurs pages en paysage, tableau d\'une page pleine un peu trop haut');
 };

@@ -12,6 +12,8 @@
 //   - avant un bloc contenu dans un autre (élément de liste, paragraphe d'un encadré…) : un intercalaire.
 (function () {
   const EPS = 0.5;
+  // Débord toléré sur la marge du bas d'une page tournée, pour un bloc qui y garde la largeur de la page (px).
+  const HANG = 30;
 
   const isGap = (n) => n.nodeType === 1 && n.classList.contains('ft-pg-gap');
   // Objets qui ne suivent pas le texte : habillage « carré », devant ou derrière le texte.
@@ -270,7 +272,8 @@
   // zone utilisée), notes (notes de chaque zone : [{ id, y0, y1 }], la partie de la note posée là), fh
   // (place prise par les notes au bas de chaque zone, filet compris) }.
   // Page tournée (versions 1.x) : un bloc qui y commence prend sa largeur s'il y tient entier ; sinon
-  // il garde la largeur ordinaire et se coupe comme ailleurs.
+  // il garde la largeur ordinaire et se coupe comme ailleurs. Plus haut de HANG au plus : il garde la largeur
+  // de la page tournée et mord sur la marge du bas.
   // Notes de bas de page : chaque note va au bas de la zone où se trouve la ligne de son appel, et la
   // place du texte de cette zone diminue d'autant. Une note qui ne tient pas entière y laisse ses
   // premières lignes (une au moins) ; la suite passe en tête des notes de la zone suivante.
@@ -395,8 +398,18 @@
           // suivante, où il ne doit pas garder la largeur de la page tournée.)
           let notes = 0;
           if (a) for (const u of a.m.units) notes += need(u, c, notes);
-          if (a && (Math.max(Y, g.ct) + a.m.height + notes <= bot(c) + EPS || turnedRun(a.m, Math.max(Y, g.ct) + notes, c))) {
+          const over = a ? Math.max(Y, g.ct) + a.m.height + notes - bot(c) : 0;
+          if (a && (over <= EPS || turnedRun(a.m, Math.max(Y, g.ct) + notes, c))) {
             m = a.m;
+            slot = a.slot;
+            alt[i] = 1;
+          } else if (a && over <= HANG) {
+            // À peine plus haut que la place qui reste (tableau d'une page pleine, ses lignes ne raccourcissent
+            // pas en s'élargissant) : il garde la largeur de la page tournée, entier, et mord un peu sur la
+            // marge du bas, plutôt que de reprendre la largeur ordinaire ou de laisser sa dernière ligne seule
+            // sur la page suivante (qui n'est pas tournée).
+            const lim = a.m.height - over;
+            m = { ...a.m, height: lim, units: a.m.units.map((u) => ({ ...u, y: Math.min(u.y, lim), b: Math.min(u.b, lim) })) };
             slot = a.slot;
             alt[i] = 1;
           }
