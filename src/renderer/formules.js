@@ -21,9 +21,79 @@
 
   const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
-  function render(latex, block) {
+  // lines : équation du document, qui passe à la ligne quand elle est plus large que sa place (case de
+  // tableau, ligne de texte), après un signe de relation (=, <, ≤…) ou d'opération (+, −, ×…), comme
+  // dans Word et LaTeX. Chaque morceau est dessiné à part ; un retour à la ligne possible entre deux.
+  function render(latex, block, lines) {
     if (!ML) return esc(latex);
-    try { return ML.convertLatexToMarkup(latex, { defaultMode: block ? 'math' : 'inline-math' }); } catch { return esc(latex); }
+    const one = (x) => ML.convertLatexToMarkup(x, { defaultMode: block ? 'math' : 'inline-math' });
+    try {
+      const parts = lines ? split(latex) : [latex];
+      if (parts.length < 2) return one(latex);
+      return '<span class="ML__latex ft-math-lignes">' + parts.map(one).join('<wbr>') + '</span>';
+    } catch { return esc(latex); }
+  }
+
+  // Morceaux d'une équation, coupée après les signes de relation et d'opération du premier niveau (hors
+  // accolades, parenthèses, crochets, \left…\right et environnements). Pas de coupure après un signe en
+  // tête, après un signe qui suit un autre signe (−, + d'un nombre), ni pour un exposant ou un indice
+  // (x^-1). Un morceau qui finit par un signe reçoit « {} » et l'espace d'après le signe (\; après une
+  // relation, \: après une opération) : l'équation garde ses espaces, comme d'un seul morceau.
+  const REL = new Set(['=', '<', '>', '+', '-', '\\le', '\\leq', '\\ge', '\\geq', '\\neq', '\\ne', '\\approx', '\\equiv', '\\sim', '\\simeq',
+    '\\cong', '\\propto', '\\to', '\\rightarrow', '\\leftarrow', '\\Rightarrow', '\\Leftarrow', '\\Leftrightarrow', '\\iff', '\\implies',
+    '\\mapsto', '\\ll', '\\gg', '\\lt', '\\gt', '\\leqslant', '\\geqslant', '\\cdot', '\\times', '\\pm', '\\mp', '\\div', '\\ast', '\\cup', '\\cap']);
+  const BIN = new Set(['+', '-', '\\cdot', '\\times', '\\pm', '\\mp', '\\div', '\\ast', '\\cup', '\\cap']);
+  function split(latex) {
+    const s = String(latex || '');
+    const parts = [];
+    let depth = 0;
+    let from = 0;
+    let prevOp = true;   // rien encore, ou un signe juste avant
+    let script = false;  // le jeton suivant est un exposant ou un indice
+    for (let i = 0; i < s.length;) {
+      const c = s[i];
+      let tok = c;
+      if (c === '\\') {
+        const m = /^\\([A-Za-z]+|.)/.exec(s.slice(i));
+        tok = m ? m[0] : c;
+      }
+      const at = i;
+      i += tok.length;
+      if (/^\s$/.test(tok)) continue;
+      if (tok === '{' || tok === '(' || tok === '[' || tok === '\\left' || tok === '\\begin') {
+        depth++;
+        // (Délimiteur de \left : il ouvre avec lui.)
+        if (tok === '\\left' && i < s.length) i += s[i] === '\\' ? (/^\\([A-Za-z]+|.)/.exec(s.slice(i)) || [' '])[0].length : 1;
+        script = false;
+        prevOp = false;
+        continue;
+      }
+      if (tok === '}' || tok === ')' || tok === ']' || tok === '\\right' || tok === '\\end') {
+        depth = Math.max(0, depth - 1);
+        // (\right) et \end{…} : leur délimiteur ou leur nom suit.
+        if (tok === '\\right' && i < s.length) i += s[i] === '\\' ? (/^\\([A-Za-z]+|.)/.exec(s.slice(i)) || [' '])[0].length : 1;
+        if (tok === '\\end' && s[i] === '{') { const e = s.indexOf('}', i); if (e > 0) i = e + 1; }
+        script = false;
+        prevOp = false;
+        continue;
+      }
+      if (tok === '^' || tok === '_') { script = true; continue; }
+      if (script) { script = false; prevOp = false; continue; }
+      const op = REL.has(tok);
+      if (op && depth === 0 && !prevOp) {
+        const rest = s.slice(i).trim();
+        if (rest && !/^[\^_]/.test(rest)) {
+          parts.push(s.slice(from, i).trim() + (BIN.has(tok) ? '{}\\:' : '{}\\;'));
+          from = i;
+          prevOp = true;
+          continue;
+        }
+      }
+      prevOp = op;
+    }
+    const last = s.slice(from).trim();
+    if (last) parts.push(last);
+    return parts.length ? parts : [s];
   }
 
   // Cases vides laissées par la palette, espaces en trop.
@@ -97,7 +167,7 @@
       el.dataset.surligne = o.hl;
       el.style.setProperty('--hl', o.hl);
     }
-    el.innerHTML = render(o.latex, o.block);
+    el.innerHTML = render(o.latex, o.block, true);
     if (o.block && o.ref) el.insertAdjacentHTML('beforeend', o.ref);
     return el;
   }
@@ -683,6 +753,7 @@
 
   window.FTFormules = {
     render,
+    split,
     clean,
     infoOf,
     element,

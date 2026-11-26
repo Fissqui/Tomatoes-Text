@@ -4217,3 +4217,7 @@ body.ft-starting #app { visibility: hidden; }
 #first-run .fr-fill { height: 100%; width: 0; background: var(--accent); transition: width 0.3s; }
 #first-run .modal-actions { padding-top: 12px; border-top: 1px solid var(--border); }
 #first-run .fr-row button:not(.primary) { border-color: var(--border); }
+
+/* Équation plus large que sa place : elle passe à la ligne après un signe (formules.js, render). */
+.ML__latex.ft-math-lignes { display: inline; white-space: normal; width: auto; }
+span.ft-math:has(> .ft-math-lignes) { max-width: 100%; }

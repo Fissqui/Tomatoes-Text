@@ -40,7 +40,7 @@
     // Dessin absent (document importé, ancien document) : refait depuis le code.
     if (!dom.querySelector('.ML__latex') && F()) {
       const ref = dom.querySelector(REF);
-      dom.innerHTML = F().render(dom.dataset.latex || '', dom.tagName === 'DIV');
+      dom.innerHTML = F().render(dom.dataset.latex || '', dom.tagName === 'DIV', true);
       if (ref) dom.append(ref);
     }
     let ed = null;
@@ -195,7 +195,7 @@
       const field = e.field;
       field.removeEventListener('input', sync);
       const drawn = document.createElement('template');
-      drawn.innerHTML = F().render(latex, block());
+      drawn.innerHTML = F().render(latex, block(), true);
       if (field.isConnected) field.replaceWith(...drawn.content.childNodes);
       const at = pos();
       if (at === undefined) return;
@@ -717,7 +717,31 @@
   M.onLoad(() => {
     const tr = renumber(M.view.state);
     if (tr) M.view.dispatch(tr.setMeta('addToHistory', false));
+    redraw();
   });
+
+  // Équations dessinées avant la 2.5.25 d'un seul morceau : redessinées pour passer à la ligne après un signe
+  // quand elles sont plus larges que leur place (case de tableau…).
+  function redraw() {
+    if (!F() || !F().split) return;
+    const v = M.view;
+    const tr = v.state.tr;
+    v.state.doc.descendants((node, pos) => {
+      if (!isMath(node)) return true;
+      const html = node.attrs.html;
+      if (/ft-math-lignes/.test(html)) return false;
+      const dom = fromHtml(html);
+      const latex = dom && dom.dataset.latex;
+      if (!latex || F().split(latex).length < 2) return false;
+      const old = dom.querySelector(':scope > .ML__latex');
+      const t = document.createElement('template');
+      t.innerHTML = F().render(latex, dom.tagName === 'DIV', true);
+      if (old) old.replaceWith(...t.content.childNodes); else dom.prepend(...t.content.childNodes);
+      tr.setNodeMarkup(pos, null, { ...node.attrs, html: dom.outerHTML }, node.marks);
+      return false;
+    });
+    if (tr.docChanged) v.dispatch(tr.setMeta('addToHistory', false));
+  }
 
   // ----- Équations prises dans une sélection de texte -----
   // Une équation est un objet fermé : le navigateur ne la colore pas quand la sélection la traverse. Elle

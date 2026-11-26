@@ -219,4 +219,36 @@ module.exports = async ({ page }) => {
   const files = await v(async () => (await window.FTEpub.build()).filter((f) => f.text && /\.xhtml$/.test(f.name)).map((f) => f.text).join('\n'));
   assert.ok((files.match(/<math\b/g) || []).length === 3 && /ft-eq-num[^>]*>\(1\)/.test(files), 'EPUB : MathML et numéros');
   ok(`exports : Word ${omath} équations natives (numéros (1), (2) à droite dans un tableau sans bordure), EPUB en MathML avec numéros`);
+
+  // 8. Équation plus large que sa case : elle passe à la ligne après = et + (2.5.25) ; d'un seul morceau,
+  // même largeur ; ancien rendu d'un seul morceau refait à l'ouverture.
+  const EQ = 'XR_3(H,i)=2XR_s(8)i+XR_s(1,\\ldots,4)i';
+  assert.deepStrictEqual(await v(() => window.FTFormules.split('XR_3(H,i)=2XR_s(8)i+XR_s(1,\\ldots,4)i').length), 3, 'coupée après = et +');
+  assert.deepStrictEqual(await v(() => ['a=-b', 'x^-1', '\\left(a+b\\right)', '\\frac{a+b}{c}'].map((x) => window.FTFormules.split(x).length)), [2, 1, 1, 1], 'pas de coupure : signe d\'un nombre, exposant, parenthèses, fraction');
+  const one = await v((eq) => window.FTFormules.render(eq, false), EQ);
+  await reset('<table class="ft-table"><tbody><tr><td><p>a</p></td><td><p>b</p></td><td><p>c</p></td><td><p>d</p></td><td><p>e</p></td><td><p>f</p></td></tr>'
+    + '<tr><td><p>x</p></td><td><p>x</p></td><td><p>x</p></td><td><p>x</p></td><td><p>x</p></td><td><p><span class="ft-math" contenteditable="false" data-latex="' + EQ.replace(/\\\\/g, '\\') + '">' + one + '</span></p></td></tr></tbody></table>'
+    + '<p>Long <span class="ft-math" contenteditable="false" data-latex="a+b=c"></span></p>', 'avance');
+  await page.waitForTimeout(300);
+  const fit = await v(() => {
+    const m = document.querySelector('#editor td span.ft-math');
+    const td = m.closest('td');
+    const a = m.getBoundingClientRect();
+    const b = td.getBoundingClientRect();
+    const lh = parseFloat(getComputedStyle(m).fontSize) * 1.2;
+    return { parts: m.querySelectorAll('.ft-math-lignes > .ML__latex').length, inside: a.right <= b.right + 0.5, lines: Math.round(a.height / lh), html: /ft-math-lignes/.test(window.FTEditor.getHtml()) };
+  });
+  assert.ok(fit.parts === 3 && fit.inside && fit.lines >= 2 && fit.html, 'équation dans sa case, sur plusieurs lignes : ' + JSON.stringify(fit));
+  const widths = await v(() => {
+    const F = window.FTFormules;
+    const host = document.createElement('div');
+    host.style.cssText = 'position:fixed;left:0;top:0;white-space:nowrap';
+    host.innerHTML = '<span class="ML__latex">' + F.render('XR_2(H,i)=XR_s(8)i+XR_s(h)i', false) + '</span><br>' + F.render('XR_2(H,i)=XR_s(8)i+XR_s(h)i', false, true);
+    document.body.append(host);
+    const w = [...host.children].filter((x) => x.tagName === 'SPAN').map((x) => x.getBoundingClientRect().width);
+    host.remove();
+    return w;
+  });
+  assert.ok(Math.abs(widths[0] - widths[1]) < 1, 'même largeur sur une ligne : ' + widths);
+  ok('équation plus large que sa case : à la ligne après = et + (ancien rendu refait), même largeur sur une ligne');
 };

@@ -84,6 +84,8 @@ nom. Le détail de chaque version publiée figure sur la
   du bas, au lieu de reprendre la largeur d'une page en portrait.
 - Pages qui restent en place : quand le texte d'au-dessus grandit et déborde sur la page d'un bloc gardé en
   haut de page, ce bloc reste à sa suite s'il y tient, au lieu de passer seul à la page suivante.
+- Équations : plus larges que leur place (case de tableau, ligne de texte), elles passent à la ligne après un
+  signe de relation ou d'opération (=, +, −, ×, ≤…), comme dans Word et LaTeX.
 
 ## 2.4 « Corbarino » — novembre 2026
 
