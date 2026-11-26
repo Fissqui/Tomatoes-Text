@@ -1702,6 +1702,9 @@ body.tb-moving, body.tb-moving * { cursor: grabbing !important; user-select: non
    pour que toutes les icônes soient alignées. */
 #main > :is(#tb-side-l, #tb-side-r).tb-vertical { position: fixed; z-index: 30; width: auto; height: auto; padding: 4px 3px; border: 1px solid var(--border); border-radius: calc(9px * var(--round)); background: var(--panel); box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08); overflow-y: auto; overflow-x: hidden; scrollbar-width: none; }
 #main > .tb-side.tb-side-away { visibility: hidden; }
+/* Elles glissent quand une page en paysage, plus large, passe à leur hauteur. */
+#main > :is(#tb-side-l, #tb-side-r).tb-vertical, .maths-panel { transition: left 0.18s ease; }
+:root[data-ui-anim="aucune"] :is(#main > .tb-side, .maths-panel) { transition: none; }
 :is(#tb-side-l, #tb-side-r).tb-vertical .tb-group:not([hidden]) { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; width: 40px; }
 :is(#tb-side-l, #tb-side-r).tb-vertical .tb-group ~ .tb-group:not([hidden]) { margin: 3px 0 0; padding: 3px 0 0; }
 :is(#tb-side-l, #tb-side-r).tb-vertical .tb-group > * { margin: 0 !important; flex: none; }

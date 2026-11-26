@@ -453,7 +453,13 @@
     const title = el('span', 'mp-title', 'Mode maths');
     const fold = el('button', 'mp-fold');
     fold.type = 'button';
-    fold.addEventListener('click', () => { store.set(FOLDED, !panel.classList.contains('folded')); applyFold(); place(); });
+    fold.addEventListener('click', () => {
+      // Réduit faute de place (page en paysage) : ouvert quand même, jusqu'à ce que la place revienne.
+      if (tight) openAnyway = panel.classList.contains('folded');
+      else store.set(FOLDED, !panel.classList.contains('folded'));
+      applyFold();
+      place();
+    });
     head.append(title, fold);
     const s1 = el('section', 'mp-section');
     s1.append(el('h3', '', 'Morceaux récents'));
@@ -471,8 +477,12 @@
     applyFold();
     new ResizeObserver(() => place()).observe(panel);
   }
+  // tight : pas la place pour le volet ouvert à côté des feuilles (page en paysage, fenêtre étroite) ;
+  // il se réduit de lui-même et se rouvre quand la place revient.
+  let tight = false;
+  let openAnyway = false;
   function applyFold() {
-    const folded = !!store.get(FOLDED, false);
+    const folded = !!store.get(FOLDED, false) || (tight && !openAnyway);
     panel.classList.toggle('folded', folded);
     const fold = panel.querySelector('.mp-fold');
     fold.textContent = folded ? '‹' : '›';
@@ -556,29 +566,57 @@
   }
 
   // À droite de la page, au milieu de la zone visible (il suit le défilement).
-  function paperRect() {
-    const sheets = pageEl.classList.contains('paged') ? [...pageEl.querySelectorAll('#pg-sheets > .pg-sheet')].slice(0, 2) : [];
-    const rects = (sheets.length ? sheets : [pageEl]).map((x) => x.getBoundingClientRect()).filter((r) => r.width);
+  // Bords des feuilles à la hauteur [top, bottom] de l'écran (une page en paysage est plus large).
+  function paperRect(top = -Infinity, bottom = Infinity) {
+    const sheets = pageEl.classList.contains('paged') ? [...pageEl.querySelectorAll('#pg-sheets > .pg-sheet')] : [];
+    let rects = (sheets.length ? sheets : [pageEl]).map((x) => x.getBoundingClientRect()).filter((r) => r.width);
+    const near = rects.filter((r) => r.bottom > top && r.top < bottom);
+    if (near.length) rects = near;
+    else if (rects.length > 2) rects = rects.slice(0, 2);
     if (!rects.length) return null;
     return { left: Math.min(...rects.map((r) => r.left)), right: Math.max(...rects.map((r) => r.right)) };
   }
   function shown() {
     return on && !pageEl.hidden && !app.classList.contains('reading-mode') && !main.classList.contains('view-mindmap') && !main.classList.contains('view-timeline');
   }
+  // Place pour le volet à droite des feuilles : quand la plus large (une page en paysage) ne la
+  // laisse pas, le document se décale vers la gauche (marge droite de la zone de travail agrandie).
+  const PAD = 24;
+  const OPEN_W = 212;   // largeur du volet ouvert (styles.css)
+  function makeRoom(visible) {
+    let pad = 0;
+    if (visible && !workspace.classList.contains('with-comments')) {
+      const sheets = pageEl.classList.contains('paged') ? [...pageEl.querySelectorAll('#pg-sheets > .pg-sheet')] : [];
+      const widest = Math.max(0, ...(sheets.length ? sheets : [pageEl]).map((x) => x.getBoundingClientRect().width));
+      const total = workspace.clientWidth;
+      const need = (store.get(FOLDED, false) ? panel.offsetWidth : OPEN_W) + 18 + 6;
+      // Feuille centrée entre les marges : (total - PAD - droite - largeur) / 2 + droite ≥ need.
+      const want = Math.ceil(2 * need - total + PAD + widest);
+      if (want > PAD && widest) pad = Math.max(PAD, Math.min(want, total - PAD - widest));
+    }
+    const value = pad > PAD ? pad + 'px' : '';
+    if (workspace.style.paddingRight !== value) workspace.style.paddingRight = value;
+  }
   function place() {
     if (!panel) return;
     const visible = shown();
     panel.hidden = !visible;
+    makeRoom(visible);
     if (!visible) { hideBar(); return; }
     const ws = workspace.getBoundingClientRect();
-    const paper = paperRect();
-    if (!ws.width || !paper) { panel.hidden = true; return; }
+    if (!ws.width || !paperRect()) { panel.hidden = true; return; }
     const inner = ws.left + workspace.clientWidth;
+    const wasTight = tight;
+    tight = !store.get(FOLDED, false) && paperRect(ws.top, ws.bottom).right + 18 + OPEN_W + 6 > inner;
+    if (!tight) openAnyway = false;
+    if (tight !== wasTight) applyFold();
     panel.style.maxHeight = Math.max(160, ws.height * 0.84) + 'px';
     const w = panel.offsetWidth;
     const h = panel.offsetHeight;
+    const top = Math.max(ws.top + 8, ws.top + (ws.height - h) / 2);
+    const paper = paperRect(top, top + h) || paperRect();
     panel.style.left = Math.max(ws.left + 4, Math.min(inner - w - 6, paper.right + 18)) + 'px';
-    panel.style.top = Math.max(ws.top + 8, ws.top + (ws.height - h) / 2) + 'px';
+    panel.style.top = top + 'px';
   }
   let placing = 0;
   const replace = () => { if (!on) return; cancelAnimationFrame(placing); placing = requestAnimationFrame(place); };

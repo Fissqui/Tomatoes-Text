@@ -214,27 +214,33 @@
   const workspace = document.getElementById('workspace');
   const pageEl = document.getElementById('page');
   const GAP = 8;
-  function paperRect() {
-    const sheets = pageEl.classList.contains('paged') ? [...pageEl.querySelectorAll('#pg-sheets > .pg-sheet')].slice(0, 2) : [];
-    const rects = (sheets.length ? sheets : [pageEl]).map((el) => el.getBoundingClientRect()).filter((r) => r.width);
+  // Bords des feuilles à la hauteur [top, bottom] de l'écran : une page tournée en paysage est plus
+  // large que les autres, les barres s'écartent quand elle passe à leur hauteur.
+  function paperRect(top = -Infinity, bottom = Infinity) {
+    const sheets = pageEl.classList.contains('paged') ? [...pageEl.querySelectorAll('#pg-sheets > .pg-sheet')] : [];
+    let rects = (sheets.length ? sheets : [pageEl]).map((el) => el.getBoundingClientRect()).filter((r) => r.width);
+    const near = rects.filter((r) => r.bottom > top && r.top < bottom);
+    if (near.length) rects = near;
+    else if (rects.length > 2) rects = rects.slice(0, 2);
     if (!rects.length) return null;
     return { left: Math.min(...rects.map((r) => r.left)), right: Math.max(...rects.map((r) => r.right)), top: Math.min(...rects.map((r) => r.top)) };
   }
   function placeSides() {
     if (!sideOn) return;
-    const paper = pageEl.hidden ? null : paperRect();
     const ws = workspace.getBoundingClientRect();
-    sides.forEach((s) => s.classList.toggle('tb-side-away', !paper || !ws.width));
-    if (!paper || !ws.width) return;
+    const away = pageEl.hidden || !ws.width || !paperRect();
+    sides.forEach((s) => s.classList.toggle('tb-side-away', away));
+    if (away) return;
     const inner = ws.left + workspace.clientWidth;   // (sans la barre de défilement)
     const [l, r] = sides;
-    l.style.left = Math.max(ws.left + 4, paper.left - GAP - l.offsetWidth) + 'px';
-    r.style.left = Math.min(inner - r.offsetWidth - 4, paper.right + GAP) + 'px';
-    // Au milieu de la zone visible (elles suivent le défilement).
+    // Au milieu de la zone visible (elles suivent le défilement), à côté des feuilles à leur hauteur.
     for (const s of sides) {
       s.style.maxHeight = Math.max(80, ws.height - 20) + 'px';
       s.style.top = Math.max(ws.top + 10, ws.top + (ws.height - s.offsetHeight) / 2) + 'px';
     }
+    const band = (s) => { const t = parseFloat(s.style.top); return paperRect(t, t + s.offsetHeight) || paperRect(); };
+    l.style.left = Math.max(ws.left + 4, band(l).left - GAP - l.offsetWidth) + 'px';
+    r.style.left = Math.min(inner - r.offsetWidth - 4, band(r).right + GAP) + 'px';
   }
   let placing = 0;
   const replace = () => { if (!sideOn) return; cancelAnimationFrame(placing); placing = requestAnimationFrame(placeSides); };
